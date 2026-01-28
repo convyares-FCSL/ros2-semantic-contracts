@@ -1,0 +1,39 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Rust / Cargo
+target/
+Cargo.lock
+**/target/
+**/*.rs.bk
+
+# Logs
+*.log
+
+# Build / artifacts
+dist/
+build/
+out/
+*.tmp
+
+# Docker / compose / local overrides
+docker-compose.override.yml
+*.env
+.env
+.env.*
+!.env.example
+
+# Coverage / profiling
+*.profraw
+*.profdata
+coverage/
+lcov.info
+
+# Misc
+*.bak
+*.orig
