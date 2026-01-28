@@ -2,7 +2,7 @@
 
 This repository exists to define, version, and enforce **normative semantic contracts** for ROS 2 core behaviour against explicit upstream baselines.
 
-It establishes a single, explicit definition of *what correct behaviour means* for ROS 2 mechanisms (e.g. lifecycle, actions, parameters) where upstream documentation defines interfaces and APIs but does not fully specify semantics.
+It establishes a single, explicit definition of *what correct behaviour means* for ROS 2 mechanisms (e.g. lifecycle, actions, parameters) within a defined upstream baseline where upstream documentation defines interfaces and APIs but does not fully specify semantics.
 
 The contracts in this repository are transport-agnostic, language-agnostic, and testable.
 
@@ -12,7 +12,7 @@ The contracts in this repository are transport-agnostic, language-agnostic, and 
 
 This repository is:
 
-* A **semantic authority layer** for ROS 2 core behaviour
+* A **semantic authority layer** for ROS 2 core behaviour, grounded in upstream specification and production evidence
 * A collection of **normative contracts** describing required behaviour and failure responses
 * A **baseline definition** derived from a named production profile (initially: ROS 2 Jazzy + rclcpp + Nav2)
 * A set of **executable enforcement tools** (reference implementations, contract tests, and harnesses)
