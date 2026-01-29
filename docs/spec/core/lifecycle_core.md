@@ -114,13 +114,15 @@ The core MUST enforce:
 ## Provenance
 
 ### Upstream sources
-- TBD
+- [Design Article: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+- [ROS 2 Docs: Lifecycle Package](https://docs.ros.org/en/jazzy/p/lifecycle/)
 
 ### Implementation-defined (rclcpp)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Ecosystem-defined (Nav2)
-- TBD
+- [Nav2 Docs: Configuring Lifecycle](https://docs.nav2.org/configuration/packages/configuring-lifecycle.html)
+- [Nav2 Docs: Concepts](https://navigation.ros.org/concepts/index.html)
 
 ### Project policy
 - None

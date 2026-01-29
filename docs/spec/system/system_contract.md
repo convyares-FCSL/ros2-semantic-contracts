@@ -106,13 +106,13 @@ This document defines **system expectations**, not engine-level semantics.
 ## Provenance
 
 ### Upstream sources
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Implementation-defined (rclcpp)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Ecosystem-defined (Nav2)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Project policy
 - Professional-stack operability requirements

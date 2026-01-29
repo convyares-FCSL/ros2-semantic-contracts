@@ -115,13 +115,14 @@ not by assertion alone.
 ## Provenance
 
 ### Upstream sources
-- TBD
+- [Design Article: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+- [ROS 2 Docs: Lifecycle Package](https://docs.ros.org/en/jazzy/p/lifecycle/)
 
 ### Implementation-defined (rclcpp)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Ecosystem-defined (Nav2)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Project policy
 - Stable, observable lifecycle semantics

@@ -153,13 +153,14 @@ The core MUST enforce:
 ## Provenance
 
 ### Upstream sources
-- TBD
+- [ROS 2 Docs: About Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
 
 ### Implementation-defined (rclcpp)
-- TBD
+- [ROS 2 Guides: Using callback groups](https://docs.ros.org/en/jazzy/How-To-Guides/Using-callback-groups.html)
+- [rclcpp Source: node_parameters.cpp](https://github.com/ros2/rclcpp/blob/jazzy/rclcpp/src/rclcpp/node_interfaces/node_parameters.cpp)
 
 ### Ecosystem-defined (Nav2)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Project policy
 - None

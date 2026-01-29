@@ -128,13 +128,13 @@ No deletion behaviour is assumed by default.
 ## Provenance
 
 ### Upstream sources
-- TBD
+- [ROS 2 Docs: About Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
 
 ### Implementation-defined (rclcpp)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Ecosystem-defined (Nav2)
-- TBD
+- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
 
 ### Project policy
 - Stable observable parameter semantics
