@@ -1,0 +1,72 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "ros2_semantic_contracts oracle trace",
+    "type": "object",
+    "required": [
+        "version",
+        "run_id",
+        "events"
+    ],
+    "properties": {
+        "version": {
+            "type": "string"
+        },
+        "run_id": {
+            "type": "string"
+        },
+        "events": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "t_ns",
+                    "type"
+                ],
+                "properties": {
+                    "t_ns": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "scenario_start",
+                            "scenario_end",
+                            "goal_send_decision",
+                            "status",
+                            "feedback",
+                            "result",
+                            "cancel_request",
+                            "cancel_response",
+                            "assertion"
+                        ]
+                    },
+                    "scenario_id": {
+                        "type": "string"
+                    },
+                    "goal_id": {
+                        "type": "string"
+                    },
+                    "state": {
+                        "type": "string"
+                    },
+                    "sequence": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "accepted": {
+                        "type": "boolean"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "detail": {
+                        "type": "object"
+                    }
+                },
+                "additionalProperties": true
+            }
+        }
+    },
+    "additionalProperties": false
+}

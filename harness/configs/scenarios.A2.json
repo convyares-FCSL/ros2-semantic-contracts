@@ -1,0 +1,36 @@
+{
+    "version": "0.1",
+    "scenarios": [
+        {
+            "id": "A2_status_transition_envelope",
+            "kind": "status_transition_envelope",
+            "notes": "Accepted->Executing allowed; Accepted->Canceling must be rejected deterministically.",
+            "steps": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "03030303030303030303030303030303",
+                    "payload": {}
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "goal_send_decision",
+                        "goal_id": "03030303030303030303030303030303",
+                        "accepted": true
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 1
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "note",
+                        "text": "Execution wiring to be added (status emissions require ROS action traffic in Phase A2)."
+                    }
+                }
+            ]
+        }
+    ]
+}

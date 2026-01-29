@@ -1,0 +1,84 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "ros2_semantic_contracts oracle scenarios",
+    "type": "object",
+    "required": [
+        "version",
+        "scenarios"
+    ],
+    "properties": {
+        "version": {
+            "type": "string"
+        },
+        "scenarios": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "kind",
+                    "steps"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "send_goal_no_ghosts",
+                            "status_transition_envelope",
+                            "sequence_monotonicity",
+                            "terminal_immutability",
+                            "cancel_eligibility",
+                            "cancel_race_legality"
+                        ]
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "steps": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "op"
+                            ],
+                            "properties": {
+                                "op": {
+                                    "type": "string",
+                                    "enum": [
+                                        "send_goal",
+                                        "emit_feedback",
+                                        "request_cancel",
+                                        "wait",
+                                        "assert"
+                                    ]
+                                },
+                                "goal_id": {
+                                    "type": "string",
+                                    "description": "16-byte hex string (32 hex chars)"
+                                },
+                                "payload": {
+                                    "type": "object"
+                                },
+                                "ms": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "assert": {
+                                    "type": "object"
+                                }
+                            },
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "additionalProperties": true
+            }
+        }
+    },
+    "additionalProperties": false
+}

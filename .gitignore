@@ -37,3 +37,8 @@ lcov.info
 # Misc
 *.bak
 *.orig
+
+# Trace
+harness/build/
+*.jsonl
+/tmp/
