@@ -1,0 +1,23 @@
+[package]
+name = "ros2_semantics_core"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Carl von Ayres <cvonayres@fuelcellsystems.co.uk>"]
+
+description = "Reference executable semantics for ROS 2 semantic contracts (transport-agnostic, graph-free core invariants)."
+readme = "README.md"
+
+repository = "https://github.com/fcsl/ros2-semantic-contracts"
+homepage = "https://github.com/fcsl/ros2-semantic-contracts"
+
+keywords = ["ros2", "semantic-contracts", "robotics", "parameters", "state-machine"]
+categories = ["science::robotics"]
+
+[dependencies]
+thiserror = "2.0.18"
+tracing = "0.1.44"
+
+[package.metadata]
+# This crate lives in a workspace repo; keep humans oriented.
+subdir = "reference/ros2_semantics_core"
