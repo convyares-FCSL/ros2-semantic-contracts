@@ -45,6 +45,8 @@ struct ScenarioBundle {
 
 #[derive(Deserialize, Debug)]
 struct Scenario {
+    #[serde(default)]
+    requires: Vec<String>,
     ops: Vec<Op>,
 }
 
@@ -185,9 +187,26 @@ fn run(args: Args) -> Result<(), BackendError> {
         "detail": { "backend": "stub" }
     }))?;
 
+    let stub_caps = ["actions.basic", "actions.terminal"];
+
+    w.emit(json!({
+        "type": "backend_capabilities",
+        "scenario_id": "_run",
+        "detail": {
+            "backend": "stub",
+            "caps": stub_caps,
+            "limits": {}
+        }
+    }))?;
+
     // Execution order is determined by BTreeMap keys (alphanumeric sort).
     for (scenario_id, scenario) in &bundle.scenarios {
-        run_scenario(&mut w, scenario_id, scenario)?;
+        let missing_caps = scenario
+            .requires
+            .iter()
+            .any(|req| !stub_caps.contains(&req.as_str()));
+
+        run_scenario(&mut w, scenario_id, scenario, missing_caps)?;
     }
 
     w.emit(json!({ "type": "run_end", "scenario_id": "_run" }))?;
@@ -210,7 +229,12 @@ fn read_bundle(path: &Path) -> Result<ScenarioBundle, BackendError> {
         .map_err(BackendError::Unexpected)
 }
 
-fn run_scenario(w: &mut EventWriter, id: &str, scenario: &Scenario) -> Result<(), BackendError> {
+fn run_scenario(
+    w: &mut EventWriter,
+    id: &str,
+    scenario: &Scenario,
+    allow_unsupported: bool,
+) -> Result<(), BackendError> {
     let mut st = BackendState::default();
 
     w.emit(json!({
@@ -221,7 +245,7 @@ fn run_scenario(w: &mut EventWriter, id: &str, scenario: &Scenario) -> Result<()
 
     for (i, op) in scenario.ops.iter().enumerate() {
         let op_id = format!("{id}#{i}");
-        exec_op(w, &mut st, id, &op_id, op)?;
+        exec_op(w, &mut st, id, &op_id, op, allow_unsupported)?;
     }
 
     w.emit(json!({ "type": "scenario_end", "scenario_id": id }))?;
@@ -234,6 +258,7 @@ fn exec_op(
     scenario_id: &str,
     op_id: &str,
     op: &Op,
+    allow_unsupported: bool,
 ) -> Result<(), BackendError> {
     w.emit(json!({
         "type": "op_start",
@@ -254,7 +279,14 @@ fn exec_op(
                 "scenario_id": scenario_id,
                 "detail": { "error": { "kind": "unsupported_op", "op": other } }
             }))?;
-            return Err(BackendError::usage(format!("unsupported op: {other}")));
+
+            // Forgiving Mode:
+            // Only strictly gated scenarios (where requirements are NOT met) are allowed to skip
+            // unsupported ops without crashing. If requirements are met (or empty), unsupported ops
+            // remain a hard usage error.
+            if !allow_unsupported {
+                return Err(BackendError::usage(format!("unsupported op: {other}")));
+            }
         }
     }
 
