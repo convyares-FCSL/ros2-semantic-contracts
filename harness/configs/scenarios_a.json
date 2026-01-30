@@ -43,6 +43,46 @@
                     }
                 }
             ]
+        },
+        {
+            "id": "A02_terminal_immutable",
+            "spec_id": "A02",
+            "steps": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "03030303030303030303030303030303"
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "goal_send_decision",
+                        "goal_id": "03030303030303030303030303030303",
+                        "accepted": true
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 500
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "terminal_result",
+                        "goal_id": "03030303030303030303030303030303",
+                        "status": "SUCCEEDED"
+                    }
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "terminal_set_attempt",
+                        "goal_id": "03030303030303030303030303030303",
+                        "attempt": 2,
+                        "allowed": false,
+                        "reason": "terminal_immutable"
+                    }
+                }
+            ]
         }
     ]
 }

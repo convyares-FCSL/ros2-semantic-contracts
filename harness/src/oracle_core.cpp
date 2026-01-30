@@ -279,6 +279,43 @@ int run_oracle(const RunConfig& cfg, BackendKind backend) {
 
           emit_assert_event(ok, expected, obs);
 
+        } else if (atype == "terminal_result") {
+          const std::string goal_id = expected.value("goal_id", "");
+          // Stub model: Any accepted goal eventually succeeds. 
+          // We synthesize the event just-in-time for the assertion in this simple stub.
+          if (accepted_goals.count(goal_id)) {
+              auto ev = base_event(cfg.version, cfg.run_id, "terminal_result", scenario_id);
+              ev["goal_id"] = goal_id;
+              ev["status"] = "SUCCEEDED";
+              ev["detail"] = json::object({{"spec_id", spec_id}});
+              write_event(trace, ev);
+              
+              bool ok = true;
+              if (expected.value("status", "") != "SUCCEEDED") ok = false;
+              emit_assert_event(ok, expected, ev);
+          } else {
+              emit_assert_event(false, expected, json::object({{"note", "goal not accepted in stub model"}}));
+          }
+
+        } else if (atype == "terminal_set_attempt") {
+          const std::string goal_id = expected.value("goal_id", "");
+          // Stub model: Terminal states are immutable. Attempt 2 is disallowed.
+          if (accepted_goals.count(goal_id)) {
+              auto ev = base_event(cfg.version, cfg.run_id, "terminal_set_attempt", scenario_id);
+              ev["goal_id"] = goal_id;
+              ev["attempt"] = expected.value("attempt", 2);
+              ev["allowed"] = false;
+              ev["reason"] = "terminal_immutable";
+              ev["detail"] = json::object({{"spec_id", spec_id}});
+              write_event(trace, ev);
+
+              bool ok = true;
+              if (expected.value("allowed", true) != false) ok = false;
+              emit_assert_event(ok, expected, ev);
+          } else {
+             emit_assert_event(false, expected, json::object({{"note", "goal not accepted in stub model"}}));
+          }
+
         } else {
           emit_assert_event(false, expected,
                             json::object({{"note", "unsupported assert.type"}, {"type", atype}}));
