@@ -124,9 +124,50 @@
             "spec_id": "P12",
             "title": "Describe unknown consistent",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.describe"
+            ],
+            "notes": "Describing an unknown parameter should produce a consistent observable response for the same input across repeated calls.",
+            "ops": [
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "param_does_not_exist"
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "param_does_not_exist"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "param_describe_request",
+                                "name": "param_does_not_exist"
+                            },
+                            {
+                                "type": "param_describe_response",
+                                "name": "param_does_not_exist",
+                                "detail": {}
+                            }
+                        ]
+                    }
+                },
+                {
+                    "check": "describe_unknown_consistent",
+                    "params": {
+                        "name": "param_does_not_exist",
+                        "min_calls": 2,
+                        "evidence_ptr": "/detail"
+                    }
+                }
+            ]
         },
         "P13_list_complete_stable": {
             "spec_id": "P13",

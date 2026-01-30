@@ -12,7 +12,11 @@ pub fn print_summary(report: &Value) -> SummaryCounts {
         Some(s) => s,
         None => {
             println!("No scenarios in report.");
-            return SummaryCounts { pass: 0, fail: 0, skip: 0 };
+            return SummaryCounts {
+                pass: 0,
+                fail: 0,
+                skip: 0,
+            };
         }
     };
 
@@ -36,9 +40,18 @@ pub fn print_summary(report: &Value) -> SummaryCounts {
         };
 
         match outcome {
-            "PASS" => { pass += 1; println!("{} {}", green("PASS"), label); }
-            "SKIP" => { skip += 1; println!("{} {}", yellow("SKIP"), label); }
-            _ => { fail += 1; println!("{} {}", red("FAIL"), label); }
+            "PASS" => {
+                pass += 1;
+                println!("{} {}", green("PASS"), label);
+            }
+            "SKIP" => {
+                skip += 1;
+                println!("{} {}", yellow("SKIP"), label);
+            }
+            _ => {
+                fail += 1;
+                println!("{} {}", red("FAIL"), label);
+            }
         }
     }
 
@@ -47,21 +60,33 @@ pub fn print_summary(report: &Value) -> SummaryCounts {
     match (fail, pass, skip) {
         (0, 0, s) if s > 0 => println!("{}", yellow(&format!("ALL TESTS SKIPPED ({s} skipped)"))),
         (0, _, s) => {
-            if s == 0 { println!("{}", green("ALL TESTS PASSED")); }
-            else { println!("{}", green(&format!("ALL TESTS PASSED ({s} skipped)"))); }
+            if s == 0 {
+                println!("{}", green("ALL TESTS PASSED"));
+            } else {
+                println!("{}", green(&format!("ALL TESTS PASSED ({s} skipped)")));
+            }
         }
         (f, _, s) => {
-            if s == 0 { println!("{}", red(&format!("{f} TEST(S) FAILED"))); }
-            else { println!("{}", red(&format!("{f} TEST(S) FAILED ({s} skipped)"))); }
+            if s == 0 {
+                println!("{}", red(&format!("{f} TEST(S) FAILED")));
+            } else {
+                println!("{}", red(&format!("{f} TEST(S) FAILED ({s} skipped)")));
+            }
         }
     }
 
     SummaryCounts { pass, fail, skip }
 }
 
-fn green(s: &str) -> String { colorize(s, "32") }
-fn yellow(s: &str) -> String { colorize(s, "33") }
-fn red(s: &str) -> String { colorize(s, "31") }
+fn green(s: &str) -> String {
+    colorize(s, "32")
+}
+fn yellow(s: &str) -> String {
+    colorize(s, "33")
+}
+fn red(s: &str) -> String {
+    colorize(s, "31")
+}
 
 fn colorize(s: &str, code: &str) -> String {
     if std::io::stdout().is_terminal() {

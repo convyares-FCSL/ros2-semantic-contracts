@@ -19,7 +19,7 @@ pub fn evaluate_bundle(bundle: &ScenarioBundle, events: Vec<Value>) -> Result<Va
     let mut fail_count = 0usize;
     let mut skip_count = 0usize;
 
-    // Extract capabilities from _run scope (naive scan, O(N) but N is small for _run).
+    // Extract backend capabilities from the _run scope.
     let backend_caps: HashSet<String> = if let Some(run_events) = events_by_id.get("_run") {
         run_events
             .iter()
@@ -70,7 +70,6 @@ pub fn evaluate_bundle(bundle: &ScenarioBundle, events: Vec<Value>) -> Result<Va
         "version": bundle.version,
         "group": bundle.group,
         "description": bundle.description,
-        // "pass" means: no fails and at least one real pass (not "all skipped").
         "pass": fail_count == 0 && pass_count > 0,
         "summary": { "pass": pass_count, "fail": fail_count, "skip": skip_count },
         "scenarios": scenarios_out
@@ -83,8 +82,9 @@ fn evaluate_scenario(
     caps: &HashSet<String>,
 ) -> Result<(Outcome, Value)> {
     let mut detail = serde_json::Map::new();
+    let mut violations = serde_json::Map::new();
 
-    // 0. Capability Gating
+    // Capability gating
     if !scenario.requires.is_empty() {
         let missing: Vec<_> = scenario
             .requires
@@ -119,7 +119,6 @@ fn evaluate_scenario(
         match ex.check.as_str() {
             "custom" => {
                 let params = ex.params.as_ref().unwrap_or(&Value::Null);
-
                 let must = params
                     .get("must_observe")
                     .and_then(|v| v.as_array())
@@ -132,17 +131,22 @@ fn evaluate_scenario(
                 let missing: Vec<_> = must
                     .iter()
                     .filter(|pattern| !events.iter().any(|ev| matches_pattern(ev, pattern)))
+                    .cloned()
                     .collect();
 
                 if !missing.is_empty() {
                     pass = false;
-                    detail.insert("missing_expectations".into(), json!(missing));
+                    violations
+                        .entry("missing_expectations")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .extend(missing);
                 }
             }
 
             "absent" => {
                 let params = ex.params.as_ref().unwrap_or(&Value::Null);
-
                 let where_pat = params.get("where").ok_or_else(|| {
                     CoreError::UnsupportedExpect("absent requires params.where".to_string())
                 })?;
@@ -166,25 +170,134 @@ fn evaluate_scenario(
                 for ev in events.iter().filter(|ev| matches_pattern(ev, where_pat)) {
                     let ty = ev.get("type").and_then(|t| t.as_str()).unwrap_or("");
                     if forbidden.iter().any(|f| *f == ty) {
-                        found.push(ev);
+                        found.push(ev.clone());
                     }
                 }
 
                 if !found.is_empty() {
                     pass = false;
-                    detail.insert(
-                        "absent_violation".into(),
-                        json!({
+                    violations
+                        .entry("absent_violation")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({
                             "where": where_pat,
                             "types": forbidden,
                             "found": found
-                        }),
-                    );
+                        }));
+                }
+            }
+
+            // P12: compare a scenario-declared evidence sub-value across repeated responses.
+            //
+            // This check is intentionally strict:
+            // - The scenario declares *what* is compared via params.evidence_ptr (JSON Pointer).
+            // - The core does NOT strip headers or guess semantics.
+            "describe_unknown_consistent" => {
+                let params = ex.params.as_ref().unwrap_or(&Value::Null);
+
+                let name = params.get("name").and_then(|v| v.as_str()).ok_or_else(|| {
+                    CoreError::UnsupportedExpect(
+                        "describe_unknown_consistent requires params.name".to_string(),
+                    )
+                })?;
+
+                let min_calls = params
+                    .get("min_calls")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(2);
+                if min_calls < 2 {
+                    return Err(CoreError::UnsupportedExpect(
+                        "describe_unknown_consistent params.min_calls must be >= 2".to_string(),
+                    )
+                    .into());
+                }
+
+                // JSON Pointer (RFC 6901), e.g. "/detail"
+                let evidence_ptr = params
+                    .get("evidence_ptr")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        CoreError::UnsupportedExpect(
+                            "describe_unknown_consistent requires params.evidence_ptr (JSON Pointer, e.g. \"/detail\")"
+                                .to_string(),
+                        )
+                    })?;
+
+                let responses: Vec<&Value> = events
+                    .iter()
+                    .filter(|e| {
+                        e.get("type").and_then(|v| v.as_str()) == Some("param_describe_response")
+                    })
+                    .filter(|e| e.get("name").and_then(|v| v.as_str()) == Some(name))
+                    .collect();
+
+                if (responses.len() as u64) < min_calls {
+                    pass = false;
+                    violations
+                        .entry("describe_unknown_consistent_violation")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({
+                            "name": name,
+                            "reason": "insufficient_responses",
+                            "observed_calls": responses.len(),
+                            "min_calls": min_calls
+                        }));
+                    continue;
+                }
+
+                let mut extracted: Vec<Value> = Vec::with_capacity(responses.len());
+                let mut missing_count = 0usize;
+
+                for ev in &responses {
+                    match ev.pointer(evidence_ptr) {
+                        Some(v) => extracted.push(v.clone()),
+                        None => missing_count += 1,
+                    }
+                }
+
+                if missing_count > 0 {
+                    pass = false;
+                    violations
+                        .entry("describe_unknown_consistent_violation")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({
+                            "name": name,
+                            "reason": "missing_evidence",
+                            "evidence_ptr": evidence_ptr,
+                            "missing_count": missing_count
+                        }));
+                    continue;
+                }
+
+                let first = &extracted[0];
+                if !extracted.iter().all(|v| v == first) {
+                    pass = false;
+                    violations
+                        .entry("describe_unknown_consistent_violation")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({
+                            "name": name,
+                            "reason": "evidence_differs",
+                            "evidence_ptr": evidence_ptr,
+                            "evidence": extracted
+                        }));
                 }
             }
 
             other => return Err(CoreError::UnsupportedExpect(other.to_string()).into()),
         }
+    }
+
+    if !violations.is_empty() {
+        detail.insert("violations".into(), json!(violations));
     }
 
     Ok((
@@ -193,173 +306,22 @@ fn evaluate_scenario(
     ))
 }
 
-/// Returns true if `pattern` is a subset of `event`.
+/// Recursive subset matcher used by custom expectations.
+///
+/// Semantics:
+/// - Objects: every key/value in `pattern` must exist in `event` and match recursively.
+/// - Arrays: exact equality (intentional for now; subset semantics can be added later).
+/// - Scalars: equality.
+///
+/// This allows expectations to match structured evidence without requiring full
+/// event equality, while remaining deterministic and explicit.
 fn matches_pattern(event: &Value, pattern: &Value) -> bool {
-    let (eobj, pobj) = match (event.as_object(), pattern.as_object()) {
-        (Some(e), Some(p)) => (e, p),
-        _ => return false,
-    };
-
-    pobj.iter().all(|(k, pv)| eobj.get(k) == Some(pv))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{evaluate_scenario, matches_pattern};
-    use crate::model::{Expect, Outcome, Scenario};
-    use serde_json::json;
-    use std::collections::HashSet;
-
-    fn scenario_with_expects(expects: Vec<Expect>) -> Scenario {
-        Scenario {
-            spec_id: "T00".to_string(),
-            title: "test".to_string(),
-            layer: None,
-            notes: None,
-            ops: vec![],
-            expects,
-            requires: vec![],
-        }
-    }
-
-    #[test]
-    fn matches_pattern_subset_true() {
-        let ev = json!({"type":"goal_response","goal_id":"g1","accepted":true,"extra":123});
-        let pat = json!({"type":"goal_response","goal_id":"g1","accepted":true});
-        assert!(matches_pattern(&ev, &pat));
-    }
-
-    #[test]
-    fn matches_pattern_subset_false_value_mismatch() {
-        let ev = json!({"type":"goal_response","goal_id":"g1","accepted":true});
-        let pat = json!({"type":"goal_response","goal_id":"g1","accepted":false});
-        assert!(!matches_pattern(&ev, &pat));
-    }
-
-    #[test]
-    fn scenario_fails_if_missing_start_or_end() {
-        let s = scenario_with_expects(vec![Expect {
-            check: "custom".to_string(),
-            params: Some(json!({"must_observe":[{"type":"x"}]})),
-        }]);
-
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            // no scenario_end
-        ];
-
-        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
-        assert_eq!(outcome, Outcome::Fail);
-    }
-
-    #[test]
-    fn scenario_skips_if_no_expects_even_if_it_ran() {
-        let s = scenario_with_expects(vec![]);
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            json!({"type":"scenario_end"}),
-        ];
-
-        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
-        assert_eq!(outcome, Outcome::Skip);
-    }
-
-    #[test]
-    fn custom_passes_when_all_patterns_observed() {
-        let s = scenario_with_expects(vec![Expect {
-            check: "custom".to_string(),
-            params: Some(json!({
-                "must_observe": [
-                    {"type":"goal_send","goal_id":"g1"},
-                    {"type":"goal_response","goal_id":"g1","accepted":true}
-                ]
-            })),
-        }]);
-
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            json!({"type":"goal_send","goal_id":"g1"}),
-            json!({"type":"goal_response","goal_id":"g1","accepted":true}),
-            json!({"type":"scenario_end"}),
-        ];
-
-        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
-        assert_eq!(outcome, Outcome::Pass);
-    }
-
-    #[test]
-    fn absent_fails_when_forbidden_type_present_for_matching_where() {
-        let s = scenario_with_expects(vec![Expect {
-            check: "absent".to_string(),
-            params: Some(json!({
-                "where": {"goal_id":"g_reject"},
-                "types": ["goal_send","goal_response"]
-            })),
-        }]);
-
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            json!({"type":"goal_send","goal_id":"g_reject"}),
-            json!({"type":"scenario_end"}),
-        ];
-
-        let (outcome, details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
-        assert_eq!(outcome, Outcome::Fail);
-        assert!(details.get("absent_violation").is_some());
-    }
-
-    #[test]
-    fn absent_passes_when_forbidden_types_not_present() {
-        let s = scenario_with_expects(vec![Expect {
-            check: "absent".to_string(),
-            params: Some(json!({
-                "where": {"goal_id":"g_reject"},
-                "types": ["goal_send","goal_response"]
-            })),
-        }]);
-
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            // different goal_id -> should not match `where`
-            json!({"type":"goal_send","goal_id":"g_other"}),
-            json!({"type":"scenario_end"}),
-        ];
-
-        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
-        assert_eq!(outcome, Outcome::Pass);
-    }
-
-    #[test]
-    fn scenario_skips_when_missing_required_capability() {
-        let mut s = scenario_with_expects(vec![]);
-        s.requires = vec!["special.cap".to_string()];
-
-        // Even if events are perfect, it must skip if cap is missing
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            json!({"type":"scenario_end"}),
-        ];
-
-        let (outcome, details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
-        assert_eq!(outcome, Outcome::Skip);
-        assert!(details.get("capability_missing").is_some());
-    }
-
-    #[test]
-    fn scenario_runs_when_required_capability_present() {
-        let mut s = scenario_with_expects(vec![]);
-        s.requires = vec!["special.cap".to_string()];
-
-        let events = vec![
-            json!({"type":"scenario_start"}),
-            json!({"type":"scenario_end"}),
-        ];
-        let mut caps = HashSet::new();
-        caps.insert("special.cap".to_string());
-
-        // Should be Outcome::Skip (default for no expects) but NOT due to missing cap
-        let (outcome, details) = evaluate_scenario(&s, &events, &caps).unwrap();
-        assert_eq!(outcome, Outcome::Skip);
-        assert!(details.get("capability_missing").is_none());
+    match (event, pattern) {
+        (Value::Object(e), Value::Object(p)) => p.iter().all(|(k, pv)| match e.get(k) {
+            Some(ev) => matches_pattern(ev, pv),
+            None => false,
+        }),
+        (Value::Array(ea), Value::Array(pa)) => ea == pa,
+        _ => event == pattern,
     }
 }

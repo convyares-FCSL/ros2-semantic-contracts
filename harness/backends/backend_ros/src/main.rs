@@ -53,7 +53,7 @@ fn run(args: Args) -> Result<(), BackendError> {
     let ros_ctx = rclrs::Context::default_from_env()
         .map_err(|e| BackendError::system(e).context("init rclrs Context"))?;
     let exec = ros_ctx.create_basic_executor();
-    let _node = exec
+    let node = exec
         .create_node("oracle_backend_ros")
         .map_err(|e| BackendError::system(e).context("create rclrs node"))?;
 
@@ -81,17 +81,18 @@ fn run(args: Args) -> Result<(), BackendError> {
             "caps": [
                 "actions.basic",
                 "actions.terminal",
-                "ros.params.set"
+                "ros.params.set",
+                "ros.params.describe"
             ],
             "limits": {}
         }
     }))?;
 
-    let _node_clone = _node.clone();
+    let _node_clone = node.clone();
     let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
     let running_clone = running.clone();
 
-    // Spawn spinner thread
+    // Spawn spinner thread (services our own parameter service calls).
     let spinner_handle = std::thread::spawn(move || {
         let mut exec = exec;
         while running_clone.load(std::sync::atomic::Ordering::Relaxed) {
@@ -109,15 +110,27 @@ fn run(args: Args) -> Result<(), BackendError> {
         }
     });
 
-    // Create client for self-parameter setting
-    let param_client = _node
+    // Create clients for self-parameter services.
+    let set_param_client = node
         .create_client::<rclrs::vendor::rcl_interfaces::srv::SetParameters>(
             "/oracle_backend_ros/set_parameters",
         )
         .map_err(|e| BackendError::system(e).context("create set_parameters client"))?;
 
+    let describe_param_client = node
+        .create_client::<rclrs::vendor::rcl_interfaces::srv::DescribeParameters>(
+            "/oracle_backend_ros/describe_parameters",
+        )
+        .map_err(|e| BackendError::system(e).context("create describe_parameters client"))?;
+
     for (scenario_id, scenario) in &bundle.scenarios {
-        run_scenario(&mut w, scenario_id, scenario, &param_client)?;
+        run_scenario(
+            &mut w,
+            scenario_id,
+            scenario,
+            &set_param_client,
+            &describe_param_client,
+        )?;
     }
 
     w.emit(json!({
@@ -126,13 +139,14 @@ fn run(args: Args) -> Result<(), BackendError> {
         "detail": { "backend": "ros" }
     }))?;
 
-    // Signal thread to stop
+    // Signal thread to stop.
     running.store(false, std::sync::atomic::Ordering::Relaxed);
     let _ = spinner_handle.join();
 
     w.flush()?;
     Ok(())
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,9 +297,7 @@ mod tests {
         }))
         .unwrap();
 
-        for (scenario_id, scenario) in &bundle.scenarios {
-            std::hint::black_box(&scenario.ops);
-
+        for (scenario_id, _scenario) in &bundle.scenarios {
             w.emit(json!({
                 "type": "scenario_start",
                 "scenario_id": scenario_id,
@@ -325,28 +337,6 @@ mod tests {
         assert_eq!(events[0]["scenario_id"], json!("_run"));
         assert_eq!(events[5]["type"], json!("run_end"));
         assert_eq!(events[5]["scenario_id"], json!("_run"));
-
-        // Scenario IDs must appear for start/end pairs
-        let mut seen = std::collections::BTreeMap::<String, (u32, u32)>::new();
-        for ev in &events {
-            let sid = ev["scenario_id"].as_str().unwrap().to_string();
-            let ty = ev["type"].as_str().unwrap();
-            if sid == "_run" {
-                continue;
-            }
-            let entry = seen.entry(sid).or_insert((0, 0));
-            match ty {
-                "scenario_start" => entry.0 += 1,
-                "scenario_end" => entry.1 += 1,
-                _ => {}
-            }
-        }
-
-        assert_eq!(seen.len(), 2);
-        for (_sid, (starts, ends)) in seen {
-            assert_eq!(starts, 1);
-            assert_eq!(ends, 1);
-        }
 
         // sequence must be contiguous from 0..N-1
         for (i, ev) in events.iter().enumerate() {

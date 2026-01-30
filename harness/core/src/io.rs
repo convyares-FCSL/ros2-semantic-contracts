@@ -11,6 +11,10 @@ use std::{
 };
 
 /// Minimal valid core vocabulary.
+///
+/// This list defines the complete set of event types the oracle will accept
+/// from backends. Any new observable evidence must be explicitly added here;
+/// unknown types are rejected at trace-ingest time.
 const CORE_TYPES: &[&str] = &[
     "run_start",
     "run_end",
@@ -28,6 +32,8 @@ const CORE_TYPES: &[&str] = &[
     "backend_capabilities",
     "param_set_request",
     "param_set_response",
+    "param_describe_request",
+    "param_describe_response",
 ];
 
 pub fn read_bundle(path: &Path) -> Result<ScenarioBundle> {

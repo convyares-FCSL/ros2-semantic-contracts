@@ -4,16 +4,21 @@ use crate::{
     io::EventWriter,
     state::BackendState,
 };
+
 use serde_json::json;
 use std::time::Duration;
 
-use rclrs::vendor::rcl_interfaces::{msg::ParameterValue, srv::SetParameters};
+use rclrs::vendor::rcl_interfaces::{
+    msg::{ParameterDescriptor, ParameterValue},
+    srv::{DescribeParameters, SetParameters},
+};
 
 pub fn run_scenario(
     w: &mut EventWriter,
     id: &str,
     scenario: &Scenario,
-    param_client: &rclrs::Client<SetParameters>,
+    set_param_client: &rclrs::Client<SetParameters>,
+    describe_param_client: &rclrs::Client<DescribeParameters>,
 ) -> Result<(), BackendError> {
     let mut st = BackendState::default();
 
@@ -25,7 +30,15 @@ pub fn run_scenario(
 
     for (i, op) in scenario.ops.iter().enumerate() {
         let op_id = format!("{id}#{i}");
-        exec_op(w, &mut st, id, &op_id, op, param_client)?;
+        exec_op(
+            w,
+            &mut st,
+            id,
+            &op_id,
+            op,
+            set_param_client,
+            describe_param_client,
+        )?;
     }
 
     w.emit(json!({
@@ -43,14 +56,10 @@ fn exec_op(
     scenario_id: &str,
     op_id: &str,
     op: &Op,
-    param_client: &rclrs::Client<SetParameters>,
+    set_param_client: &rclrs::Client<SetParameters>,
+    describe_param_client: &rclrs::Client<DescribeParameters>,
 ) -> Result<(), BackendError> {
-    w.emit(json!({
-        "type": "op_start",
-        "scenario_id": scenario_id,
-        "op_id": op_id,
-        "detail": { "op": op.op }
-    }))?;
+    w.emit(json!({ "type": "op_start", "scenario_id": scenario_id, "op_id": op_id, "detail": { "op": op.op } }))?;
 
     match op.op.as_str() {
         "send_goal" => exec_send_goal(w, scenario_id, op)?,
@@ -58,7 +67,8 @@ fn exec_op(
         "complete_terminal" => exec_complete_terminal(w, st, scenario_id, op)?,
         "attempt_terminal_override" => exec_attempt_terminal_override(w, st, scenario_id, op)?,
 
-        "set_param" => exec_set_param(w, scenario_id, op, param_client)?,
+        "set_param" => exec_set_param(w, scenario_id, op, set_param_client)?,
+        "describe_param" => exec_describe_param(w, scenario_id, op, describe_param_client)?,
 
         other => {
             w.emit(json!({
@@ -70,11 +80,7 @@ fn exec_op(
         }
     }
 
-    w.emit(json!({
-        "type": "op_end",
-        "scenario_id": scenario_id,
-        "op_id": op_id
-    }))?;
+    w.emit(json!({ "type": "op_end", "scenario_id": scenario_id, "op_id": op_id }))?;
 
     Ok(())
 }
@@ -102,9 +108,9 @@ fn exec_set_param(
     let type_str = payload
         .get("type")
         .and_then(|v| v.as_str())
-        .unwrap_or("string"); // default/fallback if needed, though schema should enforce
+        .unwrap_or("string");
 
-    // Map to ParameterValue
+    // Map to ParameterValue (typed evidence for service call).
     let mut pval = ParameterValue::default();
     match type_str {
         "bool" | "boolean" => {
@@ -125,7 +131,7 @@ fn exec_set_param(
                 serde_json::Value::String(s) => s.clone(),
                 _ => val_json.to_string(),
             };
-        } // Arrays valid but skipping for P06 scope
+        }
     }
 
     w.emit(json!({
@@ -150,13 +156,12 @@ fn exec_set_param(
         .call(&request)
         .map_err(|e| BackendError::system(e).context("failed to call set_parameters"))?;
 
-    // Block on response (spinner thread is running)
+    // Block on response (spinner thread is running).
     let result = futures::executor::block_on(future);
 
     match result {
         Ok((response, _info)) => {
-            // response.results is Vec<SetParametersResult>
-            let result = response
+            let r = response
                 .results
                 .first()
                 .ok_or_else(|| BackendError::system(anyhow::anyhow!("empty response results")))?;
@@ -166,12 +171,11 @@ fn exec_set_param(
                 "scenario_id": scenario_id,
                 "node": "/oracle_backend_ros",
                 "name": name,
-                "successful": result.successful,
-                "reason": result.reason
+                "successful": r.successful,
+                "reason": r.reason
             }))?;
         }
         Err(e) => {
-            // Call failed/canceled
             w.emit(json!({
                 "type": "param_set_response",
                 "scenario_id": scenario_id,
@@ -184,6 +188,104 @@ fn exec_set_param(
     }
 
     Ok(())
+}
+
+fn exec_describe_param(
+    w: &mut EventWriter,
+    scenario_id: &str,
+    op: &Op,
+    client: &rclrs::Client<DescribeParameters>,
+) -> Result<(), BackendError> {
+    let payload = op
+        .payload
+        .as_ref()
+        .ok_or_else(|| BackendError::usage("describe_param missing payload"))?;
+
+    let name = payload
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| BackendError::usage("describe_param payload.name missing"))?;
+
+    w.emit(json!({
+        "type": "param_describe_request",
+        "scenario_id": scenario_id,
+        "node": "/oracle_backend_ros",
+        "name": name
+    }))?;
+
+    let request = rclrs::vendor::rcl_interfaces::srv::DescribeParameters_Request {
+        names: vec![name.to_string()],
+    };
+
+    let future: rclrs::Promise<(
+        rclrs::vendor::rcl_interfaces::srv::DescribeParameters_Response,
+        rclrs::ServiceInfo,
+    )> = client
+        .call(&request)
+        .map_err(|e| BackendError::system(e).context("failed to call describe_parameters"))?;
+
+    let result = futures::executor::block_on(future);
+
+    match result {
+        Ok((response, _info)) => {
+            // Deterministic ordering: make ordering explicit even if ROS changes internal behavior.
+            let mut descriptors: Vec<serde_json::Value> = response
+                .descriptors
+                .iter()
+                .map(parameter_descriptor_to_json)
+                .collect();
+
+            descriptors.sort_by(|a, b| {
+                let an = a.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                let bn = b.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                an.cmp(bn)
+            });
+
+            w.emit(json!({
+                "type": "param_describe_response",
+                "scenario_id": scenario_id,
+                "node": "/oracle_backend_ros",
+                "name": name,
+                "detail": {
+                    "descriptors": descriptors
+                }
+            }))?;
+        }
+        Err(e) => {
+            w.emit(json!({
+                "type": "param_describe_response",
+                "scenario_id": scenario_id,
+                "node": "/oracle_backend_ros",
+                "name": name,
+                "detail": {
+                    "error": format!("service_call_failed: {}", e)
+                }
+            }))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn parameter_descriptor_to_json(d: &ParameterDescriptor) -> serde_json::Value {
+    json!({
+        "name": d.name,
+        "type": d.type_,
+        "description": d.description,
+        "additional_constraints": d.additional_constraints,
+        "read_only": d.read_only,
+        "dynamic_typing": d.dynamic_typing,
+        "floating_point_range": d.floating_point_range.iter().map(|r| json!({
+            "from_value": r.from_value,
+            "to_value": r.to_value,
+            "step": r.step
+        })).collect::<Vec<_>>(),
+        "integer_range": d.integer_range.iter().map(|r| json!({
+            "from_value": r.from_value,
+            "to_value": r.to_value,
+            "step": r.step
+        })).collect::<Vec<_>>(),
+    })
 }
 
 fn exec_send_goal(w: &mut EventWriter, scenario_id: &str, op: &Op) -> Result<(), BackendError> {
