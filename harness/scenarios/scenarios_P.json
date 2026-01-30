@@ -55,7 +55,8 @@
                 {
                     "op": "set_param",
                     "payload": {
-                        "name": "foo",
+                        "name": "param_does_not_exist",
+                        "type": "integer",
                         "value": 42
                     }
                 }
@@ -67,12 +68,10 @@
                         "must_observe": [
                             {
                                 "type": "param_set_request",
-                                "node": "oracle_witness",
                                 "name": "param_does_not_exist"
                             },
                             {
                                 "type": "param_set_response",
-                                "node": "oracle_witness",
                                 "name": "param_does_not_exist",
                                 "successful": false
                             }

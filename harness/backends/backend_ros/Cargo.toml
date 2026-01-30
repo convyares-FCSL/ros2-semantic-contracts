@@ -23,6 +23,7 @@ thiserror = "2"
 
 # ROS 2 Rust client library.
 rclrs = "0.7"
+futures = "0.3"
 
 [package.metadata]
 subdir = "harness/backends/backend_ros"

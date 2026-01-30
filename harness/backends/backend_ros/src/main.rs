@@ -80,14 +80,44 @@ fn run(args: Args) -> Result<(), BackendError> {
             "backend": "ros",
             "caps": [
                 "actions.basic",
-                "actions.terminal"
+                "actions.terminal",
+                "ros.params.set"
             ],
             "limits": {}
         }
     }))?;
 
+    let _node_clone = _node.clone();
+    let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let running_clone = running.clone();
+
+    // Spawn spinner thread
+    let spinner_handle = std::thread::spawn(move || {
+        let mut exec = exec;
+        while running_clone.load(std::sync::atomic::Ordering::Relaxed) {
+            let opts = rclrs::SpinOptions::default().timeout(std::time::Duration::from_millis(100));
+            for err in exec.spin(opts) {
+                if let rclrs::RclrsError::RclError {
+                    code: rclrs::RclReturnCode::Timeout,
+                    ..
+                } = err
+                {
+                    continue;
+                }
+                eprintln!("Spin warn: {}", err);
+            }
+        }
+    });
+
+    // Create client for self-parameter setting
+    let param_client = _node
+        .create_client::<rclrs::vendor::rcl_interfaces::srv::SetParameters>(
+            "/oracle_backend_ros/set_parameters",
+        )
+        .map_err(|e| BackendError::system(e).context("create set_parameters client"))?;
+
     for (scenario_id, scenario) in &bundle.scenarios {
-        run_scenario(&mut w, scenario_id, scenario)?;
+        run_scenario(&mut w, scenario_id, scenario, &param_client)?;
     }
 
     w.emit(json!({
@@ -95,6 +125,10 @@ fn run(args: Args) -> Result<(), BackendError> {
         "scenario_id": "_run",
         "detail": { "backend": "ros" }
     }))?;
+
+    // Signal thread to stop
+    running.store(false, std::sync::atomic::Ordering::Relaxed);
+    let _ = spinner_handle.join();
 
     w.flush()?;
     Ok(())
@@ -104,6 +138,7 @@ mod tests {
     use super::*;
     use serde_json::Value;
     use std::fs;
+    use std::path::{Path, PathBuf};
 
     fn tmp_path(prefix: &str, ext: &str) -> PathBuf {
         let now = std::time::SystemTime::now()
@@ -169,7 +204,7 @@ mod tests {
         }))
         .expect("emit run_end");
 
-        w.writer.flush().expect("flush");
+        w.flush().expect("flush");
 
         let events = read_jsonl(&trace);
         assert_eq!(events.len(), 2);
@@ -273,7 +308,7 @@ mod tests {
         }))
         .unwrap();
 
-        w.writer.flush().unwrap();
+        w.flush().unwrap();
 
         let events = read_jsonl(&trace_path);
 
