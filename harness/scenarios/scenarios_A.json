@@ -7,6 +7,9 @@
             "spec_id": "A01",
             "title": "Rejected goals are not observable ('no ghosts')",
             "layer": "Core",
+            "requires": [
+                "actions.basic"
+            ],
             "notes": "If a goal is rejected, no further lifecycle events may reference it.",
             "ops": [
                 {
@@ -56,6 +59,9 @@
             "spec_id": "A02",
             "title": "Terminal states immutable",
             "layer": "Action",
+            "requires": [
+                "actions.terminal"
+            ],
             "notes": "Once terminal is set, subsequent attempts to change terminal must be denied and observable; terminal must not change.",
             "ops": [
                 {

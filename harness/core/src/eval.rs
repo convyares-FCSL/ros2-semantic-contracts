@@ -3,7 +3,7 @@ use crate::model::{Outcome, Scenario, ScenarioBundle};
 
 use anyhow::Result;
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub fn evaluate_bundle(bundle: &ScenarioBundle, events: Vec<Value>) -> Result<Value> {
     let mut events_by_id: HashMap<String, Vec<Value>> = HashMap::new();
@@ -19,6 +19,24 @@ pub fn evaluate_bundle(bundle: &ScenarioBundle, events: Vec<Value>) -> Result<Va
     let mut fail_count = 0usize;
     let mut skip_count = 0usize;
 
+    // Extract capabilities from _run scope (naive scan, O(N) but N is small for _run).
+    let backend_caps: HashSet<String> = if let Some(run_events) = events_by_id.get("_run") {
+        run_events
+            .iter()
+            .filter(|e| e["type"] == "backend_capabilities")
+            .flat_map(|e| {
+                e.get("detail")
+                    .and_then(|d| d.get("caps"))
+                    .and_then(|c| c.as_array())
+            })
+            .flatten()
+            .filter_map(|v| v.as_str())
+            .map(|s| s.to_string())
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
     for (scenario_id, scenario) in &bundle.scenarios {
         std::hint::black_box(&scenario.ops);
 
@@ -27,7 +45,7 @@ pub fn evaluate_bundle(bundle: &ScenarioBundle, events: Vec<Value>) -> Result<Va
             .map(|v| v.as_slice())
             .unwrap_or(&[]);
 
-        let (outcome, details) = evaluate_scenario(scenario, sc_events)?;
+        let (outcome, details) = evaluate_scenario(scenario, sc_events, &backend_caps)?;
 
         match outcome {
             Outcome::Pass => pass_count += 1,
@@ -59,8 +77,27 @@ pub fn evaluate_bundle(bundle: &ScenarioBundle, events: Vec<Value>) -> Result<Va
     }))
 }
 
-fn evaluate_scenario(scenario: &Scenario, events: &[Value]) -> Result<(Outcome, Value)> {
+fn evaluate_scenario(
+    scenario: &Scenario,
+    events: &[Value],
+    caps: &HashSet<String>,
+) -> Result<(Outcome, Value)> {
     let mut detail = serde_json::Map::new();
+
+    // 0. Capability Gating
+    if !scenario.requires.is_empty() {
+        let missing: Vec<_> = scenario
+            .requires
+            .iter()
+            .filter(|req| !caps.contains(*req))
+            .cloned()
+            .collect();
+
+        if !missing.is_empty() {
+            detail.insert("capability_missing".into(), json!(missing));
+            return Ok((Outcome::Skip, json!(detail)));
+        }
+    }
 
     let has_start = events.iter().any(|e| e["type"] == "scenario_start");
     let has_end = events.iter().any(|e| e["type"] == "scenario_end");
@@ -87,7 +124,9 @@ fn evaluate_scenario(scenario: &Scenario, events: &[Value]) -> Result<(Outcome, 
                     .get("must_observe")
                     .and_then(|v| v.as_array())
                     .ok_or_else(|| {
-                        CoreError::UnsupportedExpect("custom requires params.must_observe[]".to_string())
+                        CoreError::UnsupportedExpect(
+                            "custom requires params.must_observe[]".to_string(),
+                        )
                     })?;
 
                 let missing: Vec<_> = must
@@ -119,7 +158,8 @@ fn evaluate_scenario(scenario: &Scenario, events: &[Value]) -> Result<(Outcome, 
                 if forbidden.is_empty() {
                     return Err(CoreError::UnsupportedExpect(
                         "absent params.types[] must contain at least one string".to_string(),
-                    ).into());
+                    )
+                    .into());
                 }
 
                 let mut found = Vec::new();
@@ -132,11 +172,14 @@ fn evaluate_scenario(scenario: &Scenario, events: &[Value]) -> Result<(Outcome, 
 
                 if !found.is_empty() {
                     pass = false;
-                    detail.insert("absent_violation".into(), json!({
-                        "where": where_pat,
-                        "types": forbidden,
-                        "found": found
-                    }));
+                    detail.insert(
+                        "absent_violation".into(),
+                        json!({
+                            "where": where_pat,
+                            "types": forbidden,
+                            "found": found
+                        }),
+                    );
                 }
             }
 
@@ -144,7 +187,10 @@ fn evaluate_scenario(scenario: &Scenario, events: &[Value]) -> Result<(Outcome, 
         }
     }
 
-    Ok((if pass { Outcome::Pass } else { Outcome::Fail }, json!(detail)))
+    Ok((
+        if pass { Outcome::Pass } else { Outcome::Fail },
+        json!(detail),
+    ))
 }
 
 /// Returns true if `pattern` is a subset of `event`.
@@ -162,6 +208,7 @@ mod tests {
     use super::{evaluate_scenario, matches_pattern};
     use crate::model::{Expect, Outcome, Scenario};
     use serde_json::json;
+    use std::collections::HashSet;
 
     fn scenario_with_expects(expects: Vec<Expect>) -> Scenario {
         Scenario {
@@ -171,6 +218,7 @@ mod tests {
             notes: None,
             ops: vec![],
             expects,
+            requires: vec![],
         }
     }
 
@@ -200,16 +248,19 @@ mod tests {
             // no scenario_end
         ];
 
-        let (outcome, _details) = evaluate_scenario(&s, &events).unwrap();
+        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
         assert_eq!(outcome, Outcome::Fail);
     }
 
     #[test]
     fn scenario_skips_if_no_expects_even_if_it_ran() {
         let s = scenario_with_expects(vec![]);
-        let events = vec![json!({"type":"scenario_start"}), json!({"type":"scenario_end"})];
+        let events = vec![
+            json!({"type":"scenario_start"}),
+            json!({"type":"scenario_end"}),
+        ];
 
-        let (outcome, _details) = evaluate_scenario(&s, &events).unwrap();
+        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
         assert_eq!(outcome, Outcome::Skip);
     }
 
@@ -232,7 +283,7 @@ mod tests {
             json!({"type":"scenario_end"}),
         ];
 
-        let (outcome, _details) = evaluate_scenario(&s, &events).unwrap();
+        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
         assert_eq!(outcome, Outcome::Pass);
     }
 
@@ -252,7 +303,7 @@ mod tests {
             json!({"type":"scenario_end"}),
         ];
 
-        let (outcome, details) = evaluate_scenario(&s, &events).unwrap();
+        let (outcome, details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
         assert_eq!(outcome, Outcome::Fail);
         assert!(details.get("absent_violation").is_some());
     }
@@ -274,7 +325,41 @@ mod tests {
             json!({"type":"scenario_end"}),
         ];
 
-        let (outcome, _details) = evaluate_scenario(&s, &events).unwrap();
+        let (outcome, _details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
         assert_eq!(outcome, Outcome::Pass);
+    }
+
+    #[test]
+    fn scenario_skips_when_missing_required_capability() {
+        let mut s = scenario_with_expects(vec![]);
+        s.requires = vec!["special.cap".to_string()];
+
+        // Even if events are perfect, it must skip if cap is missing
+        let events = vec![
+            json!({"type":"scenario_start"}),
+            json!({"type":"scenario_end"}),
+        ];
+
+        let (outcome, details) = evaluate_scenario(&s, &events, &HashSet::new()).unwrap();
+        assert_eq!(outcome, Outcome::Skip);
+        assert!(details.get("capability_missing").is_some());
+    }
+
+    #[test]
+    fn scenario_runs_when_required_capability_present() {
+        let mut s = scenario_with_expects(vec![]);
+        s.requires = vec!["special.cap".to_string()];
+
+        let events = vec![
+            json!({"type":"scenario_start"}),
+            json!({"type":"scenario_end"}),
+        ];
+        let mut caps = HashSet::new();
+        caps.insert("special.cap".to_string());
+
+        // Should be Outcome::Skip (default for no expects) but NOT due to missing cap
+        let (outcome, details) = evaluate_scenario(&s, &events, &caps).unwrap();
+        assert_eq!(outcome, Outcome::Skip);
+        assert!(details.get("capability_missing").is_none());
     }
 }

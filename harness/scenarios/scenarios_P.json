@@ -47,9 +47,39 @@
             "spec_id": "P06",
             "title": "Unknown params rejected",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.set"
+            ],
+            "notes": "Setting an undeclared parameter must be rejected by the node.",
+            "ops": [
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "foo",
+                        "value": 42
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "param_set_request",
+                                "node": "oracle_witness",
+                                "name": "param_does_not_exist"
+                            },
+                            {
+                                "type": "param_set_response",
+                                "node": "oracle_witness",
+                                "name": "param_does_not_exist",
+                                "successful": false
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P07_change_record_ordering": {
             "spec_id": "P07",

@@ -35,6 +35,8 @@ pub struct Scenario {
     pub layer: Option<String>,
     #[serde(default)]
     pub notes: Option<String>,
+    #[serde(default)]
+    pub requires: Vec<String>,
     /// Backend instructions (parsed for schema honesty; not interpreted by core).
     #[serde(default)]
     pub ops: Vec<Value>,

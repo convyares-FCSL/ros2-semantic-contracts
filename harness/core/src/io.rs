@@ -25,6 +25,9 @@ const CORE_TYPES: &[&str] = &[
     "status",
     "result",
     "terminal_set_attempt",
+    "backend_capabilities",
+    "param_set_request",
+    "param_set_response",
 ];
 
 pub fn read_bundle(path: &Path) -> Result<ScenarioBundle> {

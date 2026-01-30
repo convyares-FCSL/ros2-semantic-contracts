@@ -12,8 +12,9 @@ set -euo pipefail
 #   ./scripts/run_harness.sh [scenario_bundle.json] [trace.jsonl] [report.json]
 #
 # Backend selection:
+#   ./scripts/run_harness.sh                      # defaults to ORACLE_BACKEND=ros
 #   ORACLE_BACKEND=stub ./scripts/run_harness.sh
-#   ORACLE_BACKEND=ros  ./scripts/run_harness.sh   # (future; adapter not yet present)
+#   ORACLE_BACKEND=ros  ./scripts/run_harness.sh
 # -----------------------------------------------------------------------------
 
 # Resolve repo root: two levels up from harness/scripts
@@ -23,12 +24,11 @@ SCENARIOS="${1:-${ROOT}/harness/scenarios/scenarios_H.json}"
 TRACE="${2:-/tmp/oracle_trace.jsonl}"
 REPORT="${3:-/tmp/oracle_report.json}"
 
-ORACLE_BACKEND="${ORACLE_BACKEND:-stub}"
+# Default is now ros
+ORACLE_BACKEND="${ORACLE_BACKEND:-ros}"
 
 CORE_DIR="${ROOT}/harness/core"
 CORE_BIN="${CORE_DIR}/target/release/oracle_core"
-
-STUB_DIR="${ROOT}/harness/backends/backend_stub"
 
 # Backend registry (extend here; avoid redesigning the script later)
 BACKEND_DIR=""
@@ -36,16 +36,16 @@ BACKEND_BIN=""
 
 case "${ORACLE_BACKEND}" in
   stub)
-    BACKEND_DIR="${STUB_DIR}"
+    BACKEND_DIR="${ROOT}/harness/backends/backend_stub"
     BACKEND_BIN="${BACKEND_DIR}/target/release/backend_stub"
     ;;
-  # ros)
-  #   BACKEND_DIR="${ROOT}/harness/backends/backend_ros_rclcpp"
-  #   BACKEND_BIN="${BACKEND_DIR}/target/release/backend_ros_rclcpp"
-  #   ;;
+  ros)
+    BACKEND_DIR="${ROOT}/harness/backends/backend_ros"
+    BACKEND_BIN="${BACKEND_DIR}/target/release/backend_ros"
+    ;;
   *)
     echo "ERROR: Unknown ORACLE_BACKEND='${ORACLE_BACKEND}'"
-    echo "Supported: stub"
+    echo "Supported: stub, ros"
     exit 2
     ;;
 esac
