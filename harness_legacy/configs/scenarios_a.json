@@ -65,12 +65,22 @@
                     "ms": 500
                 },
                 {
+                    "op": "complete_terminal",
+                    "goal_id": "03030303030303030303030303030303",
+                    "status": "SUCCEEDED"
+                },
+                {
                     "op": "assert",
                     "assert": {
                         "type": "terminal_result",
                         "goal_id": "03030303030303030303030303030303",
                         "status": "SUCCEEDED"
                     }
+                },
+                {
+                    "op": "attempt_terminal_override",
+                    "goal_id": "03030303030303030303030303030303",
+                    "status": "ABORTED"
                 },
                 {
                     "op": "assert",

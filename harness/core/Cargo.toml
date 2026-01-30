@@ -1,0 +1,25 @@
+[package]
+name = "oracle_core"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Carl von Ayres <cvonayres@fuelcellsystems.co.uk>"]
+
+description = "Core runner and judge for the Oracle Harness (transport-agnostic, backend-replaceable)."
+readme = "README.md"
+
+repository = "https://github.com/fcsl/ros2-semantic-contracts"
+homepage = "https://github.com/fcsl/ros2-semantic-contracts"
+
+keywords = ["ros2", "semantic-contracts", "oracle-harness", "testing"]
+categories = ["science::robotics"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2.0.18"
+
+[package.metadata]
+subdir = "harness/core"

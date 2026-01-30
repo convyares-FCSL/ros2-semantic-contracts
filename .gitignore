@@ -8,9 +8,11 @@ Thumbs.db
 
 # Rust / Cargo
 target/
-Cargo.lock
 **/target/
 **/*.rs.bk
+
+# Cargo.lock intentionally ignored (library-style repo)
+Cargo.lock
 
 # Logs
 *.log
@@ -34,11 +36,11 @@ docker-compose.override.yml
 coverage/
 lcov.info
 
+# Runtime traces (generated)
+harness/tmp/
+tmp/
+oracle_trace.jsonl
+
 # Misc
 *.bak
 *.orig
-
-# Trace
-harness/build/
-*.jsonl
-/tmp/

@@ -30,10 +30,24 @@
   * All contract tests passing
   * commit: `ref: import rust reference semantics core + contract tests`
 
-* [ ] Phase 8: Docker oracle harness (Jazzy + rclcpp + Nav2)
+* [x] Phase 8a: Oracle harness baseline (H00)
 
   * `harness/**`
-  * commit: `harness: add Jazzy+rclcpp+Nav2 oracle runner`
+  * Stub backend (deterministic, non-ROS)
+  * Core runner (judge + reporter)
+  * Minimal trace vocabulary (v0.1-min)
+  * H00 smoke scenario passes end-to-end
+  * commit: `harness: add H00 stub backend + core runner`
+
+* [ ] Phase 8b: ROS backend adapter (rclcpp)
+
+  * Thin rclcpp adapter (no assertions, no policy)
+  * commit: `harness: add rclcpp backend adapter`
+
+* [ ] Phase 8c: Dockerized stacks (Jazzy / Nav2)
+
+  * Containerized backends
+  * commit: `harness: add dockerized production backends`
 
 * [ ] Phase 9 (optional): rclpy comparison
 

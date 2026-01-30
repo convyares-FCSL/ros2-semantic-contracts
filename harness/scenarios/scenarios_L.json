@@ -1,0 +1,87 @@
+{
+    "version": "0.1",
+    "group": "L",
+    "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
+    "scenarios": {
+        "L01_defined_transitions": {
+            "spec_id": "L01",
+            "title": "Only defined transitions",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L02_invalid_transitions_rejected": {
+            "spec_id": "L02",
+            "title": "Invalid transitions rejected",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L03_intermediate_states_hidden": {
+            "spec_id": "L03",
+            "title": "Intermediate states hidden",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L04_single_active_transition": {
+            "spec_id": "L04",
+            "title": "Single active transition",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L05_concurrent_transition_rejected": {
+            "spec_id": "L05",
+            "title": "Concurrent transition rejected",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L06_error_processing_deterministic": {
+            "spec_id": "L06",
+            "title": "ErrorProcessing deterministic",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L07_get_state_primary": {
+            "spec_id": "L07",
+            "title": "GetState reports primary only",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L08_rejection_observable": {
+            "spec_id": "L08",
+            "title": "Rejection observable",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L09_transition_event_emitted": {
+            "spec_id": "L09",
+            "title": "TransitionEvent emitted",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "L10_shutdown_deterministic": {
+            "spec_id": "L10",
+            "title": "Shutdown deterministic",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        }
+    }
+}

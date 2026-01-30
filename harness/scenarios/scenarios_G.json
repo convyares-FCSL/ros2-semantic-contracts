@@ -1,0 +1,15 @@
+{
+    "version": "0.1",
+    "group": "G",
+    "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
+    "scenarios": {
+        "G01_inactive_suppresses_pubs": {
+            "spec_id": "G01",
+            "title": "Inactive suppresses pubs",
+            "layer": "Core (support)",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core (support))."
+        }
+    }
+}

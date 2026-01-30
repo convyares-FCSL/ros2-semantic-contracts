@@ -1,0 +1,140 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Oracle scenario bundle (v0.1)",
+    "type": "object",
+    "required": [
+        "version",
+        "group",
+        "scenarios"
+    ],
+    "properties": {
+        "version": {
+            "type": "string"
+        },
+        "group": {
+            "type": "string",
+            "minLength": 1
+        },
+        "description": {
+            "type": "string"
+        },
+        "scenarios": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Z]\\d{2}_[A-Za-z0-9_]+$"
+            },
+            "additionalProperties": {
+                "type": "object",
+                "required": [
+                    "spec_id",
+                    "title",
+                    "ops",
+                    "expects"
+                ],
+                "properties": {
+                    "spec_id": {
+                        "type": "string",
+                        "pattern": "^[A-Z]\\d{2}$"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "layer": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "ops": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "op"
+                            ],
+                            "properties": {
+                                "op": {
+                                    "type": "string",
+                                    "enum": [
+                                        "send_goal",
+                                        "wait",
+                                        "emit_feedback",
+                                        "emit_status",
+                                        "emit_result",
+                                        "request_cancel",
+                                        "set_param",
+                                        "get_param",
+                                        "call_service"
+                                    ]
+                                },
+                                "ms": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "For wait or timeouts (milliseconds)."
+                                },
+                                "goal_id": {
+                                    "type": "string",
+                                    "description": "Logical goal id (scenario-local)."
+                                },
+                                "payload": {
+                                    "type": "object"
+                                }
+                            },
+                            "additionalProperties": true,
+                            "allOf": [
+                                {
+                                    "not": {
+                                        "properties": {
+                                            "op": {
+                                                "const": "assert"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "expects": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "check"
+                            ],
+                            "properties": {
+                                "check": {
+                                    "type": "string",
+                                    "enum": [
+                                        "no_ghost_goal",
+                                        "terminal_immutable",
+                                        "status_monotonic",
+                                        "valid_transitions_only",
+                                        "cancel_intent_observable",
+                                        "result_after_terminal",
+                                        "custom"
+                                    ]
+                                },
+                                "within_ms": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "selector": {
+                                    "type": "object",
+                                    "description": "How to select relevant events from the trace."
+                                },
+                                "params": {
+                                    "type": "object"
+                                }
+                            },
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "additionalProperties": true
+            }
+        }
+    },
+    "additionalProperties": false
+}

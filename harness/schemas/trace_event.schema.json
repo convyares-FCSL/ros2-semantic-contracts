@@ -1,0 +1,107 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Oracle trace event (JSONL line) (v0.1)",
+    "type": "object",
+    "required": [
+        "version",
+        "run_id",
+        "t_ns",
+        "type",
+        "scenario_id"
+    ],
+    "properties": {
+        "version": {
+            "type": "string"
+        },
+        "run_id": {
+            "type": "string"
+        },
+        "t_ns": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "run_start",
+                "run_end",
+                "scenario_start",
+                "scenario_end",
+                "env",
+                "diagnostic",
+                "op_start",
+                "op_end",
+                "goal_send_decision",
+                "status",
+                "feedback",
+                "result",
+                "cancel_request",
+                "cancel_response"
+            ]
+        },
+        "scenario_id": {
+            "type": "string"
+        },
+        "op_id": {
+            "type": "string"
+        },
+        "goal_id": {
+            "type": "string"
+        },
+        "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Backend-local sequence counter (monotonic)."
+        },
+        "state": {
+            "type": "string"
+        },
+        "accepted": {
+            "type": "boolean"
+        },
+        "reason": {
+            "type": "string"
+        },
+        "detail": {
+            "type": "object"
+        }
+    },
+    "additionalProperties": true,
+    "allOf": [
+        {
+            "not": {
+                "required": [
+                    "ok"
+                ]
+            }
+        },
+        {
+            "not": {
+                "required": [
+                    "pass"
+                ]
+            }
+        },
+        {
+            "not": {
+                "required": [
+                    "fail"
+                ]
+            }
+        },
+        {
+            "not": {
+                "required": [
+                    "verdict"
+                ]
+            }
+        },
+        {
+            "not": {
+                "required": [
+                    "assertion"
+                ]
+            }
+        }
+    ]
+}

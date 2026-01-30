@@ -1,0 +1,119 @@
+{
+    "version": "0.1",
+    "group": "P",
+    "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
+    "scenarios": {
+        "P01_no_fabricated_params": {
+            "spec_id": "P01",
+            "title": "No fabricated parameters",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P02_dynamic_typing_rules": {
+            "spec_id": "P02",
+            "title": "Dynamic typing rules",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P03_redeclaration_fails": {
+            "spec_id": "P03",
+            "title": "Redeclaration fails",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P04_no_partial_application": {
+            "spec_id": "P04",
+            "title": "No partial application",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P05_readonly_enforcement": {
+            "spec_id": "P05",
+            "title": "Read-only enforcement",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P06_unknown_params_rejected": {
+            "spec_id": "P06",
+            "title": "Unknown params rejected",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P07_change_record_ordering": {
+            "spec_id": "P07",
+            "title": "Change record ordering",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P08_unknown_types_not_set": {
+            "spec_id": "P08",
+            "title": "Unknown types NOT_SET",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P09_atomic_updates": {
+            "spec_id": "P09",
+            "title": "Atomic updates (external)",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P10_rejected_updates_silent": {
+            "spec_id": "P10",
+            "title": "Rejected updates silent",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P11_events_describe_changes": {
+            "spec_id": "P11",
+            "title": "Events describe changes",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P12_describe_unknown_consistent": {
+            "spec_id": "P12",
+            "title": "Describe unknown consistent",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "P13_list_complete_stable": {
+            "spec_id": "P13",
+            "title": "List complete and stable",
+            "layer": "Tooling",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Tooling)."
+        },
+        "P14_deletion_reported_events": {
+            "spec_id": "P14",
+            "title": "Deletion reported via events",
+            "layer": "Policy",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+        }
+    }
+}

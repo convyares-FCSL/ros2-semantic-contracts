@@ -1,141 +1,136 @@
-# Oracle Harness (Phase 8)
+# Oracle Harness (greenfield baseline)
 
-This harness validates the repository’s semantic contracts against observed ROS 2 behaviour.
+This folder defines the **baseline contract, assets, and executables** for the
+ROS 2 Semantic Oracle Harness.
 
-It is designed as an **oracle + audit pipeline**:
-- the oracle **executes scripted semantic scenarios** and emits a machine-readable trace
-- the auditor **consumes the trace** and produces authoritative pass/fail verdicts
-
-The trace is the source of truth.
+The harness exists to **observe behavior**, not to encode semantics.
+All semantic judgment lives in the core runner.
 
 ---
 
-## Sequencing (C: A → B)
+## Non-negotiables
 
-### A) Mechanistic oracle
-Goal: validate core action semantics with minimal confounders.
+(See `contracts/backend_contract.md`)
 
-Two backends are supported:
-
-#### Stub backend (default)
-- No ROS runtime required
-- Deterministic, scripted behaviour
-- Used to validate:
-  - scenario structure
-  - assertion logic
-  - trace format
-  - audit pipeline
-- Acts as the semantic “golden reference” for later comparison
-
-#### ROS backend (`rclcpp`)
-- Single process
-- Uses runtime ROS environment (no mocks)
-- Observes real client/server behaviour
-- Environment is captured from runtime variables:
-  - `ROS_DISTRO`
-  - `RMW_IMPLEMENTATION`
-
-Current semantic coverage (A1):
-- send_goal accept/reject (“no ghosts”)
-- cancel rejection for unknown goals
-- deterministic decision envelopes
-
-Additional A-series specs will progressively replace stub logic with observed ROS behaviour.
-
-Outputs:
-- machine-readable trace (JSONL) with timestamps and event types
-- summarized verdicts per scenario (pass/fail)
+- Backends emit **append-only JSONL trace events**
+  - One JSON object per line
+  - No rewriting, truncation, or post-processing
+- Backends emit **observations only**
+  - No assertions
+  - No pass/fail
+  - No semantic judgment
+- The **core runner** is the sole authority for:
+  - Trace validation
+  - Expectation evaluation
+  - Verdict production
+- Backend exit codes are **transport-level only**
+  - Backend success ≠ test pass
 
 ---
 
-### B) System oracle (Nav2) — planned
-Goal: confirm core semantics are not contradicted when orchestration and policy layers exist.
+## Layout
 
-Planned characteristics:
-- Minimal Nav2 bringup (containerized)
-- Indirect exercise of actions via Nav2 stacks
-- Reuse the same trace + audit machinery
-- Explicitly record “expected divergence” where Nav2 policy/executor behaviour is out of scope for core semantics
-
----
-
-## Reproducibility and dependencies
-
-This harness vendors third-party headers (e.g. `nlohmann/json`) under `include/third_party`
-to ensure:
-- reproducible builds
-- offline operation
-- audit-safe provenance
-
-No network access is required to build or run the harness.
+- `contracts/`
+  - Binding interface contracts between core and backends
+- `schemas/`
+  - JSON Schemas for scenario bundles and trace events
+- `scenarios/`
+  - Grouped scenario bundles (`scenarios_A.json`, `scenarios_L.json`, …)
+- `backends/`
+  - Backend implementations (stub, ROS adapters, production stacks)
+- `core/`
+  - Core runner (judge, evaluator, reporter)
+- `scripts/`
+  - Operator-facing convenience scripts
 
 ---
 
-## Quickstart
+## Scenarios
 
-### Build
-```bash
-cmake -S . -B build
-cmake --build build
+Scenario bundles are **declarative assets**, not code.
+
+They are keyed by scenario id for review ergonomics:
+
+```json
+"scenarios": {
+  "A01_unique_goal_identity": {
+    "spec_id": "A01",
+    "ops": [],
+    "expects": []
+  }
+}
 ````
 
-### Run (stub backend)
+* `ops`
 
-```bash
-./run_harness.sh
-```
+  * Executed by the backend
+  * Backend-specific, observational only
+* `expects`
 
-### Run (ROS backend)
+  * Evaluated exclusively by the core runner over the trace
 
-```bash
-ORACLE_BACKEND=ros ./run_harness.sh
-```
-
-The auditor will print:
-
-* which backend was used
-* ROS distro / RMW (if applicable)
-* per-scenario verdicts
-* overall summary
-
-The trace location is printed at the end of the run.
+Backends **must ignore** `expects`.
 
 ---
 
-## Directory layout
+## Harness self-tests (H-series)
 
-* `include/`
+The `H` scenario group validates the harness itself.
 
-  * `oracle/`         transport-agnostic oracle interfaces
-  * `third_party/`    vendored headers (pinned)
-* `src/`
+Example:
 
-  * `oracle_core.cpp` core oracle logic (no ROS)
-  * `oracle_a.cpp`    stub backend runner
-  * `oracle_a_ros.cpp` ROS backend adapter
-  * `audit_trace.cpp` trace auditor (verdict printer)
-* `configs/`
+* `H00_smoke_trace_roundtrip`
 
-  * scenario definitions
-* `build/`
+  * Scenario load → backend run → JSONL trace → core evaluation
 
-  * CMake build output (ignored)
-* `run_harness.sh`
+These scenarios are:
 
-  * convenience runner (oracle → audit)
+* Deterministic
+* Stub-only
+* Not tied to ROS semantics
+* Used to validate pipeline correctness before introducing real stacks
 
 ---
 
-## Design principles
+## Quickstart (H00)
 
-* **Trace-first**: the trace is the authoritative artefact
-* **Separation of concerns**:
+From the repo root:
 
-  * oracle emits facts
-  * auditor decides pass/fail
-* **Environment transparency**:
+```bash
+cd harness
+./scripts/run_harness.sh
+```
 
-  * what was tested is explicitly recorded
-* **Incremental realism**:
+Run a different scenario bundle:
 
-  * stub → ROS → Nav2, without changing the audit model
+```bash
+./scripts/run_harness.sh scenarios/scenarios_A.json
+```
+
+Select a backend (default is `stub`):
+
+```bash
+ORACLE_BACKEND=stub ./scripts/run_harness.sh
+# ORACLE_BACKEND=ros  ./scripts/run_harness.sh   # future: rclcpp adapter
+```
+
+Outputs:
+
+* Trace: `/tmp/oracle_trace.jsonl`
+* Report: `/tmp/oracle_report.json`
+
+A successful run prints a per-scenario summary and an overall verdict:
+
+```
+PASS H00_smoke_trace_roundtrip (H00)
+ALL TESTS PASSED
+```
+
+---
+
+## Design intent
+
+* Prefer **deletion over extension**
+* Keep backends thin and replaceable
+* Keep the core strict and deterministic
+* Treat traces as auditable artifacts, not transient logs

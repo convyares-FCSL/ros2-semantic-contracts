@@ -1,0 +1,236 @@
+{
+    "version": "0.1",
+    "group": "A",
+    "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
+    "scenarios": {
+        "A01_unique_goal_identity": {
+            "spec_id": "A01",
+            "title": "Rejected goals are not observable ('no ghosts')",
+            "layer": "Core",
+            "notes": "If a goal is rejected, no further lifecycle events may reference it.",
+            "ops": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "g_reject",
+                    "payload": {
+                        "mode": "reject"
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "goal_send",
+                                "goal_id": "g_reject"
+                            },
+                            {
+                                "type": "goal_response",
+                                "goal_id": "g_reject",
+                                "accepted": false
+                            }
+                        ]
+                    }
+                },
+                {
+                    "check": "absent",
+                    "params": {
+                        "where": {
+                            "goal_id": "g_reject"
+                        },
+                        "types": [
+                            "status",
+                            "result"
+                        ]
+                    }
+                }
+            ]
+        },
+        "A02_terminal_immutable": {
+            "spec_id": "A02",
+            "title": "Terminal states immutable",
+            "layer": "Action",
+            "notes": "Once terminal is set, subsequent attempts to change terminal must be denied and observable; terminal must not change.",
+            "ops": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "g1",
+                    "payload": {
+                        "mode": "accept"
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                },
+                {
+                    "op": "complete_terminal",
+                    "goal_id": "g1",
+                    "status": "SUCCEEDED"
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                },
+                {
+                    "op": "attempt_terminal_override",
+                    "goal_id": "g1",
+                    "status": "ABORTED"
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "goal_send",
+                                "goal_id": "g1"
+                            },
+                            {
+                                "type": "goal_response",
+                                "goal_id": "g1",
+                                "accepted": true
+                            },
+                            {
+                                "type": "status",
+                                "goal_id": "g1",
+                                "status": "SUCCEEDED"
+                            },
+                            {
+                                "type": "result",
+                                "goal_id": "g1",
+                                "status": "SUCCEEDED"
+                            },
+                            {
+                                "type": "terminal_set_attempt",
+                                "goal_id": "g1",
+                                "allowed": false,
+                                "reason": "terminal_immutable"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "check": "absent",
+                    "params": {
+                        "where": {
+                            "goal_id": "g1",
+                            "status": "ABORTED"
+                        },
+                        "types": [
+                            "status",
+                            "result"
+                        ]
+                    }
+                }
+            ]
+        },
+        "A03_unknown_not_persistent": {
+            "spec_id": "A03",
+            "title": "Unknown not persistent",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A04_valid_transitions": {
+            "spec_id": "A04",
+            "title": "Valid transitions only",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A05_invalid_transitions_rejected": {
+            "spec_id": "A05",
+            "title": "Invalid transitions rejected",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A06_status_updates_monotonic": {
+            "spec_id": "A06",
+            "title": "Status updates monotonic",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A07_ordering_time_independent": {
+            "spec_id": "A07",
+            "title": "Event ordering determined by sequence, not wall-clock time",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A08_cancel_intent_observable": {
+            "spec_id": "A08",
+            "title": "Cancellation intent observable",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A09_cancel_resolution_policy": {
+            "spec_id": "A09",
+            "title": "Cancel resolution policy-defined",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A10_result_visible_after_terminal": {
+            "spec_id": "A10",
+            "title": "Result visible after terminal",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A11_single_terminal_result": {
+            "spec_id": "A11",
+            "title": "Single terminal result",
+            "layer": "Core",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+        },
+        "A12_supersession_cancelled": {
+            "spec_id": "A12",
+            "title": "Supersession via CANCELED",
+            "layer": "Policy",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+        },
+        "A13_result_retention": {
+            "spec_id": "A13",
+            "title": "Result retention non-zero",
+            "layer": "Policy",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+        },
+        "A14_tooling_compatibility": {
+            "spec_id": "A14",
+            "title": "Tooling compatibility",
+            "layer": "Tooling",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=Tooling)."
+        }
+    }
+}

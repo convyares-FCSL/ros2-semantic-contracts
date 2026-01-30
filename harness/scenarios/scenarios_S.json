@@ -1,0 +1,159 @@
+{
+    "version": "0.1",
+    "group": "S",
+    "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
+    "scenarios": {
+        "S01_load_node_observable": {
+            "spec_id": "S01",
+            "title": "Load node observable",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S02_load_failure_clean": {
+            "spec_id": "S02",
+            "title": "Load failure clean",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S03_unload_node_destroyed": {
+            "spec_id": "S03",
+            "title": "Unload node destroyed",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S04_unique_node_ids": {
+            "spec_id": "S04",
+            "title": "Unique node IDs",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S05_concurrent_load_deterministic": {
+            "spec_id": "S05",
+            "title": "Concurrent load deterministic",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S06_remaps_apply_load": {
+            "spec_id": "S06",
+            "title": "Remaps apply at load",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S07_explicit_ownership": {
+            "spec_id": "S07",
+            "title": "Explicit ownership",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S08_bounded_spin_modes": {
+            "spec_id": "S08",
+            "title": "Bounded spin modes",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S09_shutdown_bounded": {
+            "spec_id": "S09",
+            "title": "Shutdown bounded",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S10_callback_failure_visible": {
+            "spec_id": "S10",
+            "title": "Callback failure visible",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S11_lifecycle_executor_safety": {
+            "spec_id": "S11",
+            "title": "Lifecycle-Executor safety",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S12_lifecycle_orchestration": {
+            "spec_id": "S12",
+            "title": "Lifecycle orchestration",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S13_liveness_detection": {
+            "spec_id": "S13",
+            "title": "Liveness detection",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S14_tooling_interoperability": {
+            "spec_id": "S14",
+            "title": "Tooling interoperability",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S15_explicit_ownership_lifetime": {
+            "spec_id": "S15",
+            "title": "Explicit ownership/lifetime",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S16_deterministic_bringup": {
+            "spec_id": "S16",
+            "title": "Deterministic bringup/teardown",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S17_no_hidden_execution": {
+            "spec_id": "S17",
+            "title": "No hidden execution",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S18_observable_failure": {
+            "spec_id": "S18",
+            "title": "Observable failure",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S19_graph_hygiene": {
+            "spec_id": "S19",
+            "title": "Graph hygiene",
+            "layer": "System",
+            "ops": [],
+            "expects": [],
+            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        }
+    }
+}

@@ -1,0 +1,64 @@
+{
+    "version": "0.1",
+    "group": "H",
+    "description": "Harness self-tests (deterministic; not tied to ROS semantics or traceability.md).",
+    "scenarios": {
+        "H00_smoke_trace_roundtrip": {
+            "spec_id": "H00",
+            "title": "Smoke: scenario load → backend run → JSONL trace → core evaluation",
+            "layer": "Harness",
+            "notes": "Deterministic stub-only. Proves pipeline and schema enforcement. Not a semantic spec test.",
+            "ops": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "g1",
+                    "payload": {
+                        "mode": "accept"
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                },
+                {
+                    "op": "send_goal",
+                    "goal_id": "g2",
+                    "payload": {
+                        "mode": "reject"
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "goal_send",
+                                "goal_id": "g1"
+                            },
+                            {
+                                "type": "goal_response",
+                                "goal_id": "g1",
+                                "accepted": true
+                            },
+                            {
+                                "type": "goal_send",
+                                "goal_id": "g2"
+                            },
+                            {
+                                "type": "goal_response",
+                                "goal_id": "g2",
+                                "accepted": false
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}

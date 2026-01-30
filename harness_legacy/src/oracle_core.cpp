@@ -341,6 +341,10 @@ int run_oracle(const RunConfig& cfg, BackendKind backend) {
         });
         write_event(trace, ev);
 
+      } else if (op == "complete_terminal") {
+        // No-op in stub model; state is implied by acceptance.
+      } else if (op == "attempt_terminal_override") {
+        // No-op in stub model.
       } else {
         emit_assert_event(false, step, json::object({{"note", "unknown op"}, {"op", op}}));
       }
