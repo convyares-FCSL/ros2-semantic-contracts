@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
 
@@ -29,6 +31,11 @@ int main(int argc, char** argv) {
     return 2;
   }
 
+  // Run metadata (from trace; auditable)
+  std::string backend = "unknown";
+  std::string ros_distro;
+  std::string rmw_impl;
+
   std::unordered_map<std::string, Status> scenarios;
   std::string line;
 
@@ -38,6 +45,17 @@ int main(int argc, char** argv) {
 
     const std::string type = ev.value("type", "");
     const std::string scenario_id = ev.value("scenario_id", "");
+
+    if (type == "run_start") {
+      if (ev.contains("detail") && ev["detail"].is_object()) {
+        const auto& d = ev["detail"];
+        backend = d.value("backend", backend);
+        ros_distro = d.value("ros_distro", "");
+        rmw_impl = d.value("rmw_implementation", "");
+      }
+      continue;
+    }
+
     if (scenario_id.empty()) continue;
 
     if (type == "assertion") {
@@ -53,14 +71,40 @@ int main(int argc, char** argv) {
     }
   }
 
+  // Print what was tested (single, clear line)
+  std::cout << "Oracle backend: " << backend;
+  if (!ros_distro.empty() || !rmw_impl.empty()) {
+    std::cout << " (";
+    bool first = true;
+    if (!ros_distro.empty()) {
+      std::cout << "ROS " << ros_distro;
+      first = false;
+    }
+    if (!rmw_impl.empty()) {
+      if (!first) std::cout << ", ";
+      std::cout << rmw_impl;
+    }
+    std::cout << ")";
+  }
+  std::cout << "\n\n";
+
+  // Stable output order
+  std::vector<std::string> ids;
+  ids.reserve(scenarios.size());
+  for (const auto& [id, _] : scenarios) ids.push_back(id);
+  std::sort(ids.begin(), ids.end());
+
   bool all_ok = true;
 
-  for (const auto& [id, st] : scenarios) {
+  for (const auto& id : ids) {
+    const auto& st = scenarios[id];
+
     if (!st.seen_end) {
       all_ok = false;
       std::cout << id << " : " << RED << "FAILED" << RESET << ". (missing scenario_end)\n";
       continue;
     }
+
     if (st.ok) {
       std::cout << id << " : " << GREEN << "PASSED" << RESET << ".\n";
     } else {
