@@ -1,4 +1,11 @@
+// src/oracle_a_ros.cpp
+//
+// ROS-backed oracle runner.
+// This executable owns ROS initialization/shutdown and calls into the ROS backend.
+// The transport-agnostic core library is not responsible for ROS execution.
+
 #include "oracle/oracle_core.hpp"
+#include "oracle/ros_backend.hpp"
 
 #include <iostream>
 
@@ -16,8 +23,7 @@ int main(int argc, char** argv) {
   cfg.scenarios_path = argv[1];
   cfg.trace_path = argv[2];
 
-  // For now, still stubbed core behaviour; next phase wires real ROS calls.
-  int rc = oracle::run_oracle(cfg, oracle::BackendKind::Ros);
+  int rc = oracle::run_oracle_ros(cfg);
 
   rclcpp::shutdown();
   return rc;

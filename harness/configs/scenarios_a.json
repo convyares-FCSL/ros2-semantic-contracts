@@ -1,0 +1,48 @@
+{
+    "scenarios": [
+        {
+            "id": "A01_no_ghosts_after_rejection",
+            "spec_id": "A01",
+            "steps": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "01010101010101010101010101010101"
+                },
+                {
+                    "op": "send_goal",
+                    "goal_id": "02020202020202020202020202020202"
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "goal_send_decision",
+                        "goal_id": "01010101010101010101010101010101",
+                        "accepted": true
+                    }
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "goal_send_decision",
+                        "goal_id": "02020202020202020202020202020202",
+                        "accepted": false,
+                        "reason": "ConcurrencyPolicy"
+                    }
+                },
+                {
+                    "op": "request_cancel",
+                    "goal_id": "02020202020202020202020202020202"
+                },
+                {
+                    "op": "assert",
+                    "assert": {
+                        "type": "cancel_response",
+                        "goal_id": "02020202020202020202020202020202",
+                        "accepted": false,
+                        "reason": "UnknownGoal"
+                    }
+                }
+            ]
+        }
+    ]
+}
