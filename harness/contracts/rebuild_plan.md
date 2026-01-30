@@ -22,8 +22,8 @@ So: the **contract document says the right thing**, but the **codebase currently
 
 ### Phase 0 — Freeze and archive (keep as forensic reference)
 
-1. Move the entire current `harness/` to `harness_legacy/` **as-is**, including `build/` (so you can reproduce old behaviour if needed).
-2. In `harness_legacy/`, add a short `README_LEGACY.md` stating: “This implementation violates backend_contract separation; retained for history only.”
+1. Move the entire current `harness/` to `harness_legacy/` **as-is**, including `build/` (so you can reproduce old behaviour if needed). *[REMOVED 2026-01-30: harness_legacy deleted]*
+2. In `harness_legacy/`, add a short `README_LEGACY.md` stating: “This implementation violates backend_contract separation; retained for history only.” *[REMOVED 2026-01-30]*
 
 ### Phase 1 — Create a clean new root with only the authoritative contract + schemas
 
