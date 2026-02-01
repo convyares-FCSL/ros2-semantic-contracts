@@ -350,3 +350,11 @@ The system maintains a clean graph (no orphaned entities).
 **Non-claims**
 - Does not specify enforcement mechanisms.
 </details>
+### S21 — Composition Interface Conformity
+**Validates:** `SPEC_C01` (System)
+**Layer:** System
+**Claim:** The container exposes the standard ROS 2 composition interface graph topology.
+<details>
+<summary>Assertions</summary>
+- Services `load_node`, `unload_node`, `list_nodes` exist.
+</details>

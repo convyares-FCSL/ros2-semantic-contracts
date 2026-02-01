@@ -278,3 +278,12 @@ Goals from vanished clients are eventually cleaned up.
 **Observable assertions**
 - Goals do not remain in `Accepted` or `Executing` indefinitely if the client disconnects.
 </details>
+### A16 — Action Interface Conformity
+**Validates:** `SPEC_A01` (Global)
+**Layer:** Global
+**Claim:** The node exposes the standard ROS 2 action interface graph topology.
+<details>
+<summary>Assertions</summary>
+- Services `_action/send_goal`, `_action/cancel_goal`, `_action/get_result` exist.
+- Topics `_action/status`, `_action/feedback` exist.
+</details>

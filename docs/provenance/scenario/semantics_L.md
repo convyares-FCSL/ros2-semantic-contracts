@@ -194,3 +194,12 @@ Custom user services are available in `Unconfigured` and `Inactive` states (unle
 **Observable assertions**
 - Service calls succeed even when the node is not `Active`.
 </details>
+### L13 — Lifecycle Interface Conformity
+**Validates:** `SPEC_L01` (Global)
+**Layer:** Global
+**Claim:** The node exposes the standard ROS 2 lifecycle interface graph topology.
+<details>
+<summary>Assertions</summary>
+- Services `change_state`, `get_state`, `get_available_states`, `get_available_transitions` exist.
+- Topic `transition_event` exists.
+</details>

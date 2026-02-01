@@ -35,7 +35,7 @@ Core semantic invariants are defined in `docs/spec/core/lifecycle_core.md`.
 
 ## Interfaces
 
-### SPEC_L01 — Standard Lifecycle Services [S12]
+### SPEC_L01 — Standard Lifecycle Services [L13]
 
 Lifecycle semantics MUST be exposed via standard ROS 2 lifecycle services and messages.
 - Exact service names and message types are defined by ROS 2.
@@ -55,7 +55,7 @@ Lifecycle semantics MUST be exposed via standard ROS 2 lifecycle services and me
 
 ## Lifecycle state visibility
 
-### SPEC_L02 — Primary State Visibility [S12]
+### SPEC_L02 — Primary State Visibility [L07]
 
 State queries MUST reflect the resolved lifecycle state.
 - `get_state` MUST report only primary lifecycle states (`Unconfigured`, `Inactive`, `Active`, `Finalized`).
@@ -75,7 +75,7 @@ State queries MUST reflect the resolved lifecycle state.
 
 ## Transition requests
 
-### SPEC_L03 — Deterministic Transition Acceptance [S12]
+### SPEC_L03 — Deterministic Transition Acceptance [L08]
 
 Valid transition requests MUST be accepted or rejected deterministically.
 - Invalid or busy requests MUST be rejected.
@@ -98,7 +98,7 @@ Valid transition requests MUST be accepted or rejected deterministically.
 
 ## Transition completion and events
 
-### SPEC_L04 — Transition Event Emission [S12]
+### SPEC_L04 — Transition Event Emission [L09]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -121,7 +121,7 @@ Accepted transition attempts MUST emit a `TransitionEvent`.
 
 ## Shutdown semantics
 
-### SPEC_L05 — Deterministic Shutdown [S12]
+### SPEC_L05 — Deterministic Shutdown [L10]
 
 Shutdown requests MUST resolve deterministically.
 - Resolution MUST result in `Finalized` or a documented failure outcome.
@@ -159,7 +159,7 @@ If a shutdown is requested while the node is in the `Active` state:
 
 ## Lifecycle-managed gating
 
-### SPEC_L07 — Publisher Suppression in Inactive State [S12]
+### SPEC_L07 — Publisher Suppression in Inactive State [G01]
 
 While `Inactive`, a lifecycle-managed node MUST NOT publish messages via lifecycle-managed publishers.
 
@@ -198,7 +198,7 @@ Custom user services are NOT automatically gated by the `Inactive` state.
 
 ## Tooling compatibility
 
-### SPEC_L09 — Tooling Introspection [S14]
+### SPEC_L09 — Tooling Introspection [L13]
 
 A compliant implementation MUST support lifecycle introspection via standard ROS 2 tools.
 

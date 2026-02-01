@@ -108,7 +108,7 @@ A compliant implementation MUST support ecosystem tooling expectations to ensure
 
 </details>
 
-### SPEC_ECO05 — Behavioral Indistinguishability [TBD]
+### SPEC_ECO05 — Behavioral Indistinguishability [H00]
 
 An implementation MUST behave **indistinguishably** from other compliant implementations when observed through standard ROS 2 tools.
 - Semantic compatibility is defined strictly by **observable behaviour** (wire protocol, graph state, service responses), not internal APIs.

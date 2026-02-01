@@ -184,6 +184,19 @@
             "ops": [],
             "expects": [],
             "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+        },
+        "P15_parameter_interface_conformity": {
+            "description": "Parameter Interface Conformity",
+            "spec_ref": "SPEC_P01",
+            "layer": "global",
+            "status": "implemented",
+            "type": "interface_introspection"
+        },
+        "P16_explicit_declaration_mode": {
+            "description": "Explicit Declaration Mode",
+            "spec_ref": "SPEC_P02",
+            "layer": "global",
+            "status": "planned"
         }
     }
 }

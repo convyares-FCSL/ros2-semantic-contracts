@@ -34,7 +34,7 @@ Core semantic invariants are defined in `docs/spec/core/action_core.md`.
 
 ## Interfaces
 
-### SPEC_A01 — Standard Action Services [S01]
+### SPEC_A01 — Standard Action Services [A16]
 
 Action semantics MUST be exposed via standard ROS 2 action services and topics.
 - Exact names and message types are defined by the ROS 2 action IDL.
@@ -54,7 +54,7 @@ Action semantics MUST be exposed via standard ROS 2 action services and topics.
 
 ## Goal lifecycle and outcomes
 
-### SPEC_A02 — Observable Lifecycle and Outcomes [S01]
+### SPEC_A02 — Observable Lifecycle and Outcomes [A04, A10]
 
 Each goal MUST proceed through a well-defined lifecycle.
 - Terminal outcomes MUST convey semantic meaning to clients.
@@ -99,7 +99,7 @@ When a new goal supersedes an existing active goal (preemption):
 
 ## Ordering guarantees
 
-### SPEC_A04 — Per-Goal Ordering [S01]
+### SPEC_A04 — Per-Goal Ordering [A06]
 
 Status and feedback updates MUST be ordered per goal.
 - Ordering is defined by per-goal sequence progression, not wall-clock time.
@@ -119,7 +119,7 @@ Status and feedback updates MUST be ordered per goal.
 
 ## Result retention
 
-### SPEC_A05 — Non-Zero Result Retention [S01]
+### SPEC_A05 — Non-Zero Result Retention [A10, A13]
 
 Results MUST be retained for some non-zero duration to allow late retrieval.
 - Retention duration is implementation-defined and MUST be documented.
@@ -139,7 +139,7 @@ Results MUST be retained for some non-zero duration to allow late retrieval.
 
 ## Cancellation behaviour
 
-### SPEC_A06 — Observable Cancellation Intent [S01]
+### SPEC_A06 — Observable Cancellation Intent [A08]
 
 Cancellation intent MUST be observable via the cancel service.
 - Cancellation MAY resolve to different terminal outcomes depending on timing and implementation policy.
@@ -159,7 +159,7 @@ Cancellation intent MUST be observable via the cancel service.
 
 ## Tooling compatibility
 
-### SPEC_A07 — Tooling Introspection [S14]
+### SPEC_A07 — Tooling Introspection [A14]
 
 A compliant implementation MUST support standard ROS 2 tools for:
 - action discovery
@@ -181,7 +181,7 @@ A compliant implementation MUST support standard ROS 2 tools for:
 
 ## Identity and Cleanup
 
-### SPEC_A08 — Goal Identity Reuse Forbidden [S01]
+### SPEC_A08 — Goal Identity Reuse Forbidden [A15]
 
 Goal identifiers (UUIDs) MUST NOT be reused within the lifetime of the action server.
 - Once a goal UUID reaches a terminal state, it MUST NOT be used for a subsequent goal.

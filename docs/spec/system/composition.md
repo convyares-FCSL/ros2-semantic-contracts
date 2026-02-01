@@ -33,7 +33,7 @@ They are validated via system-level oracle and harness tests, not core semantic 
 
 ## Container interfaces
 
-### SPEC_C01 — Standard Composition Services [S01]
+### SPEC_C01 — Standard Composition Services [S21]
 
 A composition container MUST expose the standard ROS 2 composition services in its node namespace to ensure baseline tool compatibility:
 

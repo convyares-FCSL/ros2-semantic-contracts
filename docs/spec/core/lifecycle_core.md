@@ -34,7 +34,7 @@ It specifies lifecycle state truth, transition validity, and failure semantics i
 
 ## Canonical Lifecycle State Model
 
-### SPEC_LC01 — Primary and Auxiliary States [S12]
+### SPEC_LC01 — Primary and Auxiliary States [L07]
 
 The core engine MUST enforce a state model consisting of **Primary States** (stable) and **Auxiliary States** (transient).
 
@@ -67,7 +67,7 @@ The core engine MUST enforce a state model consisting of **Primary States** (sta
 
 ## Transition Validity
 
-### SPEC_LC02 — Strict Transition Graph [S12]
+### SPEC_LC02 — Strict Transition Graph [L01, L02]
 
 The core engine MUST enforce a strict transition graph.
 - Only defined transitions between primary states are permitted.
@@ -86,7 +86,7 @@ The core engine MUST enforce a strict transition graph.
 
 ## Transition Execution Semantics
 
-### SPEC_LC03 — Intermediate State Atomicity [S12]
+### SPEC_LC03 — Intermediate State Atomicity [L03]
 
 When a transition is accepted, the core MUST enter the corresponding transition state internally.
 - Intermediate states MUST NOT be externally exposed as **stable** lifecycle states.
@@ -104,7 +104,7 @@ When a transition is accepted, the core MUST enter the corresponding transition 
 
 ## Concurrency
 
-### SPEC_LC04 — Single Active Transition [S12]
+### SPEC_LC04 — Single Active Transition [L04, L05]
 
 A lifecycle node MUST process at most one transition at a time.
 - Concurrent transition requests MUST be rejected deterministically (Busy).
@@ -122,7 +122,7 @@ A lifecycle node MUST process at most one transition at a time.
 
 ## ErrorProcessing Semantics
 
-### SPEC_LC05 — Deterministic Error Resolution [S12]
+### SPEC_LC05 — Deterministic Error Resolution [L06]
 
 If an error occurs during a transition callback (`on_configure`, `on_activate`, etc.):
 - The node MUST enter `ErrorProcessing`.

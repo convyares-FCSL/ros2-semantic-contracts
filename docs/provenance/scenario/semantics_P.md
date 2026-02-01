@@ -273,3 +273,12 @@ Node enforces the declaration mode (Strict vs Lenient).
 **Observable assertions**
 - Behavior matches the `allow_undeclared` configuration.
 </details>
+### P15 — Parameter Interface Conformity
+**Validates:** `SPEC_P01` (Global)
+**Layer:** Global
+**Claim:** The node exposes the standard ROS 2 parameter interface graph topology.
+<details>
+<summary>Assertions</summary>
+- Services `describe_parameters`, `get_parameter_types`, `get_parameters`, `list_parameters`, `set_parameters` exist.
+- Topic `parameter_events` exists.
+</details>

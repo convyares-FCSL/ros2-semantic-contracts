@@ -33,7 +33,7 @@ It specifies parameter truth, visibility, decision semantics, and ordering guara
 
 ## Core State Model
 
-### SPEC_PC01 — Identity and Case Sensitivity [S01]
+### SPEC_PC01 — Identity and Case Sensitivity [P01]
 
 Parameters are identified by UTF-8 string names.
 - Names are **case-sensitive** and treated opaquely by the core.
@@ -47,7 +47,7 @@ Parameters are identified by UTF-8 string names.
 
 </details>
 
-### SPEC_PC02 — Existence States [S01]
+### SPEC_PC02 — Existence States [P01]
 
 A parameter exists in exactly one of three semantic states:
 1.  **Declared:** Exists with a defined type and descriptor.
@@ -69,7 +69,7 @@ A parameter exists in exactly one of three semantic states:
 
 ## Values and Typing
 
-### SPEC_PC03 — Type Enforcement [S01]
+### SPEC_PC03 — Type Enforcement [P02, P08]
 
 The core MUST enforce type safety based on the parameter's descriptor.
 - **Static Typing (`dynamic_typing=false`):** The value type MUST NOT change after declaration. Setting an incompatible type MUST fail.
@@ -88,7 +88,7 @@ The core MUST enforce type safety based on the parameter's descriptor.
 
 ## Decision Logic (Outcomes)
 
-### SPEC_PC04 — Declaration Logic [S01]
+### SPEC_PC04 — Declaration Logic [P03]
 
 Declaration establishes the initial value and descriptor.
 - Declaring an already-declared parameter MUST fail deterministically (outcome: `AlreadyDeclared`).
@@ -102,7 +102,7 @@ Declaration establishes the initial value and descriptor.
 
 </details>
 
-### SPEC_PC05 — Set Operation Atomicity [S01]
+### SPEC_PC05 — Set Operation Atomicity [P04, P05]
 
 Set operations are atomic transactions.
 - A set attempt yields a deterministic outcome: `Successful` or `Failed` (with reason).
@@ -117,7 +117,7 @@ Set operations are atomic transactions.
 
 </details>
 
-### SPEC_PC06 — Undeclared Access Logic [P16]
+### SPEC_PC06 — Undeclared Access Logic [P06]
 
 Access to undeclared parameters depends on the node's configuration.
 - If `allow_undeclared_parameters` is **false**: Set attempts for unknown parameters MUST fail deterministically.
@@ -136,7 +136,7 @@ Access to undeclared parameters depends on the node's configuration.
 
 ## Change Record Model
 
-### SPEC_PC07 — Deterministic Change Records [S01]
+### SPEC_PC07 — Deterministic Change Records [P07]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -157,7 +157,7 @@ The core emits logical **change records** describing modifications.
 
 </details>
 
-### SPEC_PC08 — Deletion Support [S01]
+### SPEC_PC08 — Deletion Support [P14]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 

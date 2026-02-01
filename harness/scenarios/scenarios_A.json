@@ -237,6 +237,25 @@
             "ops": [],
             "expects": [],
             "notes": "Populate ops/observations to validate this clause (Layer=Tooling)."
+        },
+        "A15_no_goal_id_reuse": {
+            "description": "No Goal ID Reuse",
+            "spec_ref": "SPEC_AC02",
+            "layer": "core",
+            "status": "planned"
+        },
+        "A16_action_interface_conformity": {
+            "description": "Action Interface Conformity",
+            "spec_ref": "SPEC_A01",
+            "layer": "global",
+            "status": "implemented",
+            "type": "interface_introspection"
+        },
+        "A17_abandoned_goal_cleanup": {
+            "description": "Abandoned Goal Cleanup",
+            "spec_ref": "SPEC_SYS06",
+            "layer": "system",
+            "status": "planned"
         }
     }
 }

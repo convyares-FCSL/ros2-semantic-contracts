@@ -34,7 +34,7 @@ It specifies goal lifecycle, state transitions, and ordering invariants independ
 
 ## Goal Identity
 
-### SPEC_AC01 — Unique Goal Identity [S01]
+### SPEC_AC01 — Unique Goal Identity [A01, A03]
 
 Each goal processed by the engine MUST be uniquely identified.
 - Two distinct goals MUST NOT share the same identifier (UUID) concurrently.
@@ -50,7 +50,7 @@ Each goal processed by the engine MUST be uniquely identified.
 
 </details>
 
-### SPEC_AC02 — Identity Stability and No Reuse [A16]
+### SPEC_AC02 — Identity Stability and No Reuse [A15]
 
 Goal identity MUST be immutable and non-reusable.
 - Identity MUST remain stable for the entire lifetime of the goal.
@@ -72,7 +72,7 @@ Goal identity MUST be immutable and non-reusable.
 
 ## Goal States and Terminality
 
-### SPEC_AC03 — Terminal State Immutability [S01]
+### SPEC_AC03 — Terminal State Immutability [A02]
 
 Goals exist in **Non-terminal** (`Accepted`, `Executing`, `Canceling`) or **Terminal** (`Succeeded`, `Aborted`, `Canceled`) states.
 - Terminal states are **immutable**.
@@ -94,7 +94,7 @@ Goals exist in **Non-terminal** (`Accepted`, `Executing`, `Canceling`) or **Term
 
 ## State Transition Validity
 
-### SPEC_AC04 — Valid Transition Graph [S01]
+### SPEC_AC04 — Valid Transition Graph [A04, A05]
 
 The core engine MUST enforce a strict state transition graph.
 - Invalid transitions MUST be rejected deterministically.
@@ -126,7 +126,7 @@ The core engine MUST enforce a strict state transition graph.
 
 ## Ordering Invariants
 
-### SPEC_AC05 — Monotonic Status Ordering [S01]
+### SPEC_AC05 — Monotonic Status Ordering [A06, A07]
 
 Status updates exposed by the core MUST be monotonically ordered per goal.
 - The sequence of states observed for a single goal MUST strictly follow the transition graph.
@@ -147,7 +147,7 @@ Status updates exposed by the core MUST be monotonically ordered per goal.
 
 ## Cancellation Semantics
 
-### SPEC_AC06 — Cancellation Intent and Resolution [S01]
+### SPEC_AC06 — Cancellation Intent and Resolution [A08, A09]
 
 Cancellation is a request, not a coerced outcome.
 - Cancellation intent MUST be explicit and observable (transition to `Canceling`).
@@ -169,7 +169,7 @@ Cancellation is a request, not a coerced outcome.
 
 ## Result Visibility
 
-### SPEC_AC07 — Result Singularity and Consistency [S01]
+### SPEC_AC07 — Result Singularity and Consistency [A10, A11]
 
 - A goal MUST have at most one terminal result.
 - A result is semantically valid only after terminal resolution.

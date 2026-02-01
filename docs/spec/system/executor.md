@@ -57,7 +57,7 @@ The system MUST make executor ownership explicit to prevent race conditions and 
 
 ## Spin modes
 
-### SPEC_E02 — Bounded Spin Modes [S08, S20]
+### SPEC_E02 — Bounded Spin Modes [S08]
 
 The system MUST support bounded execution modes sufficient for deterministic integration and testing.
 - **Spin Forever:** Block until shutdown signal.
@@ -106,7 +106,7 @@ Shutdown operations MUST be bounded and deterministic.
 
 ## Callback concurrency model
 
-### SPEC_E04 — Concurrency Model Documentation [TBD]
+### SPEC_E04 — Concurrency Model Documentation [S08]
 
 The system MUST define and document its concurrency model.
 - Whether callbacks may execute concurrently.

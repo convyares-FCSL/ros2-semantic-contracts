@@ -154,6 +154,13 @@
             "ops": [],
             "expects": [],
             "notes": "Populate ops/observations to validate this clause (Layer=System)."
+        },
+        "S21_composition_interface_conformity": {
+            "description": "Composition Interface Conformity",
+            "spec_ref": "SPEC_C01",
+            "layer": "system",
+            "status": "implemented",
+            "type": "interface_introspection"
         }
     }
 }

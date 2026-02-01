@@ -96,4 +96,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **S16** | S16_deterministic_bringup          | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S17** | S17_no_hidden_execution            | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S18** | S18_observable_failure             | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **S19** | S19_graph_hygiene                  | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **S19** | S19_graph_hygiene                  | N/A  | N/A  | N/A  | N/A   | Not yet validated                  || A16 | A16_action_interface_conformity      | N/A | N/A | N/A | N/A | New: Interface Conformity |
+| L13 | L13_lifecycle_interface_conformity   | N/A | N/A | N/A | N/A | New: Interface Conformity |
+| P15 | P15_parameter_interface_conformity   | N/A | N/A | N/A | N/A | New: Interface Conformity |
+| S21 | S21_composition_interface_conformity | N/A | N/A | N/A | N/A | New: Interface Conformity |

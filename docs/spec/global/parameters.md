@@ -33,7 +33,7 @@ Core semantic invariants are defined in `docs/spec/core/parameter_core.md`.
 
 ## Interfaces
 
-### SPEC_P01 — Standard Parameter Services [S01]
+### SPEC_P01 — Standard Parameter Services [P15]
 
 Parameter semantics MUST be exposed via standard ROS 2 parameter services and messages.
 - Exact service names, message types, and IDL are defined by ROS 2.
@@ -74,7 +74,7 @@ Nodes MAY operate in **declared-only mode** or **undeclared-allowed mode**.
 
 ## GetParameters behaviour
 
-### SPEC_P03 — Unknown Parameters Return NOT_SET [S01]
+### SPEC_P03 — Unknown Parameters Return NOT_SET [P08]
 
 For both `get_parameters` and `get_parameter_types`:
 - Unknown or undeclared parameter names MUST return a value of type `NOT_SET`.
@@ -97,7 +97,7 @@ For both `get_parameters` and `get_parameter_types`:
 
 ## SetParameters behaviour
 
-### SPEC_P04 — Atomic Parameter Updates [S01]
+### SPEC_P04 — Atomic Parameter Updates [P04, P09, P10]
 
 Parameter updates MUST be atomic per request.
 - Partial application MUST NOT be externally observable.
@@ -117,7 +117,7 @@ Parameter updates MUST be atomic per request.
 
 ## Parameter events
 
-### SPEC_P05 — Deterministic Event Emission [S01]
+### SPEC_P05 — Deterministic Event Emission [P07, P11]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -140,7 +140,7 @@ Parameter change events MUST describe **state changes**, not attempts.
 
 ## Introspection
 
-### SPEC_P06 — Consistent Description [S01]
+### SPEC_P06 — Consistent Description [P12]
 
 Behaviour for `describe_parameters` on unknown parameters MUST be consistent.
 - If descriptors are returned for unknown parameters, their semantics MUST be documented.
@@ -157,7 +157,7 @@ Behaviour for `describe_parameters` on unknown parameters MUST be consistent.
 
 </details>
 
-### SPEC_P07 — Stable List Enumeration [S01]
+### SPEC_P07 — Stable List Enumeration [P13]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -180,7 +180,7 @@ For `list_parameters`:
 
 ## Deletion semantics
 
-### SPEC_P08 — Optional Deletion Support [S01]
+### SPEC_P08 — Optional Deletion Support [P14]
 
 Parameter deletion support is optional.
 - If supported, deletion MUST be documented.
