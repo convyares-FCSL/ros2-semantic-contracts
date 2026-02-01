@@ -23,9 +23,51 @@
             "spec_id": "P03",
             "title": "Redeclaration fails",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.declare"
+            ],
+            "notes": "Declaring the same parameter twice must fail deterministically.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "test_redeclare_param"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "test_redeclare_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "param_declare_request",
+                                "name": "test_redeclare_param"
+                            },
+                            {
+                                "type": "param_declare_response",
+                                "name": "test_redeclare_param",
+                                "successful": true
+                            },
+                            {
+                                "type": "param_declare_request",
+                                "name": "test_redeclare_param"
+                            },
+                            {
+                                "type": "param_declare_response",
+                                "name": "test_redeclare_param",
+                                "successful": false
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P04_no_partial_application": {
             "spec_id": "P04",
