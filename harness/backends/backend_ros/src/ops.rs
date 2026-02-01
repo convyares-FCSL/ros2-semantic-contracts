@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use rclrs::vendor::rcl_interfaces::{
     msg::{ParameterDescriptor, ParameterValue},
-    srv::{DescribeParameters, SetParameters},
+    srv::{DescribeParameters, SetParameters, SetParametersAtomically},
 };
 
 pub fn run_scenario(
@@ -19,6 +19,7 @@ pub fn run_scenario(
     scenario: &Scenario,
     set_param_client: &rclrs::Client<SetParameters>,
     describe_param_client: &rclrs::Client<DescribeParameters>,
+    set_param_atomically_client: &rclrs::Client<SetParametersAtomically>,
 ) -> Result<(), BackendError> {
     let mut st = BackendState::default();
 
@@ -38,6 +39,7 @@ pub fn run_scenario(
             op,
             set_param_client,
             describe_param_client,
+            set_param_atomically_client,
         )?;
     }
 
@@ -58,6 +60,7 @@ fn exec_op(
     op: &Op,
     set_param_client: &rclrs::Client<SetParameters>,
     describe_param_client: &rclrs::Client<DescribeParameters>,
+    set_param_atomically_client: &rclrs::Client<SetParametersAtomically>,
 ) -> Result<(), BackendError> {
     w.emit(json!({ "type": "op_start", "scenario_id": scenario_id, "op_id": op_id, "detail": { "op": op.op } }))?;
 
@@ -68,6 +71,9 @@ fn exec_op(
         "attempt_terminal_override" => exec_attempt_terminal_override(w, st, scenario_id, op)?,
 
         "set_param" => exec_set_param(w, scenario_id, op, set_param_client)?,
+        "set_params_batch" => {
+            exec_set_params_batch(w, scenario_id, op, set_param_atomically_client)?
+        }
         "describe_param" => exec_describe_param(w, scenario_id, op, describe_param_client)?,
         "declare_param" => exec_declare_param(w, st, scenario_id, op)?,
 
@@ -183,6 +189,114 @@ fn exec_set_param(
                 "node": "/oracle_backend_ros",
                 "name": name,
                 "successful": null,
+                "reason": format!("service_call_failed: {}", e)
+            }))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn exec_set_params_batch(
+    w: &mut EventWriter,
+    scenario_id: &str,
+    op: &Op,
+    client: &rclrs::Client<SetParametersAtomically>,
+) -> Result<(), BackendError> {
+    let payload = op
+        .payload
+        .as_ref()
+        .ok_or_else(|| BackendError::usage("set_params_batch missing payload"))?;
+
+    let params_arr = payload
+        .get("params")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| {
+            BackendError::usage("set_params_batch payload.params missing or not array")
+        })?;
+
+    let mut ros_params: Vec<rclrs::vendor::rcl_interfaces::msg::Parameter> = Vec::new();
+    let mut names: Vec<String> = Vec::new();
+
+    for p in params_arr {
+        let name = p
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| BackendError::usage("set_params_batch param missing name"))?;
+        let val_json = p
+            .get("value")
+            .ok_or_else(|| BackendError::usage("set_params_batch param missing value"))?;
+        let type_str = p.get("type").and_then(|v| v.as_str()).unwrap_or("string");
+
+        let mut pval = ParameterValue::default();
+        match type_str {
+            "bool" | "boolean" => {
+                pval.type_ = 1;
+                pval.bool_value = val_json.as_bool().unwrap_or(false);
+            }
+            "int" | "integer" => {
+                pval.type_ = 2;
+                pval.integer_value = val_json.as_i64().unwrap_or(0);
+            }
+            "double" | "float" => {
+                pval.type_ = 3;
+                pval.double_value = val_json.as_f64().unwrap_or(0.0);
+            }
+            _ => {
+                pval.type_ = 4;
+                pval.string_value = match val_json {
+                    serde_json::Value::String(s) => s.clone(),
+                    _ => val_json.to_string(),
+                };
+            }
+        }
+
+        names.push(name.to_string());
+        ros_params.push(rclrs::vendor::rcl_interfaces::msg::Parameter {
+            name: name.to_string(),
+            value: pval,
+        });
+    }
+
+    w.emit(json!({
+        "type": "param_set_batch_request",
+        "scenario_id": scenario_id,
+        "node": "/oracle_backend_ros",
+        "names": names
+    }))?;
+
+    let request = rclrs::vendor::rcl_interfaces::srv::SetParametersAtomically_Request {
+        parameters: ros_params,
+    };
+
+    let future: rclrs::Promise<(
+        rclrs::vendor::rcl_interfaces::srv::SetParametersAtomically_Response,
+        rclrs::ServiceInfo,
+    )> = client
+        .call(&request)
+        .map_err(|e| BackendError::system(e).context("failed to call set_parameters_atomically"))?;
+
+    let result = futures::executor::block_on(future);
+
+    match result {
+        Ok((response, _info)) => {
+            let result = response.result;
+            w.emit(json!({
+                "type": "param_set_batch_response",
+                "scenario_id": scenario_id,
+                "node": "/oracle_backend_ros",
+                "names": names,
+                "all_successful": result.successful,
+                "reason": result.reason
+            }))?;
+        }
+        Err(e) => {
+            w.emit(json!({
+                "type": "param_set_batch_response",
+                "scenario_id": scenario_id,
+                "node": "/oracle_backend_ros",
+                "names": names,
+                "all_successful": null,
                 "reason": format!("service_call_failed: {}", e)
             }))?;
         }
