@@ -32,6 +32,8 @@ const CORE_TYPES: &[&str] = &[
     "backend_capabilities",
     "param_set_request",
     "param_set_response",
+    "param_set_batch_request",
+    "param_set_batch_response",
     "param_describe_request",
     "param_describe_response",
     "param_declare_request",
