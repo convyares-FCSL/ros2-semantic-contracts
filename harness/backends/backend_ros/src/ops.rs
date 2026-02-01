@@ -356,11 +356,20 @@ fn exec_describe_param(
                 an.cmp(bn)
             });
 
+            // P08: Emit param_type for unknown/known parameters.
+            // If the parameter is unknown, ROS returns a descriptor with type 0 (NOT_SET).
+            let param_type_str = response
+                .descriptors
+                .first()
+                .map(|d| param_type_to_string(d.type_))
+                .unwrap_or("NOT_SET");
+
             w.emit(json!({
                 "type": "param_describe_response",
                 "scenario_id": scenario_id,
                 "node": "/oracle_backend_ros",
                 "name": name,
+                "param_type": param_type_str,
                 "detail": {
                     "descriptors": descriptors
                 }
@@ -448,6 +457,21 @@ fn parameter_descriptor_to_json(d: &ParameterDescriptor) -> serde_json::Value {
             "step": r.step
         })).collect::<Vec<_>>(),
     })
+}
+
+fn param_type_to_string(t: u8) -> &'static str {
+    match t {
+        1 => "bool",
+        2 => "integer",
+        3 => "double",
+        4 => "string",
+        5 => "byte_array",
+        6 => "bool_array",
+        7 => "integer_array",
+        8 => "double_array",
+        9 => "string_array",
+        _ => "NOT_SET",
+    }
 }
 
 fn exec_send_goal(w: &mut EventWriter, scenario_id: &str, op: &Op) -> Result<(), BackendError> {
