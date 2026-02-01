@@ -43,7 +43,7 @@ Parameters are identified by UTF-8 string names.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 
 </details>
 
@@ -58,7 +58,7 @@ A parameter exists in exactly one of three semantic states:
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 
 **Notes**
 - Unknown parameters MUST NOT appear in list results unless explicitly requested (e.g. via recursive list).
@@ -80,7 +80,7 @@ The core MUST enforce type safety based on the parameter's descriptor.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 
 </details>
 
@@ -98,7 +98,7 @@ Declaration establishes the initial value and descriptor.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 
 </details>
 
@@ -113,7 +113,7 @@ Set operations are atomic transactions.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 
 </details>
 
@@ -127,7 +127,7 @@ Access to undeclared parameters depends on the node's configuration.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - Baseline: Jazzy+rclcpp default behavior
 
 </details>

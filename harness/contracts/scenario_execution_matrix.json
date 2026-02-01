@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "stage": 2,
+    "description": "Stage-2 execution matrix: tracks which scenarios have been executed per backend. EXECUTED != VALIDATED.",
+    "backends": {
+        "snub": {
+            "stage": 2,
+            "description": "Stub backend for harness self-tests",
+            "executed": [
+                "H01"
+            ]
+        },
+        "ros_local": {
+            "stage": 2,
+            "description": "Local ROS 2 Jazzy execution (not containerized baseline)",
+            "executed": [
+                "H01",
+                "A01",
+                "A02"
+            ]
+        },
+        "docker_baseline": {
+            "stage": 3,
+            "description": "Containerized Jazzy+rclcpp+Nav2 baseline (not yet enforced)",
+            "executed": []
+        }
+    },
+    "artifact_rule": {
+        "path_template": "evidence/{backend}/{scenario_id}/result.json",
+        "required_fields": [
+            "scenario_id",
+            "backend",
+            "stage",
+            "status",
+            "timestamp"
+        ]
+    },
+    "notes": {
+        "P03": "Paused due to spec rework; do not force into EXECUTED/VALIDATED."
+    }
+}

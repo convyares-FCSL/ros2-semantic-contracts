@@ -45,7 +45,7 @@ A composition container MUST expose the standard ROS 2 composition services in i
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Design: Composition](https://design.ros2.org/articles/composition.html)
+- Official: [ROS 2 Design: Composition](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Composition.html)
 - REP/RFC: None
 - Community: None
 - BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Professional-stack operability requirement)
@@ -78,7 +78,7 @@ If `load_node` is rejected:
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Design: Composition](https://design.ros2.org/articles/composition.html) (defines services but not full transactional semantics)
+- Official: [ROS 2 Design: Composition](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Composition.html) (defines services but not full transactional semantics)
 - REP/RFC: None
 - Community: None
 - BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Deterministic orchestration requires atomic load semantics)
@@ -133,7 +133,7 @@ Node identifiers within a container must adhere to the following invariant:
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Design: Composition](https://design.ros2.org/articles/composition.html) (Uniqueness)
+- Official: [ROS 2 Design: Composition](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Composition.html) (Uniqueness)
 - REP/RFC: None
 - Community: None
 - BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Safety against race conditions / No Reuse)
@@ -178,7 +178,7 @@ Parameter overrides and remappings supplied at load time MUST adhere to the foll
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Design: Composition](https://design.ros2.org/articles/composition.html)
+- Official: [ROS 2 Design: Composition](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Composition.html)
 - REP/RFC: None
 - Community: None
 

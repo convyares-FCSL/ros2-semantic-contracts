@@ -156,11 +156,15 @@
             "notes": "Populate ops/observations to validate this clause (Layer=System)."
         },
         "S21_composition_interface_conformity": {
-            "description": "Composition Interface Conformity",
-            "spec_ref": "SPEC_C01",
-            "layer": "system",
-            "status": "implemented",
-            "type": "interface_introspection"
+            "spec_id": "S21",
+            "title": "Composition Interface Conformity",
+            "layer": "System",
+            "requires": [
+                "graph.observe"
+            ],
+            "ops": [],
+            "expects": [],
+            "notes": "Interface introspection scenario. Validate composition services exist."
         }
     }
 }
