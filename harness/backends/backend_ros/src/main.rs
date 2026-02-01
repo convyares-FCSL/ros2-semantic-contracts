@@ -82,7 +82,6 @@ fn run(args: Args) -> Result<(), BackendError> {
                 "actions.basic",
                 "actions.terminal",
                 "ros.params.set",
-                "ros.params.set_batch",
                 "ros.params.describe",
                 "ros.params.declare"
             ],

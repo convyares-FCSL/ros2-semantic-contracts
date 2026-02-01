@@ -68,7 +68,6 @@ fn exec_op(
         "attempt_terminal_override" => exec_attempt_terminal_override(w, st, scenario_id, op)?,
 
         "set_param" => exec_set_param(w, scenario_id, op, set_param_client)?,
-        "set_params_batch" => exec_set_params_batch(w, scenario_id, op, set_param_client)?,
         "describe_param" => exec_describe_param(w, scenario_id, op, describe_param_client)?,
         "declare_param" => exec_declare_param(w, st, scenario_id, op)?,
 
@@ -184,126 +183,6 @@ fn exec_set_param(
                 "node": "/oracle_backend_ros",
                 "name": name,
                 "successful": null,
-                "reason": format!("service_call_failed: {}", e)
-            }))?;
-        }
-    }
-
-    Ok(())
-}
-
-fn exec_set_params_batch(
-    w: &mut EventWriter,
-    scenario_id: &str,
-    op: &Op,
-    client: &rclrs::Client<SetParameters>,
-) -> Result<(), BackendError> {
-    let payload = op
-        .payload
-        .as_ref()
-        .ok_or_else(|| BackendError::usage("set_params_batch missing payload"))?;
-
-    let params_arr = payload
-        .get("params")
-        .and_then(|v| v.as_array())
-        .ok_or_else(|| {
-            BackendError::usage("set_params_batch payload.params missing or not array")
-        })?;
-
-    let mut ros_params: Vec<rclrs::vendor::rcl_interfaces::msg::Parameter> = Vec::new();
-    let mut names: Vec<String> = Vec::new();
-
-    for p in params_arr {
-        let name = p
-            .get("name")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| BackendError::usage("set_params_batch param missing name"))?;
-        let val_json = p
-            .get("value")
-            .ok_or_else(|| BackendError::usage("set_params_batch param missing value"))?;
-        let type_str = p.get("type").and_then(|v| v.as_str()).unwrap_or("string");
-
-        let mut pval = ParameterValue::default();
-        match type_str {
-            "bool" | "boolean" => {
-                pval.type_ = 1;
-                pval.bool_value = val_json.as_bool().unwrap_or(false);
-            }
-            "int" | "integer" => {
-                pval.type_ = 2;
-                pval.integer_value = val_json.as_i64().unwrap_or(0);
-            }
-            "double" | "float" => {
-                pval.type_ = 3;
-                pval.double_value = val_json.as_f64().unwrap_or(0.0);
-            }
-            _ => {
-                pval.type_ = 4;
-                pval.string_value = match val_json {
-                    serde_json::Value::String(s) => s.clone(),
-                    _ => val_json.to_string(),
-                };
-            }
-        }
-
-        names.push(name.to_string());
-        ros_params.push(rclrs::vendor::rcl_interfaces::msg::Parameter {
-            name: name.to_string(),
-            value: pval,
-        });
-    }
-
-    w.emit(json!({
-        "type": "param_set_batch_request",
-        "scenario_id": scenario_id,
-        "node": "/oracle_backend_ros",
-        "names": names
-    }))?;
-
-    let request = rclrs::vendor::rcl_interfaces::srv::SetParameters_Request {
-        parameters: ros_params,
-    };
-
-    let future: rclrs::Promise<(
-        rclrs::vendor::rcl_interfaces::srv::SetParameters_Response,
-        rclrs::ServiceInfo,
-    )> = client
-        .call(&request)
-        .map_err(|e| BackendError::system(e).context("failed to call set_parameters batch"))?;
-
-    let result = futures::executor::block_on(future);
-
-    match result {
-        Ok((response, _info)) => {
-            let mut results_json: Vec<serde_json::Value> = Vec::new();
-            for (i, r) in response.results.iter().enumerate() {
-                let name: &str = names.get(i).map(|s: &String| s.as_str()).unwrap_or("?");
-                results_json.push(json!({
-                    "name": name,
-                    "successful": r.successful,
-                    "reason": r.reason
-                }));
-            }
-
-            // Compute batch success: all must succeed for no partial application
-            let all_success = response.results.iter().all(|r| r.successful);
-
-            w.emit(json!({
-                "type": "param_set_batch_response",
-                "scenario_id": scenario_id,
-                "node": "/oracle_backend_ros",
-                "names": names,
-                "all_successful": all_success,
-                "results": results_json
-            }))?;
-        }
-        Err(e) => {
-            w.emit(json!({
-                "type": "param_set_batch_response",
-                "scenario_id": scenario_id,
-                "node": "/oracle_backend_ros",
-                "names": names,
-                "all_successful": null,
                 "reason": format!("service_call_failed: {}", e)
             }))?;
         }
