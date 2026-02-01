@@ -34,6 +34,8 @@ const CORE_TYPES: &[&str] = &[
     "param_set_response",
     "param_describe_request",
     "param_describe_response",
+    "param_declare_request",
+    "param_declare_response",
 ];
 
 pub fn read_bundle(path: &Path) -> Result<ScenarioBundle> {

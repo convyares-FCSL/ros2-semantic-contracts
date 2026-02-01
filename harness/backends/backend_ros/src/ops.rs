@@ -69,6 +69,7 @@ fn exec_op(
 
         "set_param" => exec_set_param(w, scenario_id, op, set_param_client)?,
         "describe_param" => exec_describe_param(w, scenario_id, op, describe_param_client)?,
+        "declare_param" => exec_declare_param(w, st, scenario_id, op)?,
 
         other => {
             w.emit(json!({
@@ -262,6 +263,53 @@ fn exec_describe_param(
                 }
             }))?;
         }
+    }
+
+    Ok(())
+}
+
+fn exec_declare_param(
+    w: &mut EventWriter,
+    st: &mut BackendState,
+    scenario_id: &str,
+    op: &Op,
+) -> Result<(), BackendError> {
+    let payload = op
+        .payload
+        .as_ref()
+        .ok_or_else(|| BackendError::usage("declare_param missing payload"))?;
+
+    let name = payload
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| BackendError::usage("declare_param payload.name missing"))?;
+
+    w.emit(json!({
+        "type": "param_declare_request",
+        "scenario_id": scenario_id,
+        "node": "/oracle_backend_ros",
+        "name": name
+    }))?;
+
+    // Check if already declared (redeclaration detection).
+    if st.declared_params.contains(name) {
+        w.emit(json!({
+            "type": "param_declare_response",
+            "scenario_id": scenario_id,
+            "node": "/oracle_backend_ros",
+            "name": name,
+            "successful": false,
+            "reason": "already_declared"
+        }))?;
+    } else {
+        st.declared_params.insert(name.to_string());
+        w.emit(json!({
+            "type": "param_declare_response",
+            "scenario_id": scenario_id,
+            "node": "/oracle_backend_ros",
+            "name": name,
+            "successful": true
+        }))?;
     }
 
     Ok(())
