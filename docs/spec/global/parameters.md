@@ -43,7 +43,7 @@ Parameter semantics MUST be exposed via standard ROS 2 parameter services and me
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
 
@@ -63,7 +63,7 @@ Nodes MAY operate in **declared-only mode** or **undeclared-allowed mode**.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
 - Baseline: Jazzy+rclcpp default behavior
@@ -84,7 +84,7 @@ For both `get_parameters` and `get_parameter_types`:
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
 
@@ -107,7 +107,7 @@ Parameter updates MUST be atomic per request.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
 
@@ -190,7 +190,7 @@ Parameter deletion support is optional.
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
 

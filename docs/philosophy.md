@@ -231,3 +231,33 @@ This repository refuses to be:
 Its sole purpose is to define and enforce semantic truth.
 
 </details>
+
+---
+
+<details open>
+<summary><strong>Appendix: Stage-2 Status (ros_local)</strong></summary>
+
+**Current Stage:** Stage-2 — ros_local validation
+
+**What this means:**
+
+- Specifications are **hypotheses** until validated against a reproducible baseline.
+- The Oracle Harness can execute scenarios on local ROS 2 (Jazzy) and a deterministic stub backend.
+- Partial validation exists: A01, A02, P06, P12 pass on `backend_ros`.
+- Failing scenarios (e.g., P08) are expected and document backend gaps.
+- FAIL is acceptable during active development.
+
+**Evidence Policy (Stage-2):**
+
+During active harness development, execution artifacts live in `/tmp` and CI artifacts.
+They are NOT committed to the repository.
+Evidence receipts become required when `backend_prod` / `docker_baseline` is introduced (Stage-3+).
+
+**Development Workflow:**
+
+- Scenario development happens one scenario per PR.
+- Each PR branch follows: `feat/backend-ros-<scenario-id>`
+- CI enforces bundle schema, stub H00, and ros_local smoke tests.
+- Provenance gate warns but does not fail on missing artifacts (Stage-2 only).
+
+</details>

@@ -1,0 +1,102 @@
+name: Harness Validation
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+jobs:
+  validate-bundles:
+    name: Validate Scenario Bundles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate bundle schema
+        run: python3 harness/scripts/validate_bundles.py
+
+  harness-stub:
+    name: Harness Stub Backend (H00)
+    runs-on: ubuntu-latest
+    needs: validate-bundles
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run H00 on stub backend
+        working-directory: harness
+        run: |
+          echo "=== Required: H00 must PASS ==="
+          ORACLE_BACKEND=stub ./scripts/run_harness.sh scenarios/scenarios_H.json
+        env:
+          ORACLE_BACKEND: stub
+
+  # NOTE: ROS backend jobs require ros2-test-msgs which is not in the base
+  # ros-tooling/setup-ros install. These jobs are informational during Stage-2.
+  # They will become blocking when docker_baseline CI is introduced.
+  harness-ros-actions:
+    name: Harness ROS Backend (Actions)
+    runs-on: ubuntu-latest
+    needs: validate-bundles
+    continue-on-error: true  # Informational only until docker CI
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install ROS 2 Jazzy
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+
+      - name: Install additional ROS packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ros-jazzy-test-msgs ros-jazzy-example-interfaces
+
+      - name: Run Actions scenarios on ros backend
+        working-directory: harness
+        run: |
+          echo "=== Required: A01, A02 must PASS (skips allowed) ==="
+          source /opt/ros/jazzy/setup.bash
+          ORACLE_BACKEND=ros ./scripts/run_harness.sh scenarios/scenarios_A.json
+        env:
+          ORACLE_BACKEND: ros
+
+  harness-ros-params:
+    name: Harness ROS Backend (Parameters)
+    runs-on: ubuntu-latest
+    needs: validate-bundles
+    continue-on-error: true  # Informational only until docker CI
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install ROS 2 Jazzy
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+
+      - name: Install additional ROS packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ros-jazzy-test-msgs ros-jazzy-example-interfaces
+
+      - name: Run Parameters scenarios on ros backend
+        working-directory: harness
+        run: |
+          echo "=== Required: P06, P12 must PASS (skips allowed) ==="
+          source /opt/ros/jazzy/setup.bash
+          ORACLE_BACKEND=ros ./scripts/run_harness.sh scenarios/scenarios_P.json
+        env:
+          ORACLE_BACKEND: ros
