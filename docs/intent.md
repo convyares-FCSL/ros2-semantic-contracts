@@ -1,22 +1,23 @@
 # Intent — ros2-semantic-contracts
 
-This repository exists to define, version, and enforce **normative semantic contracts** for ROS 2 core behaviour against explicit upstream baselines.
+This repository exists to define, version, and enforce **normative semantic contracts** for ROS 2 core behaviour.
 
-It establishes a single, explicit definition of *what correct behaviour means* for ROS 2 mechanisms (e.g. lifecycle, actions, parameters) within a defined upstream baseline where upstream documentation defines interfaces and APIs but does not fully specify semantics.
+It establishes a **versioned, testable semantic profile** so that ROS 2 behaviour stops being
+“whatever the reference implementation happens to do” without leaving a paper trail.
 
-The contracts in this repository are transport-agnostic, language-agnostic, and testable.
+We achieve this by maintaining:
+1. **Semantic Contracts:** Transport-agnostic definitions of Core, Global, and System invariants.
+2. **The Oracle:** A semantic harness that validates any backend against these contracts.
+3. **Divergence Records:** A ledger of exactly *where* and *why* an implementation differs.
 
 ---
 
 ## What This Repository Is
 
 This repository is:
-
-* A **semantic authority layer** for ROS 2 core behaviour, grounded in upstream specification and production evidence
-* A collection of **normative contracts** describing required behaviour and failure responses
-* A **baseline definition** derived from a named production profile (initially: ROS 2 Jazzy + rclcpp + Nav2)
-* A set of **executable enforcement tools** (reference implementations, contract tests, and harnesses)
-* A mechanism to make **semantic drift visible, reviewable, and versioned**
+* A **semantic definition layer grounded in upstream documentation and production evidence**.
+* A baseline definition derived from a named profile (**ROS 2 Jazzy + rclcpp**).
+* A mechanism to make **semantic drift visible, reviewable, and versioned**.
 
 It defines *what must happen* — not *how to implement it*.
 
@@ -24,86 +25,90 @@ It defines *what must happen* — not *how to implement it*.
 
 ## What This Repository Is Not
 
-This repository is not:
-
-* A ROS 2 tutorial or learning sequence
-* A reference application or demo system
-* A best-practices guide
-* A performance benchmark suite (except as supporting evidence)
-* A replacement for ROS documentation, REPs, or quality processes
-* A language advocacy project
-
-It does not teach ROS.
-It defines semantic truth.
+* **Not a Tutorial:** It does not teach ROS; it defines semantic truth.
+* **Not a Best-Practices Guide:** It defines strict boundaries, not advice.
+* **Not a Performance Benchmark:** It measures correctness, not speed
+  (except where latency violates a contract).
 
 ---
 
-## Who This Repository Is For
-
-This repository primarily serves:
-
-* **Client library implementers** (rclcpp, rclpy, rclrs, rosrustlib, and others)
-* **Middleware and tooling authors** who need a precise semantic target
-* **System integrators** who must reason about behaviour under failure, race, and orchestration pressure
-
-It is written for engineers who require **predictability, auditability, and testable correctness**, not for onboarding or exploration.
-
----
-
-## How This Repository Is Used
-
-The repository is used to:
-
-* Determine whether an implementation **conforms to defined semantics**
-* Compare observed behaviour against a **named semantic baseline**
-* Detect and document divergence across languages, versions, or ecosystems
-* Support automated verification via contract tests and oracle harnesses
-* Anchor discussions about correctness in **reproducible evidence**, not interpretation
-
-Claims made by this repository are always traceable to:
-upstream documentation, upstream code, or reproducible observation.
-
----
-
-## Relationship to Client Libraries and Ecosystems
+## Relationship to Client Libraries
 
 This repository does not define APIs.
 It defines **required behaviour**.
 
-Where upstream ROS specifications are incomplete, the behaviour of the production stack defines the baseline.
-For the initial contract set, **rclcpp behaviour in ROS 2 Jazzy, as exercised by Nav2**, is treated as canonical.
+Where upstream ROS specifications are incomplete or ambiguous, the behaviour of the
+**Reference Stack (ROS 2 Jazzy + rclcpp)** is treated as the semantic anchor.
 
-Other client libraries are evaluated relative to this contract.
-Deviation is permitted, but it must be **explicitly documented and justified**.
+Other client libraries (including extended variants such as
+**`rclrs + rosrustext_rclrs`**) are evaluated relative to this anchor.
+
+### The Role of Ecosystem Consumers (Nav2)
+
+Complex ecosystem stacks like **Nav2** are used as **evidence amplifiers**.
+
+Nav2 is **not** treated as an authority on semantics.
+Instead, it is used to *surface hidden system invariants* that the ecosystem implicitly relies upon.
+If breaking a specific behaviour breaks Nav2, that behaviour is a strong candidate for a
+previously undocumented system contract — which must then be validated directly against
+the production stack.
+
+---
+
+## Validation Roadmap
+
+Our strategy is **comparative verification**.
+We do not force all libraries to be identical; we force them to be **explicit about their differences**.
+
+### Phase 1: The Golden Master (Current)
+
+* **Target:** `rclcpp` (C++) on **ROS 2 Jazzy**
+* **Role:** Semantic anchor when upstream documentation is ambiguous
+* **Goal:** Prove that the specifications describe the actual behaviour of the reference stack
+
+### Phase 2: The Challengers (Verification)
+
+We run the Oracle against these targets to detect semantic drift:
+
+* **`rclpy`** — Python client (flexible, widely used baseline)
+* **`rclrs`** — Rust client (safety-oriented baseline)
+* **`rclgo`** — Go client (systems / microservice-oriented baseline)
+* **`rclrs + rosrustext_rclrs`** — Rust parity extension layer
+  * Closes feature gaps relative to `rclcpp`
+  * Adds lifecycle-aware subscriptions, services, timers
+  * Introduces ergonomic Rust improvements (e.g. builders, safer abstractions)
+
+These targets are not required to converge on identical behaviour.
+Any divergence must be **observable, documented, and justified**.
+
+### Phase 3: Distribution Regression
+
+* **ROS 2 Humble** — Quantify behavioural differences across LTS versions
+* **ROS 2 Rolling** — Detect breaking semantic changes *before* release
 
 ---
 
 ## Scope Discipline
 
-Only behaviour that affects **semantic correctness, safety, or liveness** belongs in this repository.
+Only behaviour that affects **semantic correctness, safety, or liveness**
+belongs in this repository.
 
-Performance characteristics, tuning guidance, and deployment advice are out of scope unless they directly affect correctness or operability.
+Performance characteristics, tuning guidance, and deployment advice are
+**out of scope** unless they directly affect correctness
+(e.g. deadlock prevention).
 
-This constraint is deliberate.
-It keeps the contract set minimal, enforceable, and stable.
-
----
-
-## Change and Evolution
-
-Semantic contracts evolve through **explicit versioning**, not silent modification.
-
-Each contract set is tied to a named upstream baseline.
-Future changes are evaluated as regressions until proven intentional via upstream evidence.
-
-Historical contracts are retained.
-At any given time, only one contract set is authoritative.
+This constraint keeps the contract set **minimal, enforceable, and stable**.
 
 ---
 
-## Closing
+## Success Metric
 
-This repository exists to make ROS 2 behaviour **explicit, testable, and comparable**.
+Success is **not** “All backends pass 100%.”
 
-It does not promise completeness.
-It promises clarity.
+Success is:
+
+> **“An engineer can look at the Divergence Record and make an informed architectural decision.”**
+
+Examples:
+> “I need exact parameter atomicity, so I cannot use Library X yet.”  
+> “I need strict lifecycle ordering, so I must use Library Y.”

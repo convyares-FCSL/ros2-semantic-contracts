@@ -1,121 +1,122 @@
 # Ecosystem Contract
 
-This document defines **ecosystem-level semantic constraints** required for
-interoperability with the ROS 2 professional stack baseline.
+**Normativity Class: Baseline System Contract**
 
-These constraints arise from **widely deployed ecosystem practice** rather than
-formal ROS 2 design articles, but are treated as normative for the baseline
-profile defined by this repository.
+These requirements define interoperability constraints for the ROS 2 professional baseline.
+They are validated via system-level oracle and harness tests, not core semantic engines.
+
+* **Authority:** Production Stack (Jazzy + rclcpp).
+* **Evidence:** Nav2 usage patterns provide high-leverage evidence for hidden ecosystem invariants.
+* **Status:** Until validated by traces, requirements marked UNVALIDATED remain hypotheses.
 
 ---
 
-## Scope
+<details open>
+<summary><strong>Scope: What this contract covers</strong></summary>
 
-This contract applies to systems that are expected to interoperate with:
+- native ROS 2 client library implementations built on `rcl` / `rmw`
+- interoperability with ROS 2 CLI tooling and lifecycle managers
+- compatibility with mature ecosystem stacks (e.g. Navigation 2)
+</details>
 
-- ROS 2 CLI tooling
-- lifecycle managers
-- orchestration frameworks
-- mature ecosystem stacks (e.g. navigation)
+<details>
+<summary><strong>Scope: What this contract excludes</strong></summary>
 
-It applies only to **native ROS 2 client library implementations** built on
-`rcl` / `rmw`.
+- specific implementation strategies or language choices
+- adoption of ecosystem libraries beyond semantic compatibility
+- non-native transports (unless explicitly stated)
+</details>
 
 ---
 
 ## Ecosystem Invariants
 
-### Lifecycle Orchestration Compatibility
+### SPEC_ECO01 — Lifecycle Orchestration Compatibility [S12]
 
-An implementation MUST expose lifecycle behaviour compatible with external
-lifecycle managers.
+An implementation MUST expose lifecycle behaviour compatible with external lifecycle managers to ensure safe system orchestration.
+- Lifecycle state, transitions, and failure responses MUST be observable and controllable via standard ROS 2 lifecycle services.
+- An implementation that cannot be externally orchestrated via these standard interfaces is non-compliant.
 
-Lifecycle state, transitions, and failure responses MUST be observable and
-controllable via standard ROS 2 lifecycle services.
+<details>
+<summary>Sources and notes</summary>
 
-An implementation that cannot be externally orchestrated is non-compliant.
+**Sources**
+- Official: [ROS 2 Design: Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+- Community: Nav2 (manager expectations)
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Orchestration requirement)
 
----
+</details>
 
-### Liveness and Fault Detection
+### SPEC_ECO02 — Liveness and Fault Detection [S13]
 
-Active components MUST provide a mechanism for liveness detection such that:
+Active components MUST provide a mechanism for liveness detection to ensure system robustness.
+- A crashed or unresponsive component MUST be detectable by external observers.
+- Orchestration layers MUST be able to react deterministically to a loss of liveness.
 
-- a crashed or unresponsive component is detectable
-- orchestration layers can react deterministically
+<details>
+<summary>Sources and notes</summary>
 
-The specific mechanism (e.g. bond-based monitoring) is ecosystem-defined, but the
-**liveness guarantee** is normative.
+**Sources**
+- Official: None (upstream silent on specific liveness guarantees)
+- Community: Nav2 (Bond-based monitoring)
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Reliability requirement)
 
----
+**Notes**
+- The specific mechanism (e.g., bonds) is ecosystem-defined, but the **guarantee** that a crash is observable is normative.
 
-### Action Supersession Semantics
+</details>
 
-⚠️ **UNVALIDATED (baseline hypothesis)**  
-This section describes expected baseline behaviour inferred from ecosystem usage
-and implementation inspection. It is not normative until validated by oracle
-testing against the Jazzy+rclcpp+Nav2 baseline.
+### SPEC_ECO03 — Action Supersession Semantics [A12]
 
-When a new goal supersedes an existing active goal, the previously active goal
-MUST transition to a terminal state whose semantic meaning clearly indicates that
-it was superseded by a subsequent goal.
+⚠️ **UNVALIDATED (baseline hypothesis)**
 
-In the baseline profile, supersession MUST NOT be represented as `ABORTED`.
-Supersession MUST be represented as `CANCELED`, with result or reason information
-that indicates goal supersession (preemption).
+When a new goal supersedes an existing active goal (preemption), the server must handle the transition deterministically:
+- The previously active goal MUST transition to a terminal state indicating supersession.
+- In the baseline profile, supersession MUST be represented as `CANCELED`, with result or reason information indicating preemption.
+- Supersession MUST NOT be represented as `ABORTED` (which implies internal malfunction).
 
-Using generic failure states that imply internal malfunction to represent goal
-supersession is non-compliant.
+<details>
+<summary>Sources and notes</summary>
 
-This constraint reflects ecosystem expectations for safe, predictable behaviour
-in long-running and continuously replanned action servers.
+**Sources**
+- Official: None (upstream silent on specific preemption state)
+- Community: Nav2 (Safety requirement for continuous replanning)
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Semantic distinction between failure and preemption)
 
----
+**Notes**
+- This constraint reflects ecosystem expectations for safe behavior in long-running action servers.
 
-### Tooling Introspection
 
-A compliant implementation MUST support ecosystem tooling expectations,
-including:
+</details>
 
-- action discovery and status reporting
-- parameter event publication
-- lifecycle state introspection
+### SPEC_ECO04 — Tooling Introspection Support [S14]
 
-These behaviours are validated via oracle and harness testing, not by assertion
-alone.
+A compliant implementation MUST support ecosystem tooling expectations to ensure observability.
+- **Action Discovery:** Action servers must be discoverable by CLI tools.
+- **Parameter Events:** Changes to parameters must be published to `/parameter_events`.
+- **Lifecycle Introspection:** Current state must be queryable via `get_state`.
 
----
+<details>
+<summary>Sources and notes</summary>
 
-### Interoperability over Identity
+**Sources**
+- Official: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Tooling observability)
 
-An implementation MUST behave **indistinguishably** from other compliant
-implementations when observed through standard ROS 2 tools.
+**Notes**
+- These behaviors are validated via oracle and harness testing, not by assertion alone.
 
-Semantic compatibility is defined by **observable behaviour**, not internal APIs
-or language choice.
+</details>
 
----
+### SPEC_ECO05 — Behavioral Indistinguishability [TBD]
 
-## Non-Goals
+An implementation MUST behave **indistinguishably** from other compliant implementations when observed through standard ROS 2 tools.
+- Semantic compatibility is defined strictly by **observable behaviour** (wire protocol, graph state, service responses), not internal APIs.
 
-This contract does not:
+<details>
+<summary>Sources and notes</summary>
 
-- prescribe a specific implementation strategy
-- mandate a particular language
-- require adoption of ecosystem libraries beyond semantic compatibility
+**Sources**
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (The fundamental interoperability axiom)
 
----
-
-## Provenance
-
-### Upstream sources
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
-
-### Implementation-defined (rclcpp)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
-
-### Ecosystem-defined (Nav2)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
-
-### Project policy
-- Baseline interoperability requirements
+</details>

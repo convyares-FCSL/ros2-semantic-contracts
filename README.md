@@ -1,8 +1,11 @@
-# ros2-semantic-contracts
+# ROS 2 Semantic Contracts
 
-ROS 2 standardises interfaces and mechanisms, but it does not provide a single, canonical, testable definition of **semantic correctness** for core behaviours such as lifecycle, actions, and parameters within a defined upstream baseline.
+> **From "Implementation-Defined" to "Spec-Defined"**
 
-In practice, semantic truth has emerged from implementation and ecosystem convergence — most notably from **rclcpp** and mature stacks such as **Nav2**. Those semantics are widely relied upon, but they are implicit, fragmented, and difficult to validate across languages and versions.
+ROS 2 has robust interface specifications, proven quality processes, and a mature testing culture.
+What it does not yet have is a canonical, testable definition of **semantic correctness** for core behaviors—lifecycle orchestration, action goal handling, parameter lifecycle, executor semantics—independent of implementation.
+
+In practice, semantic truth has emerged organically from the reference implementation (**rclcpp**) and mature production stacks (**Nav2**). This is natural and healthy. But as ROS 2 scales into multi-language ecosystems, safety-critical domains, and cross-middleware deployments, implicit semantics become harder to verify at scale.
 
 This repository makes that implicit truth **explicit, normative, and testable**.
 
@@ -11,18 +14,18 @@ This repository makes that implicit truth **explicit, normative, and testable**.
 ## The Problem
 
 ROS 2 tells you *how to wire things together*.
-It does not fully specify *what correct behaviour means* once systems are running, orchestrated, restarted, cancelled, or shut down under real operational pressure.
+It does not always specify *what correct behavior means* when systems are orchestrated, restarted, cancelled, preempted, or shut down under operational pressure.
 
-As a result:
+This is not an oversight. Semantic convergence through implementation is normal in evolving ecosystems.
+But it creates measurable costs:
 
-- semantic meaning is inferred from code, not contracts
-- behaviour can drift across client libraries without detection
-- “works in practice” becomes indistinguishable from “works by accident”
-- cross-language parity is assumed rather than proven
-- regressions are hard to classify as bugs, changes, or misunderstandings
+* **Safety certification requires explicit contracts** — Implicit behavior cannot be formally verified.
+* **Cross-language parity is assumed, not proven** — Subtle behavioral differences between C++, Python, and Rust remain undetected.
+* **Regressions are hard to classify** — Is a change in Rolling a bug, a feature, or a misunderstanding?
+* **"Works in practice" becomes indistinguishable from "works by accident"** — Critical invariants are inferred from reading source code, not specifications.
 
-This is not a tooling failure.
-It is a missing specification layer.
+**This repository does not fix ROS 2.**
+**It measures it.**
 
 ---
 
@@ -30,86 +33,156 @@ It is a missing specification layer.
 
 **Semantic contracts should be explicit, normative, and testable.**
 
-This repository defines **semantic contracts** for ROS 2 core behaviour:
-clear statements of required behaviour, allowed outcomes, and failure responses, independent of language or transport.
+We define semantic contracts for ROS 2 core behavior: clear statements of required behavior, allowed outcomes, and failure responses, independent of language or transport.
 
 These contracts are:
-
-- **Normative** — they define what correct behaviour is
-- **Language-agnostic** — they apply equally to C++, Python, Rust, or others
-- **Transport-agnostic** — they do not depend on DDS details
-- **Observable** — they are judged by externally visible behaviour
-- **Enforceable** — they are backed by executable tests and harnesses
+* **Normative** — they define what correct behavior is.
+* **Language-agnostic** — they apply equally to C++, Python, Rust, or Go.
+* **Transport-agnostic** — they do not depend on DDS implementation details.
+* **Observable** — they are judged by externally visible behavior.
+* **Enforceable** — they are backed by executable tests and harnesses.
 
 The goal is not to redesign ROS.
-It is to make existing semantic reality precise.
+It is to **codify existing semantic reality** from the reference implementation and make it testable.
 
 ---
 
-## Baseline Oracle
+## The Three-Layer Architecture
+
+We organize specifications into three distinct layers of abstraction to separate "Physics" from "Protocol" from "Operation."
+
+### 1. Core Contracts ("The Physics")
+**State machine invariants enforced by the engine.**
+These define the internal logic that must hold true regardless of the transport layer.
+* *Example:* "A Goal ID must never be reused within a session."
+* *Example:* "Lifecycle transitions must be sequential and atomic."
+* [View Core Specs](docs/spec/core/)
+
+### 2. Global Specifications ("The Wire")
+**Observable behavior over DDS topics and services.**
+These define how the internal state is projected to the outside world.
+* *Example:* "Lifecycle transitions must emit a `TransitionEvent` message."
+* *Example:* "Action servers must expose `/_action/send_goal` service."
+* [View Global Specs](docs/spec/global/)
+
+### 3. System Contracts ("The Runtime")
+**Operational constraints for production stability.**
+These are informed by ecosystem usage (e.g., Nav2, orchestration) and validated against the baseline reference implementation.
+* *Example:* "Nodes must clean up resources on shutdown within timeout bounds."
+* *Example:* "Executor callbacks must not block indefinitely."
+* [View System Specs](docs/spec/system/)
+
+---
+
+## The Oracle Methodology
 
 All contracts in this repository are defined against an explicit upstream baseline.
+We do not guess at correctness; we measure it using a **Comparative Physics** approach.
 
-For the initial contract set, the baseline is:
-
-> **ROS 2 Jazzy + rclcpp + Nav2**
+**Baseline Semantic Anchor:** `ROS 2 Jazzy + rclcpp`  
+**Ecosystem Stress Tests:** `Nav2` (evidence amplifier, not authority)
 
 Upstream ROS documentation and REPs are authoritative where they are complete.
-Where they are silent or ambiguous, the behaviour of this production stack defines the semantic truth for the purposes of this repository.
+Where they are silent or ambiguous, the behavior of this production stack defines the semantic truth for the purposes of this repository.
 
-That baseline is named, versioned, and treated as the reference oracle against which other implementations are evaluated.
+**Ecosystem consumers are used to discover hidden invariants, not to define them.**
 
----
+### Validation Process
 
-## What Is a “Semantic Contract”?
+1. **Hypothesis:** A behavior is observed in production systems.
+2. **Inventory:** It is logged in [Missing Semantics](docs/provenance/missing_semantics.md).
+3. **Codification:** It is written into a Spec (marked `UNVALIDATED`).
+4. **Execution:** The [Oracle Harness](harness/) runs a scenario against the **Baseline**.
+5. **Validation:**
+   * If the Baseline passes, the Spec becomes **Normative**.
+   * If a target (e.g., `rclrs`) fails where the Baseline passes, a [Divergence Record](docs/provenance/divergence_records/) is created.
 
-A semantic contract defines:
-
-- what behaviour **must** occur
-- what behaviour **must not** occur
-- which outcomes are allowed when ordering or timing cannot be fixed
-- how invalid states, inputs, or transitions **must be handled**
-- what remains explicitly undefined
-
-It does **not** define APIs.
-It does **not** prescribe architecture.
-It defines observable meaning.
+**This is not a competing standard.**
+**It is a measurement instrument.**
 
 ---
 
-## Why `core` Exists
+## Why Core Contracts Exist
 
 ROS 2 does not lack documentation, quality processes, or testing culture.
+It lacks **canonical semantic contracts** that are:
 
-It lacks **canonical semantic contracts**.
+* Independent of implementation language
+* Independent of middleware binding
+* Testable against any compliant stack
+* Explicit about what remains undefined
 
-The `core` specifications in this repository define the *minimum semantic truth* that all compliant implementations must share, independent of language, middleware binding, or adapter strategy.
-
+The core specifications in this repository define the *minimum semantic truth* that all compliant implementations must share.
 From those core contracts, the repository supports:
 
-- contract tests
-- reference executable semantics
-- adapter conformance checks
-- divergence detection across implementations
-- explicit handling of upstream change vs regression
+* **Contract tests** — executable validation of semantic correctness
+* **Reference executable semantics** — a runnable model of correct behavior
+* **Adapter conformance checks** — explicit verification of cross-language parity
+* **Divergence detection** — tracking differences between implementations
+* **Regression classification** — distinguishing upstream changes from bugs
 
-Without a core semantic layer, parity and correctness cannot be stated — only guessed.
+Without a core semantic layer, parity and correctness cannot be stated—only guessed.
+
+**We welcome collaboration with upstream maintainers** to ensure these contracts accurately reflect intended behavior and to identify areas where formal specifications would benefit the broader ecosystem.
+
+---
+
+## Validation Roadmap
+
+Our goal is not to force every client library to be identical, but to make differences **explicit and traceable**.
+
+| Phase | Target Stack | Role | Status |
+|:------|:------------|:-----|:-------|
+| **I** | **ROS 2 Jazzy + rclcpp** | **Baseline Semantic Anchor** | 🟡 In Progress |
+| **II** | **rclpy** | Comparison (The Flexible Standard) | ⬜ Planned |
+| **III** | **rclrs** | Comparison (The Safety Standard) | ⬜ Planned |
+| **IV** | **rclgo / rosrustext_rclrs** | Comparison (Alternative Stacks) | ⬜ Planned |
+| **V** | **ROS 2 Humble/Rolling** | Regression Analysis | ⬜ Planned |
 
 ---
 
 ## Repository Structure
 
-At a high level, the repository is organised as follows:
-
 ```text
 docs/
-├─ philosophy.md        # how semantic truth is defined and governed
-├─ intent.md            # what this repository is and is not
-├─ spec/
-│  └─ core/             # normative core semantic contracts
-├─ provenance/          # citations, baselines, divergence records
+├── philosophy.md              # How semantic truth is defined and governed
+├── intent.md                  # Project goals and roadmap
+├── methodology.md             # How we measure semantic truth
+├── spec/                      # THE LAW: Normative Contracts
+│   ├── core/                  # Physics (State Machines)
+│   ├── global/                # Protocol (Wire Format)
+│   └── system/                # Operation (Executor/Composition)
+└── provenance/                # THE EVIDENCE
+    ├── oracle/                # Epistemology (Measurement rules, Scenarios)
+    ├── divergence_records/    # Known differences between backends
+    └── missing_semantics.md   # Backlog of unvalidated hypotheses
 
-reference/              # reference executable semantics (language-specific)
-harness/                # oracle runners and comparison tooling
-tools/                  # validation, linting, and support scripts
+harness/                       # THE JUDGE: Oracle Runners & Scenarios
+reference/                     # Reference executable semantics (Rust)
+tools/                         # Validation, linting, and support scripts
 ```
+
+---
+
+## Contributing
+
+This repository treats **rclcpp + Jazzy** as the baseline semantic anchor.
+
+Where this repository's specifications diverge from upstream ROS documentation or REPs, **upstream is authoritative**.
+Where upstream is silent, production behavior defines truth.
+
+We welcome:
+- Scenarios that expose unspecified behavior
+- Divergence reports from alternative implementations
+- Clarifications where contracts are ambiguous
+- Evidence that contradicts a normative spec (triggers re-measurement)
+- Collaboration with upstream maintainers to align specifications
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
+## License
+
+This repository is licensed under Apache 2.0.
+Specifications are intended to be freely implementable without restriction.

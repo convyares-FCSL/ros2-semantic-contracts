@@ -21,9 +21,14 @@ This repository does not invent behaviour.
 It **codifies existing behaviour** into explicit, testable semantic contracts.
 
 Upstream specifications are authoritative when they are precise.
-Where they are incomplete, ambiguous, or silent, the observed behaviour of the production stack defines the baseline truth. That baseline is explicitly named and versioned.
+Where they are incomplete, ambiguous, or silent, the observed behaviour of the production stack defines the baseline truth.
 
-All contracts in this repository are traceable to public documentation, public code, or reproducible observation.
+**Criteria for Derived Truth**
+A behavior observed in the production stack becomes normative only if:
+1.  It is **consistent** across repeated measurements in the baseline profile (rclcpp + Jazzy).
+2.  At least one widely used downstream consumer (e.g., Nav2) **relies on it** for correctness.
+
+Incidental artifacts (e.g., specific error strings or timing jitter) that do not affect consumer correctness remain implementation details, not semantic contracts.
 
 </details>
 
@@ -70,6 +75,8 @@ Specifications use normative language (“MUST”, “MUST NOT”, “SHALL”) 
 
 They do not describe possibilities or recommendations.
 They define required behaviour for any implementation claiming conformance to a given semantic profile.
+
+Material that describes system-level "hygiene" or design intent without black-box testable invariants is classified as **guidance**, not specification.
 
 </details>
 
@@ -118,7 +125,7 @@ When ordering or timing cannot be fixed, contracts define:
 * invariants that must always hold,
 * and forbidden states or transitions.
 
-“Unspecified” is not an acceptable substitute for bounded semantics.
+“Unspecified” is not an acceptable substitute for bounded semantics. Negative assertions (e.g., "X must not happen") must always be bounded by a defined **Observation Window**.
 
 </details>
 
@@ -167,12 +174,13 @@ Performance characteristics belong in benchmarks, harnesses, and provenance docu
 What role do mature ecosystems such as Nav2 play?
 
 **Answer**
-They act as **de-facto standard bearers** for undefined semantics.
+They act as **validation pressure** and evidence for undefined semantics.
 
 **Understanding**
-Where upstream ROS specifications are incomplete, behaviour that is stable, widely deployed, and relied upon in the production stack defines the semantic baseline.
+Where upstream ROS specifications are incomplete, behavior relied upon by the ecosystem defines the semantic baseline.
 
-Such behaviour may be elevated to a normative contract unless explicitly rejected or superseded by upstream definition.
+Nav2 is **evidence of dependency**, not the authority itself.
+Behavior required by Nav2 is elevated to a normative ROS 2 contract because breaking it breaks the ecosystem, not because Nav2 defines ROS 2.
 
 </details>
 

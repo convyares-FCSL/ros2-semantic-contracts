@@ -13,11 +13,10 @@ This methodology applies to all normative material in this repository, including
 
 - core semantic contracts (`*_core.md`)
 - global semantic specifications
-- system and ecosystem contracts
 - oracle and harness validation artifacts
 - divergence records and traceability matrices
 
-It does not apply to adapter implementations or parity ledgers.
+Material that describes system hygiene or design intent without black-box testable invariants is classified as **guidelines**, not normative specifications.
 
 ---
 
@@ -30,7 +29,7 @@ Rules:
 - Normative language (“MUST”, “MUST NOT”, “SHALL”) is used only for enforceable requirements.
 - Each requirement must be:
   - observable,
-  - testable, or
+  - testable via black-box oracle, or
   - explicitly classified as a hypothesis.
 - Contracts define behaviour, not implementation strategy.
 
@@ -38,8 +37,7 @@ Contracts are authored in one of the following categories:
 
 - **Core Contracts** — engine-enforceable semantic invariants
 - **Global Specifications** — ROS-facing observable semantics
-- **System Contracts** — operability and orchestration constraints
-- **Ecosystem Contracts** — interoperability expectations
+- **Baseline System Contracts** — interoperability constraints validated via harness
 
 ---
 
@@ -48,18 +46,40 @@ Contracts are authored in one of the following categories:
 Every normative requirement MUST be traceable to at least one of:
 
 - upstream ROS documentation or REPs
-- upstream implementation behaviour
-- ecosystem-defined practice
+- upstream implementation behaviour (see "Derived Semantic Truth" below)
 - explicit project policy
 
-Traceability is recorded via:
+### Provenance Tagging
 
-- provenance sections in specification documents
-- citation tables
-- traceability matrices mapping:
-  - contract clause → upstream reference → harness validation
+Provenance tracking is required for strict normative claims only. Any statement using **MUST**, **SHALL**, or **FORBIDDEN** must be tagged with one of the following in the specification source:
 
-Untraceable requirements are not permitted.
+* `VALIDATED: <scenario_ids>` — Confirmed by passing oracle tests.
+* `UNVALIDATED: <reason/hypothesis>` — Awaiting validation; currently a hypothesis.
+* `REJECTED: <evidence_ref>` — Disproven by oracle evidence.
+
+Descriptive text, `SHOULD`, and `MAY` statements do not require tags.
+
+---
+
+## Derived Semantic Truth (The Authority Ladder)
+
+The repository’s specs are hypotheses about ROS 2 semantics. When a spec is ambiguous or contradicted by observation, the **production baseline** (ROS 2 Jazzy + rclcpp, under a declared RMW) is treated as the secondary authority only after behavior is reproduced and captured by oracle traces.
+
+**Nav2** is used as a stress-test consumer that exposes ecosystem invariants, but Nav2 itself is not the authority: invariants inferred from Nav2 become normative only when confirmed by direct measurement against the production baseline.
+
+---
+
+## Capability Declaration
+
+The harness acknowledges that not all backends support all semantic surfaces (e.g., a backend may support Pub/Sub but not Actions).
+
+Rules:
+- Backends MUST explicitly declare their supported **evidence classes** (capabilities) via trace events at runtime.
+- The Core uses this declaration to determine test applicability.
+- **SKIP**: The backend declared it does not support this capability.
+- **FAIL**: The backend declared support but failed the semantic check.
+
+Backend exit codes are transport-level signals only and do not determine semantic validity.
 
 ---
 
@@ -91,10 +111,17 @@ Validation is performed exclusively through:
 Tests enforce contracts.
 Tests do not define contracts.
 
-A contract requirement is considered validated only when:
+### Observation Windows (Measurement Scaffolding)
 
-- a corresponding oracle or harness test exists, and
-- the test passes against the baseline profile.
+Assertions that an event *does not happen* (negative proofs) or *has not yet happened* (liveness) MUST be bounded by a defined **Observation Window** (Settling Time).
+
+The Observation Window is a **measurement tool**, not a system performance guarantee.
+
+- **PASS**: The expected event occurred within the window.
+- **FAIL**: The system actively violated a contract (e.g., invalid transition, wrong data) within the window.
+- **INCONCLUSIVE**: The window expired without the expected event, and the spec does not mandate a specific timing guarantee.
+
+A spec may only mandate a `FAIL` on timeout if the timing constraint is normative (e.g., `spin_once` with a generic timeout). Otherwise, timeouts represent measurement uncertainty, not necessarily semantic incorrectness.
 
 ---
 
@@ -134,18 +161,7 @@ This methodology enforces the following separations:
 
 - Authority vs process
 - Semantics vs implementation
-- Engine-enforceable invariants vs system-level constraints
+- Engine-enforceable invariants vs system-level guidelines
 - Specification vs validation
 
 Any material that blurs these boundaries is non-compliant.
-
----
-
-## Exit Conditions
-
-A contract or section may be considered complete only when:
-
-- all requirements are traceable,
-- all hypotheses are resolved or explicitly retained,
-- validation status is clear,
-- and no ambiguity remains regarding scope or authority.

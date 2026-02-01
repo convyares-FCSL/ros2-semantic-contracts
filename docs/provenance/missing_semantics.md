@@ -1,12 +1,3 @@
-## Brief overview
-
-This is exactly the right document to write **now**.
-It should be mechanical, boring, and brutally explicit: a punch-list for the oracle harness, not an essay.
-
-Below is a **filled-in, baseline-aligned version** that reflects everything you’ve already marked ⚠️ UNVALIDATED across lifecycle, actions, and parameters — with no new semantics introduced.
-
----
-
 # Missing Semantics Inventory
 
 This document enumerates **semantic gaps** where upstream ROS 2 specifications are incomplete and where behaviour must be established via:

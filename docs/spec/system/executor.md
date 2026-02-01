@@ -1,135 +1,198 @@
 # Executor — System Contract
 
-This document defines **system-level semantic constraints** for executor behaviour
-required to interoperate with the ROS 2 professional baseline.
+**Normativity Class: Baseline System Contract**
 
-These constraints are **not core semantic engine invariants**.
-They describe observable execution, shutdown, and concurrency behaviour
-that must hold at the system boundary.
+These requirements define interoperability constraints for the ROS 2 professional baseline.
+They are validated via system-level oracle and harness tests, not core semantic engines.
 
-Baseline profile:
-- ROS 2 Jazzy + rclcpp + Nav2
+* **Authority:** Production Stack (Jazzy + rclcpp).
+* **Evidence:** Nav2 usage patterns provide high-leverage evidence for hidden ecosystem invariants.
+* **Status:** Until validated by traces, requirements marked UNVALIDATED remain hypotheses.
 
 ---
 
-## Scope
+<details open>
+<summary><strong>Scope: What this contract covers</strong></summary>
 
-This contract applies to:
 - executor ownership and spinning
 - bounded shutdown and cancellation
 - callback concurrency guarantees
 - lifecycle interaction under load
 - testability of execution behaviour
+</details>
 
-This contract does **not** define:
+<details>
+<summary><strong>Scope: What this contract excludes</strong></summary>
+
 - client-library APIs
 - callback scheduling algorithms
 - real-time guarantees
 - QoS tuning
 - component composition mechanics
+</details>
 
 ---
 
-## Executor ownership (explicit)
+## Executor ownership
 
-The system MUST make executor ownership explicit.
+### SPEC_E01 — Explicit Ownership and Control [S07]
 
-Observable requirements:
-- No callbacks are **invoked** unless an executor is actively being spun.
+The system MUST make executor ownership explicit to prevent race conditions and "hidden" background work.
+- No callbacks may be **invoked** unless an executor is actively being spun.
 - Libraries MUST NOT start background spinning implicitly.
-- If background execution exists, it MUST be explicitly constructed,
-  documented, and controllable.
+- If background execution exists, it MUST be explicitly constructed, documented, and controllable.
 
-Hidden or implicit execution is non-compliant.
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (upstream silent)
+- REP/RFC: None
+- Community: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Hidden spinners forbidden)
+
+</details>
 
 ---
 
 ## Spin modes
 
-The system MUST support bounded execution modes sufficient for
-deterministic integration and testing:
+### SPEC_E02 — Bounded Spin Modes [S08, S20]
 
-- spin-forever (block until shutdown)
-- spin-once / step (process a bounded unit of work)
-- spin-with-timeout
+The system MUST support bounded execution modes sufficient for deterministic integration and testing.
+- **Spin Forever:** Block until shutdown signal.
+- **Spin Once / Step:** Process a bounded unit of work.
+- **Spin with Timeout:** Execute for a bounded duration.
+- **Non-Blocking Check:** `spin_once` with `timeout=0` MUST return immediately if no work is available.
 
-Exact API shape is implementation-defined.
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (upstream silent on precise timing semantics)
+- REP/RFC: None
+- Community: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Testability requirement)
+
+**Notes**
+- Exact API shape is implementation-defined, but the *semantics* of these modes must be observable.
+
+</details>
 
 ---
 
 ## Shutdown semantics
 
-Shutdown MUST be bounded and deterministic:
+### SPEC_E03 — Bounded and Idempotent Shutdown [S09]
 
-- A shutdown request MUST unblock any active spin loop within a bounded time.
-- Shutdown MUST be idempotent.
-- Dropping executor or node handles MUST NOT deadlock.
+Shutdown operations MUST be bounded and deterministic.
+- A shutdown request MUST unblock any active spin loop within a bounded time (Settling Window).
+- Shutdown MUST be idempotent (safe to call multiple times).
+- Dropping executor or node handles MUST NOT cause deadlock.
+- The process MUST exit cleanly without repeated external interruption.
 
-Observable requirement:
-- A process exits cleanly without repeated external interruption.
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (upstream silent on unblocking guarantees)
+- REP/RFC: None
+- Community: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Clean exit requirement)
+
+</details>
 
 ---
 
 ## Callback concurrency model
 
+### SPEC_E04 — Concurrency Model Documentation [TBD]
+
 The system MUST define and document its concurrency model.
-This contract does **not** mandate a particular concurrency model.
+- Whether callbacks may execute concurrently.
+- Whether per-entity ordering is preserved.
+- Whether starvation is possible.
 
-Observable considerations:
-- Whether callbacks may execute concurrently
-- Whether per-entity ordering is preserved
-- Whether starvation is possible
+<details>
+<summary>Sources and notes</summary>
 
-Baseline expectations (informative, not normative):
-- Single-threaded execution → no concurrent callbacks
-- Multi-threaded execution → concurrency permitted; ordering best-effort
+**Sources**
+- Official: None
+- REP/RFC: None
+- Community: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Transparency requirement)
+
+**Notes**
+- This contract does **not** mandate a particular concurrency model (single vs multi-threaded), only that it is explicitly defined.
+- Baseline expectation: Multi-threaded execution permits concurrency; ordering is best-effort.
+
+</details>
 
 ---
 
 ## Callback isolation and failure handling
 
-Callback failures MUST NOT silently corrupt execution:
+### SPEC_E05 — Failure Isolation and Observability [S10]
 
+Callback failures MUST NOT silently corrupt execution.
 - Failure handling policy MUST be documented.
-- If a failure terminates execution, it MUST be explicit and observable
-  (e.g. via process exit, error logging, or lifecycle transition).
+- If a failure terminates execution, it MUST be explicit and observable (e.g. via process exit, error logging, or lifecycle transition).
 - Long-running callbacks MUST NOT permanently block shutdown.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None
+- REP/RFC: None
+- Community: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Safety requirement)
+
+</details>
 
 ---
 
 ## Lifecycle interaction
 
-Executor and lifecycle semantics MUST compose safely:
+### SPEC_E06 — Safe Lifecycle Composition [S11]
 
+Executor and lifecycle semantics MUST compose safely under load.
 - Lifecycle transitions MUST NOT require re-entrant spinning of the same executor.
 - Transition handling MUST NOT deadlock under executor load.
 - Busy rejection semantics MUST remain deterministic even under contention.
 
----
+<details>
+<summary>Sources and notes</summary>
 
-## Testing support (harness expectation)
+**Sources**
+- Official: None
+- REP/RFC: None
+- Community: Nav2 Ecosystem (lifecycle heavy usage)
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Deadlock prevention)
 
-Executor behaviour MUST be testable via harness:
-
-- bounded spin/step capability
-- deterministic shutdown
-- reproducible lifecycle + executor interaction
-
-Tooling and test validation is performed via oracle and harnesses,
-not asserted by this document alone.
+</details>
 
 ---
 
-## Provenance
+## Testing support
 
-### Upstream sources
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
+### SPEC_E07 — Testable Execution Interface [S14]
 
-### Implementation-defined (rclcpp)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
+Executor behaviour MUST be testable via harness.
+- Must support bounded spin/step capability.
+- Must support deterministic shutdown.
+- Must support reproducible lifecycle + executor interactions.
 
-### Ecosystem-defined (Nav2)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
+<details>
+<summary>Sources and notes</summary>
 
-### Project policy
-- Baseline executor operability requirements
+**Sources**
+- Official: None
+- REP/RFC: None
+- Community: None
+- BIC: [system_contract.md#baseline-interoperability-constraints](system_contract.md) (Harness requirement)
+
+**Notes**
+- Tooling and test validation is performed via oracle and harnesses, not asserted by this document alone.
+
+</details>

@@ -1,140 +1,184 @@
 # Actions — Core Semantic Contract
 
-Normative status note:
-This document may contain sections marked **UNVALIDATED (baseline hypothesis)**.
-Such sections describe expected baseline behaviour that is not yet enforced by oracle tests.
-They are not part of the normative contract until validated.
+**Normativity Class: Core Contract**
+
+This document defines the **normative, transport-agnostic semantic contract** for ROS 2 actions as enforced by a core semantics engine.
+It specifies goal lifecycle, state transitions, and ordering invariants independently of ROS services, executors, threading, or QoS.
+
+* **Authority:** Production Stack (Jazzy + rclcpp).
+* **Evidence:** Nav2 usage patterns provide high-leverage evidence for hidden ecosystem invariants.
+* **Status:** Until validated by traces, requirements marked UNVALIDATED remain hypotheses.
 
 ---
 
-This document defines the **normative, transport-agnostic semantic contract** for ROS 2
-actions as enforced by a core semantics engine.
+<details open>
+<summary><strong>Scope: What this contract covers</strong></summary>
 
-It specifies goal lifecycle, state transitions, and ordering invariants independently
-of ROS services, executors, threading, or QoS.
-
-Canonical global specification:
-- `docs/spec/action.md`
-
----
-
-## 1) Scope and non-goals
-
-This contract applies to:
 - goal identity and lifetime
 - state transitions and terminality
-- cancellation semantics
+- cancellation semantics (engine level)
 - ordering and visibility invariants
+</details>
 
-This contract explicitly excludes:
-- ROS action services and message types
+<details>
+<summary><strong>Scope: What this contract excludes</strong></summary>
+
+- ROS action services and wire protocol (see `docs/spec/global/action.md`)
 - executor behaviour and threading
 - lifecycle gating or orchestration
-- supersession policy
+- supersession policy (system level)
 - QoS configuration
+</details>
 
 ---
 
-## 2) Goal identity
+## Goal Identity
 
-- Each goal is uniquely identified.
-- Identity MUST remain stable for the lifetime of the goal.
-- Identity reuse after terminal resolution is forbidden.
+### SPEC_AC01 — Unique Goal Identity [S01]
 
----
+Each goal processed by the engine MUST be uniquely identified.
+- Two distinct goals MUST NOT share the same identifier (UUID) concurrently.
+- The engine MUST treat goals with distinct IDs as semantically independent entities.
 
-## 3) Goal states
+<details>
+<summary>Sources and notes</summary>
 
-Non-terminal states:
-- Accepted
-- Executing
-- Canceling
-- Unknown
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html)
+- REP/RFC: None
+- Community: None
 
-Terminal states:
-- Succeeded
-- Aborted
-- Canceled
+</details>
 
-Rules:
-- Terminal states are immutable.
-- A goal in a terminal state MUST NOT transition further.
-- `Unknown` is not a terminal state and MUST NOT be persisted for a known goal.
+### SPEC_AC02 — Identity Stability and No Reuse [A16]
 
----
+Goal identity MUST be immutable and non-reusable.
+- Identity MUST remain stable for the entire lifetime of the goal.
+- **Identity Reuse Forbidden:** Once a goal ID reaches a terminal state, that ID MUST NOT be reused for a new goal within the server's execution context.
 
-## 4) State transition validity
+<details>
+<summary>Sources and notes</summary>
 
-Permitted transitions include:
-- Accepted → Executing
-- Accepted → Succeeded
-- Accepted → Aborted
-- Accepted → Canceling
-- Accepted → Canceled
-- Executing → Succeeded
-- Executing → Aborted
-- Executing → Canceling
-- Canceling → Canceled
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html) (Implies uniqueness over time)
+- BIC: [system_contract.md#baseline-interoperability-constraints](../system/system_contract.md) (Safety requirement)
 
-Invalid transitions MUST be rejected deterministically.
+**Notes**
+- Reusing IDs destroys the ability for clients to correlate late results or status updates.
+
+</details>
 
 ---
 
-## 5) Ordering and visibility
+## Goal States and Terminality
 
-- Status updates MUST be monotonically ordered per goal
-  (strictly increasing sequence).
+### SPEC_AC03 — Terminal State Immutability [S01]
+
+Goals exist in **Non-terminal** (`Accepted`, `Executing`, `Canceling`) or **Terminal** (`Succeeded`, `Aborted`, `Canceled`) states.
+- Terminal states are **immutable**.
+- A goal in a terminal state MUST NOT transition to any other state.
+- `Unknown` is NOT a terminal state; it indicates absence of state.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html)
+
+**Notes**
+- The "Unknown" state exists for external observers but is not a valid internal state for an active goal.
+
+</details>
+
+---
+
+## State Transition Validity
+
+### SPEC_AC04 — Valid Transition Graph [S01]
+
+The core engine MUST enforce a strict state transition graph.
+- Invalid transitions MUST be rejected deterministically.
+
+**Permitted Transitions:**
+1.  **From Accepted:**
+    * → `Executing` (Normal start)
+    * → `Canceling` (Cancel requested before execution)
+    * → `Succeeded` / `Aborted` / `Canceled` (Fast termination)
+2.  **From Executing:**
+    * → `Canceling` (Cancel requested during execution)
+    * → `Succeeded` / `Aborted` (Normal termination)
+3.  **From Canceling:**
+    * → `Canceled` (Cancel accepted)
+    * → `Succeeded` / `Aborted` (Cancel ignored/race condition)
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html)
+
+**Notes**
+- Transitioning from `Canceling` to `Succeeded` is valid "Physics" (the core allows it), even if specific policies might discourage it.
+
+</details>
+
+---
+
+## Ordering Invariants
+
+### SPEC_AC05 — Monotonic Status Ordering [S01]
+
+Status updates exposed by the core MUST be monotonically ordered per goal.
+- The sequence of states observed for a single goal MUST strictly follow the transition graph.
 - Ordering MUST NOT depend on wall-clock time.
 - Identical transition sequences MUST produce identical observable orderings.
 
----
+<details>
+<summary>Sources and notes</summary>
 
-## 6) Cancellation semantics
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html)
+- REP/RFC: None
+- Community: None
 
-- Cancellation intent is explicit and observable.
-- Cancellation does not guarantee a specific terminal outcome.
-
-While in `Canceling`, resolution to any terminal state permitted by the active
-cancellation policy is allowed.
-
-The core validates that any terminal outcome is permitted by policy;
-it does **not** select the outcome.
+</details>
 
 ---
 
-## 7) Result visibility
+## Cancellation Semantics
 
-- A result is visible only after terminal resolution.
+### SPEC_AC06 — Cancellation Intent and Resolution [S01]
+
+Cancellation is a request, not a coerced outcome.
+- Cancellation intent MUST be explicit and observable (transition to `Canceling`).
+- Transitioning to `Canceling` does **not** guarantee a specific terminal outcome.
+- The core MUST allow resolution to *any* terminal state (`Succeeded`, `Aborted`, or `Canceled`) from the `Canceling` state, subject to policy.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html)
+
+**Notes**
+- The core validates that the transition is *possible*; the user code (Policy) decides which outcome occurs.
+
+</details>
+
+---
+
+## Result Visibility
+
+### SPEC_AC07 — Result Singularity and Consistency [S01]
+
 - A goal MUST have at most one terminal result.
-- Result visibility MUST be consistent with goal state.
+- A result is semantically valid only after terminal resolution.
+- Result visibility MUST be consistent with the goal state (e.g., a `Succeeded` goal cannot yield a "Canceled" result payload, though the payload content itself is user-defined).
 
----
+<details>
+<summary>Sources and notes</summary>
 
-## 8) Invariants (testable)
+**Sources**
+- Official: [ROS 2 Design: Actions](https://design.ros2.org/articles/actions.html)
 
-The core MUST enforce:
-- Unique goal identity
-- Valid state transitions only
-- Terminal state immutability
-- Deterministic ordering
-- Policy-constrained terminal resolution
-- No persistence of `Unknown` for known goals
-
----
-
-## Provenance
-
-### Upstream sources
-- [Design Article: Actions](https://design.ros2.org/articles/actions.html)
-- [ROS 2 Docs: About Actions](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Actions.html)
-- [ROS 2 Docs: Writing an Action Server (C++)](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Writing-an-Action-Server-Client/Cpp.html)
-- [ROS 2 Docs: Understanding Actions](https://docs.ros.org/en/jazzy/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Actions/Understanding-ROS2-Actions.html)
-
-### Implementation-defined (rclcpp)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
-
-### Ecosystem-defined (Nav2)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
-
-### Project policy
-- None
+</details>

@@ -1,128 +1,145 @@
 # Lifecycle — Core Semantic Contract
 
-Normative status note:
-This document may contain sections marked **UNVALIDATED (baseline hypothesis)**.
-Such sections describe expected baseline behaviour that is not yet enforced by oracle tests.
-They are not part of the normative contract until validated.
+**Normativity Class: Core Contract**
+
+This document defines the **normative, transport-agnostic semantic contract** for the ROS 2 managed node lifecycle as enforced by a core semantics engine.
+It specifies lifecycle state truth, transition validity, and failure semantics independently of ROS services, executors, or tooling.
+
+* **Authority:** Production Stack (Jazzy + rclcpp).
+* **Evidence:** Nav2 usage patterns provide high-leverage evidence for hidden ecosystem invariants.
+* **Status:** Until validated by traces, requirements marked UNVALIDATED remain hypotheses.
 
 ---
 
-This document defines the **normative, transport-agnostic semantic contract** for the ROS 2
-managed node lifecycle as enforced by a core semantics engine.
+<details open>
+<summary><strong>Scope: What this contract covers</strong></summary>
 
-It specifies lifecycle state truth, transition validity, and failure semantics independently
-of ROS services, executors, or tooling.
-
-Canonical global specification:
-- `docs/spec/lifecycle.md`
-
----
-
-## 1) Scope and non-goals
-
-This contract applies to:
 - lifecycle state machines
 - transition validity
 - deterministic state resolution
 - error routing
+</details>
 
-This contract explicitly excludes:
-- ROS lifecycle services and message types
+<details>
+<summary><strong>Scope: What this contract excludes</strong></summary>
+
+- ROS lifecycle services and wire protocol (see `docs/spec/global/lifecycle.md`)
 - executor scheduling or threading
 - timing guarantees
 - tooling behaviour
 - publication, subscription, or action gating
+</details>
 
 ---
 
-## 2) Canonical lifecycle state model
+## Canonical Lifecycle State Model
 
-Primary states:
-- Unconfigured
-- Inactive
-- Active
-- Finalized
+### SPEC_LC01 — Primary and Auxiliary States [S12]
 
-Auxiliary states:
-- Configuring
-- Activating
-- Deactivating
-- CleaningUp
-- ShuttingDown
-- ErrorProcessing
+The core engine MUST enforce a state model consisting of **Primary States** (stable) and **Auxiliary States** (transient).
 
-Auxiliary states are **internal semantic states** used to resolve transitions.
+**Primary States (Stable):**
+- `Unconfigured`
+- `Inactive`
+- `Active`
+- `Finalized`
+
+**Auxiliary States (Internal/Transient):**
+- `Configuring`
+- `Activating`
+- `Deactivating`
+- `CleaningUp`
+- `ShuttingDown`
+- `ErrorProcessing`
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Design: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+
+**Notes**
+- Auxiliary states are **internal semantic states** used to resolve transitions. They are not valid stable states.
+
+</details>
 
 ---
 
-## 3) Transition validity
+## Transition Validity
 
+### SPEC_LC02 — Strict Transition Graph [S12]
+
+The core engine MUST enforce a strict transition graph.
 - Only defined transitions between primary states are permitted.
-- Invalid transitions MUST be rejected deterministically.
-- Rejection is a semantic outcome, not a transport error.
+- Invalid transitions MUST be rejected deterministically by the engine.
+- Rejection is a semantic outcome (invalid request), not a transport error.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Design: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+
+</details>
 
 ---
 
-## 4) Transition execution semantics
+## Transition Execution Semantics
 
-### Intermediate-state correctness
+### SPEC_LC03 — Intermediate State Atomicity [S12]
 
-When a transition is accepted, the core MUST enter the corresponding
-transition state internally (**not externally observable**) until it resolves
-to a primary state or ErrorProcessing.
+When a transition is accepted, the core MUST enter the corresponding transition state internally.
+- Intermediate states MUST NOT be externally exposed as **stable** lifecycle states.
+- The engine MUST NOT accept new transitions while in an intermediate state (atomicity).
 
-Intermediate states MUST NOT be externally observable as stable lifecycle states.
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Design: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+
+</details>
 
 ---
 
-## 5) Busy and concurrent transitions
+## Concurrency
 
-- A lifecycle node MUST process at most one transition at a time.
-- Concurrent transition requests MUST be rejected deterministically.
+### SPEC_LC04 — Single Active Transition [S12]
+
+A lifecycle node MUST process at most one transition at a time.
+- Concurrent transition requests MUST be rejected deterministically (Busy).
 - Rejection MUST NOT partially apply any transition effects.
 
----
+<details>
+<summary>Sources and notes</summary>
 
-## 6) ErrorProcessing semantics
+**Sources**
+- Official: [ROS 2 Design: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
 
-If an error occurs during a transition:
-- The node MUST enter ErrorProcessing.
-- ErrorProcessing MUST resolve deterministically to a primary state.
-
-> ⚠️ **UNVALIDATED (baseline hypothesis)**
->
-> Baseline expectation (Jazzy+rclcpp):
-> - on_error returning SUCCESS resolves to Unconfigured
-> - on_error returning FAILURE or ERROR resolves to Finalized
->
-> This mapping is not normative until validated by the oracle harness.
-> Once validated, it becomes normative for the baseline profile only.
+</details>
 
 ---
 
-## 7) Invariants (testable)
+## ErrorProcessing Semantics
 
-The core MUST enforce:
-- Single active transition at a time
-- Deterministic acceptance or rejection of transitions
-- No partial transition effects
-- Deterministic resolution from ErrorProcessing
-- No externally observable intermediate states
+### SPEC_LC05 — Deterministic Error Resolution [S12]
 
----
+If an error occurs during a transition callback (`on_configure`, `on_activate`, etc.):
+- The node MUST enter `ErrorProcessing`.
+- `ErrorProcessing` MUST resolve deterministically to a primary state (`Unconfigured` or `Finalized`).
 
-## Provenance
+**Baseline Resolution Logic (UNVALIDATED):**
+- `on_error` returning `SUCCESS` → Resolves to `Unconfigured`.
+- `on_error` returning `FAILURE` or `ERROR` → Resolves to `Finalized`.
 
-### Upstream sources
-- [Design Article: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
-- [ROS 2 Docs: Lifecycle Package](https://docs.ros.org/en/jazzy/p/lifecycle/)
+<details>
+<summary>Sources and notes</summary>
 
-### Implementation-defined (rclcpp)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
+**Sources**
+- Official: [ROS 2 Design: Node Lifecycle](https://design.ros2.org/articles/node_lifecycle.html)
+- Baseline: Jazzy+rclcpp observed behavior
 
-### Ecosystem-defined (Nav2)
-- [Nav2 Docs: Configuring Lifecycle](https://docs.nav2.org/configuration/packages/configuring-lifecycle.html)
-- [Nav2 Docs: Concepts](https://navigation.ros.org/concepts/index.html)
+**Notes**
+- This mapping is not normative until validated by the oracle harness. Once validated, it becomes normative for the baseline profile.
 
-### Project policy
-- None
+</details>

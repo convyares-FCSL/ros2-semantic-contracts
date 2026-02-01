@@ -1,166 +1,175 @@
 # Parameters — Core Semantic Contract
 
-Normative status note:
-This document may contain sections marked **UNVALIDATED (baseline hypothesis)**.
-Such sections describe expected baseline behaviour that is not yet enforced by oracle tests.
-They are not part of the normative contract until validated.
+**Normativity Class: Core Contract**
+
+This document defines the **normative, transport-agnostic semantic contract** for parameters as enforced by a core semantics engine.
+It specifies parameter truth, visibility, decision semantics, and ordering guarantees independently of any ROS transport, executor, or client library.
+
+* **Authority:** Production Stack (Jazzy + rclcpp).
+* **Evidence:** Nav2 usage patterns provide high-leverage evidence for hidden ecosystem invariants.
+* **Status:** Until validated by traces, requirements marked UNVALIDATED remain hypotheses.
 
 ---
 
-This document defines the **normative, transport-agnostic semantic contract** for parameters as enforced by a
-core semantics engine.
+<details open>
+<summary><strong>Scope: What this contract covers</strong></summary>
 
-It specifies parameter truth, visibility, decision semantics, and ordering guarantees independently of any ROS
-transport, executor, or client library.
-
-It does **not** define ROS graph wiring, ROS parameter services, message types, or event transport.
-
-Canonical global specification:
-- `docs/spec/parameters.md`
-
----
-
-## 1) Scope and non-goals
-
-This contract applies to a core parameter semantics engine and its logical API surface, including:
-- a parameter store
-- value types
-- descriptors
-- set/list/describe outcomes
+- parameter store state model
+- value types and descriptor enforcement
+- set/list/describe decision logic (outcomes)
 - logical change records
+</details>
 
-This contract explicitly excludes:
-- ROS parameter services and message types
+<details>
+<summary><strong>Scope: What this contract excludes</strong></summary>
+
+- ROS parameter services and wire protocol (see `docs/spec/global/parameters.md`)
 - topic publication and QoS
-- executors, threading, or scheduling
+- executor scheduling or threading
 - lifecycle state gating
-- wall-clock time or timestamps
-
-Adapters are responsible for exposing ROS-facing behaviour using these semantics.
+</details>
 
 ---
 
-## 2) Core state model
+## Core State Model
 
-### Parameter identity
-- Parameters are identified by UTF-8 string names.
-- Names are case-sensitive and treated opaquely by the core.
+### SPEC_PC01 — Identity and Case Sensitivity [S01]
 
-### Parameter existence
-A parameter may be in one of three semantic states:
-- **Declared** — exists with defined type and descriptor
-- **Undeclared but allowed** — exists implicitly if undeclared parameters are permitted
-- **Unknown** — not declared and not implicitly allowed
+Parameters are identified by UTF-8 string names.
+- Names are **case-sensitive** and treated opaquely by the core.
+- The core MUST NOT fabricate parameters that have not been explicitly set or declared.
 
-Unknown parameters MUST NOT be fabricated.
+<details>
+<summary>Sources and notes</summary>
 
----
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
 
-## 3) Values and typing
+</details>
 
-Supported value set:
-- NOT_SET, BOOL, INTEGER, DOUBLE, STRING,
-  BYTE_ARRAY, BOOL_ARRAY, INTEGER_ARRAY, DOUBLE_ARRAY, STRING_ARRAY
+### SPEC_PC02 — Existence States [S01]
 
-Typing rules:
-- If `dynamic_typing = false`, the value type MUST NOT change after declaration.
-- If `dynamic_typing = true`, the value type MAY change on set.
-- Setting a value with an incompatible type MUST fail deterministically.
+A parameter exists in exactly one of three semantic states:
+1.  **Declared:** Exists with a defined type and descriptor.
+2.  **Undeclared but Allowed:** Exists implicitly (only if `allow_undeclared` is true).
+3.  **Unknown:** Not declared and not implicitly allowed.
 
----
+<details>
+<summary>Sources and notes</summary>
 
-## 4) Decision envelopes (outcomes, not errors)
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
 
-Parameter operations return **outcomes**, not exceptions.
-Exceptional failures are reserved for invariant violations or API misuse.
+**Notes**
+- Unknown parameters MUST NOT appear in list results unless explicitly requested (e.g. via recursive list).
 
-### 4.1) Declaration
-- Declaring an already-declared parameter MUST fail deterministically.
-- Declaration establishes initial value and descriptor.
-- Declaration order MUST be preserved in change records.
-
-### 4.2) Setting parameters
-- Each set attempt yields an outcome: success or failure, with optional reason.
-- Failed operations MUST NOT partially apply.
-- Atomic operations MUST apply all changes or none.
-
-Read-only enforcement:
-- If `read_only = true`, any attempt to change the parameter MUST fail.
-
-### 4.3) Unknown parameters
-- If undeclared parameters are not allowed, set attempts MUST fail deterministically.
-- If undeclared parameters are allowed, parameters become implicitly declared with inferred type.
-- Unknown parameters MUST NOT appear in results unless explicitly requested.
+</details>
 
 ---
 
-## 5) Change record and ordering model
+## Values and Typing
 
-> ⚠️ **UNVALIDATED (baseline hypothesis)**
->
-> The following rules are expected based on inspection of baseline implementation
-> and ecosystem usage, but have not yet been verified by an oracle harness
-> against the Jazzy+rclcpp+Nav2 baseline.
->
-> These rules are not normative until validated.
+### SPEC_PC03 — Type Enforcement [S01]
 
-The core emits logical **change records** describing parameter modifications.
+The core MUST enforce type safety based on the parameter's descriptor.
+- **Static Typing (`dynamic_typing=false`):** The value type MUST NOT change after declaration. Setting an incompatible type MUST fail.
+- **Dynamic Typing (`dynamic_typing=true`):** The value type MAY change on set.
+- Supported types: `NOT_SET`, `BOOL`, `INTEGER`, `DOUBLE`, `STRING`, `BYTE_ARRAY`, and their array variants.
 
-Hypothesised rules:
-- Each operation produces exactly one change record.
-- Records may include:
-  - newly created parameters
-  - changed parameters
-  - deleted parameters (if supported)
-- Ordering within a record reflects application order.
+<details>
+<summary>Sources and notes</summary>
 
-Determinism:
-- Ordering MUST NOT depend on wall-clock time.
-- Identical operation sequences MUST produce identical records.
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
 
-Deletion note:
-Deletion support is not part of the core contract unless explicitly validated.
-Deletion records are included only if deletion is supported by the baseline.
+</details>
 
 ---
 
-## 6) Invariants (testable)
+## Decision Logic (Outcomes)
 
-The core MUST enforce:
-- No fabricated parameters
-- Deterministic failure for invalid operations
-- Atomicity of atomic updates
-- Read-only enforcement
-- Dynamic typing rules
-- Deterministic change ordering
-- No side effects on failure
+### SPEC_PC04 — Declaration Logic [S01]
+
+Declaration establishes the initial value and descriptor.
+- Declaring an already-declared parameter MUST fail deterministically (outcome: `AlreadyDeclared`).
+- Declaration order MUST be preserved in change records to ensure deterministic reconstruction of state.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+
+</details>
+
+### SPEC_PC05 — Set Operation Atomicity [S01]
+
+Set operations are atomic transactions.
+- A set attempt yields a deterministic outcome: `Successful` or `Failed` (with reason).
+- **Atomicity:** Failed operations MUST NOT partially apply. All changes in a request MUST be applied, or none.
+- **Read-Only:** If `read_only=true` in the descriptor, any attempt to change the value MUST fail.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+
+</details>
+
+### SPEC_PC06 — Undeclared Access Logic [P16]
+
+Access to undeclared parameters depends on the node's configuration.
+- If `allow_undeclared_parameters` is **false**: Set attempts for unknown parameters MUST fail deterministically.
+- If `allow_undeclared_parameters` is **true**: Unknown parameters become implicitly declared upon setting (type inferred from value).
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+- Baseline: Jazzy+rclcpp default behavior
+
+</details>
 
 ---
 
-## 7) Traceability map
+## Change Record Model
 
-| Global spec heading (`docs/spec/parameters.md`) | Core clause(s) |
-| --- | --- |
-| Parameter declaration | 2, 4.1 |
-| Parameter typing | 3, 6 |
-| Set parameters | 4.2, 6 |
-| Atomic updates | 4.2, 6 |
-| Unknown parameters | 4.3, 6 |
-| Parameter events | 5 |
+### SPEC_PC07 — Deterministic Change Records [S01]
 
----
+⚠️ **UNVALIDATED (baseline hypothesis)**
 
-## Provenance
+The core emits logical **change records** describing modifications.
+- Each operation MUST produce exactly one change record (containing one or more parameter changes).
+- Ordering within a record MUST reflect the application order.
+- **Determinism:** Identical operation sequences MUST produce identical records, independent of wall-clock time.
 
-### Upstream sources
-- [ROS 2 Docs: About Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic-Concepts/About-Parameters.html)
+<details>
+<summary>Sources and notes</summary>
 
-### Implementation-defined (rclcpp)
-- [ROS 2 Guides: Using callback groups](https://docs.ros.org/en/jazzy/How-To-Guides/Using-callback-groups.html)
-- [rclcpp Source: node_parameters.cpp](https://github.com/ros2/rclcpp/blob/jazzy/rclcpp/src/rclcpp/node_interfaces/node_parameters.cpp)
+**Sources**
+- Official: None (upstream silent on event cardinality)
+- Baseline: Jazzy+rclcpp implementation
 
-### Ecosystem-defined (Nav2)
-- TBD: needs oracle validation (see docs/provenance/oracle_plan.md)
+**Notes**
+- "Change Record" maps to the `ParameterEvent` message in the global scope, but at the core level, it is a logical struct.
 
-### Project policy
-- None
+</details>
+
+### SPEC_PC08 — Deletion Support [S01]
+
+⚠️ **UNVALIDATED (baseline hypothesis)**
+
+Deletion support is optional but must be deterministic if present.
+- If supported, deletion of a parameter MUST generate a change record indicating removal.
+- Deletion of an `Unknown` parameter MUST fail or be a no-op (depending on implementation), but MUST NOT corrupt state.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None
+- Baseline: Jazzy+rclcpp
+
+</details>
