@@ -82,6 +82,7 @@ fn run(args: Args) -> Result<(), BackendError> {
                 "actions.basic",
                 "actions.terminal",
                 "ros.params.set",
+                "ros.params.set_batch",
                 "ros.params.describe",
                 "ros.params.declare"
             ],
@@ -124,6 +125,12 @@ fn run(args: Args) -> Result<(), BackendError> {
         )
         .map_err(|e| BackendError::system(e).context("create describe_parameters client"))?;
 
+    let set_param_atomically_client = node
+        .create_client::<rclrs::vendor::rcl_interfaces::srv::SetParametersAtomically>(
+            "/oracle_backend_ros/set_parameters_atomically",
+        )
+        .map_err(|e| BackendError::system(e).context("create set_parameters_atomically client"))?;
+
     for (scenario_id, scenario) in &bundle.scenarios {
         run_scenario(
             &mut w,
@@ -131,6 +138,7 @@ fn run(args: Args) -> Result<(), BackendError> {
             scenario,
             &set_param_client,
             &describe_param_client,
+            &set_param_atomically_client,
         )?;
     }
 
