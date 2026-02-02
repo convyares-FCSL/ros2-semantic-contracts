@@ -1,0 +1,62 @@
+{
+    "version": "0.1",
+    "group": "S",
+    "description": "Probe: S11 lifecycle-executor safety test",
+    "scenarios": {
+        "S11_lifecycle_executor_safety": {
+            "spec_id": "S11",
+            "title": "Lifecycle-Executor safety",
+            "layer": "System",
+            "notes": "Probe scenario: lifecycle transitions must not deadlock executor. get_state must remain responsive during blocking transitions. Tests SPEC_E06 safe composition.",
+            "ops": [
+                {
+                    "op": "init_lifecycle_node"
+                },
+                {
+                    "op": "change_state_async",
+                    "payload": {
+                        "goal_state": "configured",
+                        "delay_ms": 500
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 50
+                },
+                {
+                    "op": "get_state",
+                    "payload": {
+                        "deadline_ms": 200
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "transition_start",
+                                "goal": "configured"
+                            },
+                            {
+                                "type": "get_state_request"
+                            },
+                            {
+                                "type": "get_state_response",
+                                "state": "configuring"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "check": "latency",
+                    "params": {
+                        "op_type": "get_state",
+                        "max_latency_ms": 200
+                    }
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,57 @@
+{
+    "version": "0.1",
+    "group": "L",
+    "description": "Probe: L05 concurrent transition rejection test",
+    "scenarios": {
+        "L05_concurrent_transition_rejected": {
+            "spec_id": "L05",
+            "title": "Concurrent transition rejected",
+            "layer": "Core",
+            "notes": "Probe scenario: overlapping lifecycle transitions must be rejected with BUSY/ERROR. Tests SPEC_LC04 concurrency invariant.",
+            "ops": [
+                {
+                    "op": "init_lifecycle_node"
+                },
+                {
+                    "op": "change_state_async",
+                    "payload": {
+                        "goal_state": "configured",
+                        "delay_ms": 200
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                },
+                {
+                    "op": "change_state",
+                    "payload": {
+                        "goal_state": "inactive"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "transition_start",
+                                "goal": "configured"
+                            },
+                            {
+                                "type": "transition_request",
+                                "goal": "inactive"
+                            },
+                            {
+                                "type": "transition_response",
+                                "goal": "inactive",
+                                "successful": false
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}

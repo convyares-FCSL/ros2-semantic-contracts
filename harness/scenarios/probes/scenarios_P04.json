@@ -1,0 +1,60 @@
+{
+    "version": "0.1",
+    "group": "P",
+    "description": "Probe: P04 no partial application (atomic batch parameter updates)",
+    "scenarios": {
+        "P04_no_partial_application": {
+            "spec_id": "P04",
+            "title": "No partial application",
+            "layer": "Core",
+            "requires": [
+                "ros.params.set_batch",
+                "ros.params.declare"
+            ],
+            "notes": "Batch parameter updates with one invalid must reject entirely (atomic).",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "valid_param"
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "valid_param",
+                                "value": "foo",
+                                "type": "string"
+                            },
+                            {
+                                "name": "undeclared_param",
+                                "value": "bar",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "param_declare_response",
+                                "name": "valid_param",
+                                "successful": true
+                            },
+                            {
+                                "type": "param_set_batch_response",
+                                "all_successful": false
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}
