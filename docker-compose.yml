@@ -11,8 +11,8 @@ services:
       - CARGO_TERM_COLOR=never
     volumes:
       - ./evidence:/evidence
-      - ./.docker-cache/cargo-registry:/root/.cargo/registry
-      - ./.docker-cache/cargo-git:/root/.cargo/git
-      - ./.docker-cache/target-core:/work/harness/core/target
-      - ./.docker-cache/target-stub:/work/harness/backends/backend_stub/target
+      - ./.docker-cache/${ROS_DISTRO:-jazzy}/cargo-registry:/root/.cargo/registry
+      - ./.docker-cache/${ROS_DISTRO:-jazzy}/cargo-git:/root/.cargo/git
+      - ./.docker-cache/${ROS_DISTRO:-jazzy}/target-core:/work/harness/core/target
+      - ./.docker-cache/${ROS_DISTRO:-jazzy}/target-stub:/work/harness/backends/backend_stub/target
     command: bash -lc "cd harness && ./scripts/run_harness.sh ${SCENARIO_BUNDLE:-scenarios/scenarios_H.json} ${TRACE:-/evidence/trace.jsonl} ${REPORT:-/evidence/report.json}"
