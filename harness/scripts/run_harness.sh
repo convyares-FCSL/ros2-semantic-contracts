@@ -57,9 +57,14 @@ case "${ORACLE_BACKEND}" in
     BACKEND_DIR="${ROOT}/harness/backends/backend_ros"
     BACKEND_BIN="${BACKEND_DIR}/target/release/backend_ros"
     ;;
+  prod)
+    BACKEND_DIR="${ROOT}/harness/backends/backend_prod"
+    # Assumes colcon build from root output
+    BACKEND_BIN="${ROOT}/install/backend_prod/lib/backend_prod/backend_prod"
+    ;;
   *)
     echo "ERROR: Unknown ORACLE_BACKEND='${ORACLE_BACKEND}'"
-    echo "Supported: stub, ros"
+    echo "Supported: stub, ros, prod"
     exit 2
     ;;
 esac
@@ -98,7 +103,13 @@ echo
 # ---- Build ----
 
 echo "== Build backend =="
-( cd "${BACKEND_DIR}" && cargo build --release )
+if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
+    # Build using colcon from root
+    # Ensure setup.bash is sourced by the caller or docker env
+    ( cd "${ROOT}" && colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release )
+else
+    ( cd "${BACKEND_DIR}" && cargo build --release )
+fi
 echo
 
 echo "== Build core =="
