@@ -1,7 +1,7 @@
 /// @file actions.cpp
 /// @brief Action-specific operations (send_goal, etc.).
 #include "../backend.hpp"
-#include <stdexcept>
+#include "internal/errors.hpp"
 
 namespace backend_prod::ops {
 
@@ -9,12 +9,12 @@ namespace backend_prod::ops {
 /// Decision driven by payload.mode (accept|reject).
 void exec_send_goal(TraceWriter& w, const std::string& scenario_id, const Op& op) {
     if (!op.goal_id) {
-        throw std::runtime_error("send_goal: missing goal_id");
+        throw BundleError("send_goal: missing goal_id");
     }
     const std::string& goal_id = *op.goal_id;
 
     if (!op.payload || !op.payload->contains("mode")) {
-        throw std::runtime_error("send_goal: missing payload.mode");
+        throw BundleError("send_goal: missing payload.mode");
     }
     std::string mode = (*op.payload)["mode"].get<std::string>();
 
