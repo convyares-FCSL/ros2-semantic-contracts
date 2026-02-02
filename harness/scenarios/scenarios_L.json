@@ -11,13 +11,16 @@
             "expects": [],
             "notes": "Populate ops/observations to validate this clause (Layer=Core)."
         },
-        "L02_invalid_transitions_rejected": {
+        "L02_primary_state_visibility": {
             "spec_id": "L02",
-            "title": "Invalid transitions rejected",
+            "title": "Primary State Visibility",
             "layer": "Core",
+            "requires": [
+                "ros.lifecycle"
+            ],
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Primary state visibility requires lifecycle support. backend_ros does not support this, so SKIP."
         },
         "L03_intermediate_states_hidden": {
             "spec_id": "L03",

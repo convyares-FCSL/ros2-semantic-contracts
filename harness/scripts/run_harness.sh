@@ -11,6 +11,8 @@ set -euo pipefail
 # Usage:
 #   ./scripts/run_harness.sh [scenario_bundle.json] [trace.jsonl] [report.json]
 #
+#   If no scenario_bundle is provided, runs sequence: H, S, P, L, A.
+#
 # Backend selection:
 #   ./scripts/run_harness.sh                      # defaults to ORACLE_BACKEND=ros
 #   ORACLE_BACKEND=stub ./scripts/run_harness.sh
@@ -20,9 +22,21 @@ set -euo pipefail
 # Resolve repo root: two levels up from harness/scripts
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-SCENARIOS="${1:-${ROOT}/harness/scenarios/scenarios_H.json}"
 TRACE="${2:-/tmp/oracle_trace.jsonl}"
 REPORT="${3:-/tmp/oracle_report.json}"
+
+# Determine target bundles
+TARGETS=()
+if [[ $# -eq 0 ]]; then
+    # Default order: H, S, P, L, A
+    TARGETS+=("${ROOT}/harness/scenarios/scenarios_H.json")
+    TARGETS+=("${ROOT}/harness/scenarios/scenarios_S.json")
+    TARGETS+=("${ROOT}/harness/scenarios/scenarios_P.json")
+    TARGETS+=("${ROOT}/harness/scenarios/scenarios_L.json")
+    TARGETS+=("${ROOT}/harness/scenarios/scenarios_A.json")
+else
+    TARGETS+=("${1}")
+fi
 
 # Default is now ros
 ORACLE_BACKEND="${ORACLE_BACKEND:-ros}"
@@ -52,10 +66,12 @@ esac
 
 # ---- Preflight ----
 
-if [[ ! -f "${SCENARIOS}" ]]; then
-  echo "ERROR: Scenario bundle not found: ${SCENARIOS}"
-  exit 2
-fi
+for BUNDLE in "${TARGETS[@]}"; do
+    if [[ ! -f "${BUNDLE}" ]]; then
+      echo "ERROR: Scenario bundle not found: ${BUNDLE}"
+      exit 2
+    fi
+done
 
 if [[ ! -d "${CORE_DIR}" ]]; then
   echo "ERROR: Core directory not found: ${CORE_DIR}"
@@ -69,7 +85,11 @@ fi
 
 echo "== Oracle Harness =="
 echo "ROOT:      ${ROOT}"
-echo "SCENARIOS: ${SCENARIOS}"
+if [[ $# -eq 0 ]]; then
+    echo "SCENARIOS: [Default Sequence: H, S, P, L, A]"
+else
+    echo "SCENARIOS: ${TARGETS[0]}"
+fi
 echo "TRACE:     ${TRACE}"
 echo "REPORT:    ${REPORT}"
 echo "BACKEND:   ${ORACLE_BACKEND}"
@@ -92,11 +112,21 @@ echo
 
 # ---- Run ----
 
-echo "== Run core (invokes backend) =="
-"${CORE_BIN}" "${SCENARIOS}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}"
-RC=$?
+FAILED=0
 
-echo
+for BUNDLE in "${TARGETS[@]}"; do
+    NAME=$(basename "${BUNDLE}")
+    echo "== Run core for ${NAME} =="
+    "${CORE_BIN}" "${BUNDLE}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}" || FAILED=1
+    echo
+done
+
 echo "Trace:  ${TRACE}"
 echo "Report: ${REPORT}"
-exit "${RC}"
+
+if [[ ${FAILED} -ne 0 ]]; then
+    echo "FAILURE: One or more bundles failed."
+    exit 1
+fi
+
+exit 0
