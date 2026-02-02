@@ -64,7 +64,7 @@ case "${ORACLE_BACKEND}" in
     ;;
   rclpy)
     BACKEND_DIR="${ROOT}/harness/backends/backend_rclpy"
-    BACKEND_BIN="python3 ${BACKEND_DIR}/backend_rclpy.py"
+    BACKEND_BIN="${BACKEND_DIR}/backend_rclpy"
     ;;
   *)
     echo "ERROR: Unknown ORACLE_BACKEND='${ORACLE_BACKEND}'"

@@ -22,7 +22,7 @@ class LifecycleOps:
         "configured": Transition.TRANSITION_CONFIGURE,
         "inactive": Transition.TRANSITION_CLEANUP,
         "active": Transition.TRANSITION_ACTIVATE,
-        "finalized": Transition.TRANSITION_SHUTDOWN
+        "finalized": Transition.TRANSITION_INACTIVE_SHUTDOWN  # Placeholder, trigger_shutdown handles any source state
     }
     
     def __init__(self, node, trace, scenario_id):
