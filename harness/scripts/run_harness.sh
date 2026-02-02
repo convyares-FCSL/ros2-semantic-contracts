@@ -62,9 +62,13 @@ case "${ORACLE_BACKEND}" in
     # Assumes colcon build from root output
     BACKEND_BIN="${ROOT}/install/backend_prod/lib/backend_prod/backend_prod"
     ;;
+  rclpy)
+    BACKEND_DIR="${ROOT}/harness/backends/backend_rclpy"
+    BACKEND_BIN="python3 ${BACKEND_DIR}/backend_rclpy.py"
+    ;;
   *)
     echo "ERROR: Unknown ORACLE_BACKEND='${ORACLE_BACKEND}'"
-    echo "Supported: stub, ros, prod"
+    echo "Supported: stub, ros, prod, rclpy"
     exit 2
     ;;
 esac
@@ -107,6 +111,8 @@ if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
     # Build using colcon from root
     # Ensure setup.bash is sourced by the caller or docker env
     ( cd "${ROOT}" && colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release )
+elif [[ "${ORACLE_BACKEND}" == "rclpy" ]]; then
+    echo "Skipping build (Python backend)"
 else
     ( cd "${BACKEND_DIR}" && cargo build --release )
 fi
@@ -118,7 +124,12 @@ echo
 
 # ---- Verify binaries ----
 
-[[ -x "${BACKEND_BIN}" ]] || { echo "ERROR: backend binary missing: ${BACKEND_BIN}"; exit 2; }
+if [[ "${ORACLE_BACKEND}" == "rclpy" ]]; then
+    # For Python backend, just check file exists
+    [[ -f "${ROOT}/harness/backends/backend_rclpy/backend_rclpy.py" ]] || { echo "ERROR: backend script missing"; exit 2; }
+else
+    [[ -x "${BACKEND_BIN}" ]] || { echo "ERROR: backend binary missing: ${BACKEND_BIN}"; exit 2; }
+fi
 [[ -x "${CORE_BIN}" ]] || { echo "ERROR: core binary missing: ${CORE_BIN}"; exit 2; }
 
 # ---- Run ----
