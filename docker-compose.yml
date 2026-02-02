@@ -3,8 +3,10 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.harness
+      args:
+        - ROS_DISTRO=${ROS_DISTRO:-jazzy}
     environment:
-      - ORACLE_BACKEND=prod
+      - ORACLE_BACKEND=${ORACLE_BACKEND:-prod}
       - CARGO_TERM_PROGRESS_WHEN=never
       - CARGO_TERM_COLOR=never
     volumes:
@@ -13,4 +15,4 @@ services:
       - ./.docker-cache/cargo-git:/root/.cargo/git
       - ./.docker-cache/target-core:/work/harness/core/target
       - ./.docker-cache/target-stub:/work/harness/backends/backend_stub/target
-    command: bash -lc "cd harness && ./scripts/run_harness.sh scenarios/scenarios_H.json /evidence/trace.jsonl /evidence/report.json"
+    command: bash -lc "cd harness && ./scripts/run_harness.sh ${SCENARIO_BUNDLE:-scenarios/scenarios_H.json} ${TRACE:-/evidence/trace.jsonl} ${REPORT:-/evidence/report.json}"
