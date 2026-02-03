@@ -19,21 +19,11 @@ set -euo pipefail
 #   ORACLE_BACKEND=ros  ./scripts/run_harness.sh
 # -----------------------------------------------------------------------------
 
+# Resolve repo root: two levels up from harness/scripts
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Detect if user provided explicit paths
-USER_PROVIDED_TRACE=0
-USER_PROVIDED_REPORT=0
-if [[ $# -ge 2 ]]; then
-    USER_PROVIDED_TRACE=1
-fi
-if [[ $# -ge 3 ]]; then
-    USER_PROVIDED_REPORT=1
-fi
-
-# Default base paths (will be per-bundle in default mode)
-TRACE_BASE="${2:-/tmp/oracle_trace.jsonl}"
-REPORT_BASE="${3:-/tmp/oracle_report.json}"
+TRACE="${2:-/tmp/oracle_trace.jsonl}"
+REPORT="${3:-/tmp/oracle_report.json}"
 
 # Determine target bundles
 TARGETS=()
@@ -102,12 +92,11 @@ echo "== Oracle Harness =="
 echo "ROOT:      ${ROOT}"
 if [[ $# -eq 0 ]]; then
     echo "SCENARIOS: [Default Sequence: H, S, P, L, A]"
-    echo "MODE:      Per-bundle evidence"
 else
     echo "SCENARIOS: ${TARGETS[0]}"
-    echo "TRACE:     ${TRACE_BASE}"
-    echo "REPORT:    ${REPORT_BASE}"
 fi
+echo "TRACE:     ${TRACE}"
+echo "REPORT:    ${REPORT}"
 echo "BACKEND:   ${ORACLE_BACKEND}"
 echo
 
@@ -135,88 +124,16 @@ echo
 # ---- Run ----
 
 FAILED=0
-EXPECTED_EVIDENCE=()
 
 for BUNDLE in "${TARGETS[@]}"; do
     NAME=$(basename "${BUNDLE}")
-    
-    # Determine per-bundle paths
-    if [[ $# -eq 0 ]]; then
-        # Default mode: per-bundle evidence
-        BUNDLE_STEM="${NAME%.json}"  # e.g., scenarios_H
-        TRACE_DIR=$(dirname "${TRACE_BASE}")
-        REPORT_DIR=$(dirname "${REPORT_BASE}")
-        
-        # Ensure directories exist
-        mkdir -p "${TRACE_DIR}" "${REPORT_DIR}"
-        
-        TRACE="${TRACE_DIR}/trace_${BUNDLE_STEM}.jsonl"
-        REPORT="${REPORT_DIR}/report_${BUNDLE_STEM}.json"
-        
-        EXPECTED_EVIDENCE+=("${TRACE}")
-        EXPECTED_EVIDENCE+=("${REPORT}")
-        
-        echo "== Run core for ${NAME} =="
-        echo "   TRACE:  ${TRACE}"
-        echo "   REPORT: ${REPORT}"
-    else
-        # User-provided mode: use explicit paths
-        TRACE="${TRACE_BASE}"
-        REPORT="${REPORT_BASE}"
-        
-        # Ensure directories exist
-        mkdir -p "$(dirname "${TRACE}")" "$(dirname "${REPORT}")"
-        
-        echo "== Run core for ${NAME} =="
-    fi
-    
+    echo "== Run core for ${NAME} =="
     "${CORE_BIN}" "${BUNDLE}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}" || FAILED=1
     echo
 done
 
-# ---- Self-check for default mode ----
-
-if [[ $# -eq 0 ]]; then
-    echo "== Self-check: verifying per-bundle evidence =="
-    SELF_CHECK_FAILED=0
-    
-    # Check that trace files exist (should always be created)
-    for ((i=0; i<${#EXPECTED_EVIDENCE[@]}; i+=2)); do
-        TRACE_FILE="${EXPECTED_EVIDENCE[i]}"
-        if [[ ! -s "${TRACE_FILE}" ]]; then
-            echo "ERROR: Expected trace file missing or empty: ${TRACE_FILE}"
-            SELF_CHECK_FAILED=1
-        else
-            echo "✓ ${TRACE_FILE}"
-        fi
-    done
-    
-    # Check report files (may be missing if bundle failed)
-    for ((i=1; i<${#EXPECTED_EVIDENCE[@]}; i+=2)); do
-        REPORT_FILE="${EXPECTED_EVIDENCE[i]}"
-        if [[ -s "${REPORT_FILE}" ]]; then
-            echo "✓ ${REPORT_FILE}"
-        else
-            echo "⚠ ${REPORT_FILE} (missing or empty - bundle may have failed)"
-        fi
-    done
-    
-    if [[ ${SELF_CHECK_FAILED} -ne 0 ]]; then
-        echo "FAILURE: Self-check failed (missing trace files)."
-        exit 1
-    fi
-    echo
-    
-    echo "Evidence files:"
-    for EVIDENCE_FILE in "${EXPECTED_EVIDENCE[@]}"; do
-        if [[ -f "${EVIDENCE_FILE}" ]]; then
-            echo "  ${EVIDENCE_FILE}"
-        fi
-    done
-else
-    echo "Trace:  ${TRACE_BASE}"
-    echo "Report: ${REPORT_BASE}"
-fi
+echo "Trace:  ${TRACE}"
+echo "Report: ${REPORT}"
 
 if [[ ${FAILED} -ne 0 ]]; then
     echo "FAILURE: One or more bundles failed."
@@ -224,4 +141,3 @@ if [[ ${FAILED} -ne 0 ]]; then
 fi
 
 exit 0
-
