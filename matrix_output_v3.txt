@@ -1,0 +1,378 @@
+==========================================
+Probe Matrix Runner
+==========================================
+Distros:  humble jazzy
+Backends: prod rclpy
+Probes:   P04 L05 S11
+Total cells: 12
+==========================================
+
+[1] Running: humble/prod/P04
+  Distro: humble, Backend: prod, Probe: P04
+  Building docker image for humble...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/humble/prod/P04/report.json
+BACKEND:   prod
+
+== Build backend ==
+Starting >>> backend_prod
+Finished <<< backend_prod [6.24s]
+
+Summary: 1 package finished [6.41s]
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.07s
+
+== Run core for scenarios_P04.json ==
+bundle error: unsupported op: declare_param
+Error: backend failed with exit code 2
+
+Trace:  /evidence/humble/prod/P04/trace.jsonl
+Report: /evidence/humble/prod/P04/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[2] Running: humble/prod/L05
+  Distro: humble, Backend: prod, Probe: L05
+  Building docker image for humble...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/humble/prod/L05/report.json
+BACKEND:   prod
+
+== Build backend ==
+Starting >>> backend_prod
+Finished <<< backend_prod [5.99s]
+
+Summary: 1 package finished [6.17s]
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.04s
+
+== Run core for scenarios_L05.json ==
+bundle error: unsupported op: init_lifecycle_node
+Error: backend failed with exit code 2
+
+Trace:  /evidence/humble/prod/L05/trace.jsonl
+Report: /evidence/humble/prod/L05/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[3] Running: humble/prod/S11
+  Distro: humble, Backend: prod, Probe: S11
+  Building docker image for humble...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/humble/prod/S11/report.json
+BACKEND:   prod
+
+== Build backend ==
+Starting >>> backend_prod
+Finished <<< backend_prod [6.09s]
+
+Summary: 1 package finished [6.27s]
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.04s
+
+== Run core for scenarios_S11.json ==
+bundle error: unsupported op: init_lifecycle_node
+Error: backend failed with exit code 2
+
+Trace:  /evidence/humble/prod/S11/trace.jsonl
+Report: /evidence/humble/prod/S11/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[4] Running: humble/rclpy/P04
+  Distro: humble, Backend: rclpy, Probe: P04
+  Building docker image for humble...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/humble/rclpy/P04/report.json
+BACKEND:   rclpy
+
+== Build backend ==
+Skipping build (Python backend)
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.04s
+
+== Run core for scenarios_P04.json ==
+  File "/work/harness/backends/backend_rclpy/backend_rclpy.py", line 103
+    elif op_type == "wait":
+    ^^^^
+SyntaxError: expected 'except' or 'finally' block
+Error: backend failed with exit code 1
+
+Trace:  /evidence/humble/rclpy/P04/trace.jsonl
+Report: /evidence/humble/rclpy/P04/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[5] Running: humble/rclpy/L05
+  Distro: humble, Backend: rclpy, Probe: L05
+  Building docker image for humble...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/humble/rclpy/L05/report.json
+BACKEND:   rclpy
+
+== Build backend ==
+Skipping build (Python backend)
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.03s
+
+== Run core for scenarios_L05.json ==
+  File "/work/harness/backends/backend_rclpy/backend_rclpy.py", line 103
+    elif op_type == "wait":
+    ^^^^
+SyntaxError: expected 'except' or 'finally' block
+Error: backend failed with exit code 1
+
+Trace:  /evidence/humble/rclpy/L05/trace.jsonl
+Report: /evidence/humble/rclpy/L05/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[6] Running: humble/rclpy/S11
+  Distro: humble, Backend: rclpy, Probe: S11
+  Building docker image for humble...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/humble/rclpy/S11/report.json
+BACKEND:   rclpy
+
+== Build backend ==
+Skipping build (Python backend)
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.04s
+
+== Run core for scenarios_S11.json ==
+  File "/work/harness/backends/backend_rclpy/backend_rclpy.py", line 103
+    elif op_type == "wait":
+    ^^^^
+SyntaxError: expected 'except' or 'finally' block
+Error: backend failed with exit code 1
+
+Trace:  /evidence/humble/rclpy/S11/trace.jsonl
+Report: /evidence/humble/rclpy/S11/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[7] Running: jazzy/prod/P04
+  Distro: jazzy, Backend: prod, Probe: P04
+  Building docker image for jazzy...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/jazzy/prod/P04/report.json
+BACKEND:   prod
+
+== Build backend ==
+Starting >>> backend_prod
+Finished <<< backend_prod [6.62s]
+
+Summary: 1 package finished [6.76s]
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.08s
+
+== Run core for scenarios_P04.json ==
+bundle error: unsupported op: declare_param
+Error: backend failed with exit code 2
+
+Trace:  /evidence/jazzy/prod/P04/trace.jsonl
+Report: /evidence/jazzy/prod/P04/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[8] Running: jazzy/prod/L05
+  Distro: jazzy, Backend: prod, Probe: L05
+  Building docker image for jazzy...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/jazzy/prod/L05/report.json
+BACKEND:   prod
+
+== Build backend ==
+Starting >>> backend_prod
+Finished <<< backend_prod [6.21s]
+
+Summary: 1 package finished [6.35s]
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.04s
+
+== Run core for scenarios_L05.json ==
+bundle error: unsupported op: init_lifecycle_node
+Error: backend failed with exit code 2
+
+Trace:  /evidence/jazzy/prod/L05/trace.jsonl
+Report: /evidence/jazzy/prod/L05/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[9] Running: jazzy/prod/S11
+  Distro: jazzy, Backend: prod, Probe: S11
+  Building docker image for jazzy...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/jazzy/prod/S11/report.json
+BACKEND:   prod
+
+== Build backend ==
+Starting >>> backend_prod
+Finished <<< backend_prod [6.26s]
+
+Summary: 1 package finished [6.40s]
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.05s
+
+== Run core for scenarios_S11.json ==
+bundle error: unsupported op: init_lifecycle_node
+Error: backend failed with exit code 2
+
+Trace:  /evidence/jazzy/prod/S11/trace.jsonl
+Report: /evidence/jazzy/prod/S11/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[10] Running: jazzy/rclpy/P04
+  Distro: jazzy, Backend: rclpy, Probe: P04
+  Building docker image for jazzy...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/jazzy/rclpy/P04/report.json
+BACKEND:   rclpy
+
+== Build backend ==
+Skipping build (Python backend)
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.03s
+
+== Run core for scenarios_P04.json ==
+  File "/work/harness/backends/backend_rclpy/backend_rclpy.py", line 103
+    elif op_type == "wait":
+    ^^^^
+SyntaxError: expected 'except' or 'finally' block
+Error: backend failed with exit code 1
+
+Trace:  /evidence/jazzy/rclpy/P04/trace.jsonl
+Report: /evidence/jazzy/rclpy/P04/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[11] Running: jazzy/rclpy/L05
+  Distro: jazzy, Backend: rclpy, Probe: L05
+  Building docker image for jazzy...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/jazzy/rclpy/L05/report.json
+BACKEND:   rclpy
+
+== Build backend ==
+Skipping build (Python backend)
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.04s
+
+== Run core for scenarios_L05.json ==
+  File "/work/harness/backends/backend_rclpy/backend_rclpy.py", line 103
+    elif op_type == "wait":
+    ^^^^
+SyntaxError: expected 'except' or 'finally' block
+Error: backend failed with exit code 1
+
+Trace:  /evidence/jazzy/rclpy/L05/trace.jsonl
+Report: /evidence/jazzy/rclpy/L05/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+[12] Running: jazzy/rclpy/S11
+  Distro: jazzy, Backend: rclpy, Probe: S11
+  Building docker image for jazzy...
+
+
+
+
+ Image ros2-semantic-contracts-harness Built 
+  Running harness...
+REPORT:    /evidence/jazzy/rclpy/S11/report.json
+BACKEND:   rclpy
+
+== Build backend ==
+Skipping build (Python backend)
+
+== Build core ==
+    Finished `release` profile [optimized] target(s) in 0.03s
+
+== Run core for scenarios_S11.json ==
+  File "/work/harness/backends/backend_rclpy/backend_rclpy.py", line 103
+    elif op_type == "wait":
+    ^^^^
+SyntaxError: expected 'except' or 'finally' block
+Error: backend failed with exit code 1
+
+Trace:  /evidence/jazzy/rclpy/S11/trace.jsonl
+Report: /evidence/jazzy/rclpy/S11/report.json
+FAILURE: One or more bundles failed.
+
+  ERROR: Harness execution failed
+==========================================
+Matrix Runner Summary
+==========================================
+Total cells:  12
+Passed:       0
+Failed/Skip:  12
+Build/exec failures: 12
+==========================================
+FAILURE: 12 cells failed to execute

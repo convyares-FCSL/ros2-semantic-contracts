@@ -36,24 +36,38 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "transition_start",
-                                "goal": "configured"
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "change_state_async",
+                                    "payload": {
+                                        "goal_state": "configured"
+                                    }
+                                }
                             },
                             {
-                                "type": "get_state_request"
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "get_state"
+                                }
                             },
                             {
-                                "type": "get_state_response",
-                                "state": "configuring"
+                                "type": "op_end",
+                                "detail": {
+                                    "result": {
+                                        "state": "configuring"
+                                    }
+                                }
                             }
                         ]
                     }
                 },
                 {
-                    "check": "latency",
+                    "check": "absent",
                     "params": {
-                        "op_type": "get_state",
-                        "max_latency_ms": 200
+                        "where": {},
+                        "types": [
+                            "deadline_exceeded"
+                        ]
                     }
                 }
             ]

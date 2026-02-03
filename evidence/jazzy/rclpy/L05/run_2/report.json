@@ -1,0 +1,37 @@
+{
+  "description": "Probe: L05 concurrent transition rejection test",
+  "group": "L",
+  "pass": false,
+  "scenarios": {
+    "L05_concurrent_transition_rejected": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true,
+        "violations": {
+          "missing_expectations": [
+            {
+              "detail": {
+                "result": {
+                  "code": "BUSY",
+                  "successful": false
+                }
+              },
+              "type": "op_end"
+            }
+          ]
+        }
+      },
+      "layer": "Core",
+      "notes": "Probe scenario: overlapping lifecycle transitions must be rejected with BUSY/ERROR. Tests SPEC_LC04 concurrency invariant.",
+      "outcome": "FAIL",
+      "spec_id": "L05",
+      "title": "Concurrent transition rejected"
+    }
+  },
+  "summary": {
+    "fail": 1,
+    "pass": 0,
+    "skip": 0
+  },
+  "version": "0.1"
+}

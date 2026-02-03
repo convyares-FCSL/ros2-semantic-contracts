@@ -37,7 +37,14 @@ const CORE_TYPES: &[&str] = &[
     "param_describe_request",
     "param_describe_response",
     "param_declare_request",
+    "param_declare_request",
     "param_declare_response",
+    "transition_request",
+    "transition_response",
+    "get_state_request",
+    "get_state_response",
+    "deadline_exceeded",
+    "get_state_error",
 ];
 
 pub fn read_bundle(path: &Path) -> Result<ScenarioBundle> {

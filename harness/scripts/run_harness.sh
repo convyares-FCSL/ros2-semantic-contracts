@@ -110,6 +110,7 @@ echo "== Build backend =="
 if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
     # Build using colcon from root
     # Ensure setup.bash is sourced by the caller or docker env
+    rm -rf "${ROOT}/build/backend_prod" "${ROOT}/install/backend_prod"
     ( cd "${ROOT}" && colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release )
 elif [[ "${ORACLE_BACKEND}" == "rclpy" ]]; then
     echo "Skipping build (Python backend)"

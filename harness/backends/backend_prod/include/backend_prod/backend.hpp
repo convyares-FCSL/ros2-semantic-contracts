@@ -4,6 +4,7 @@
 #define BACKEND_PROD_BACKEND_HPP_
 
 #include <string>
+#include <memory>
 
 namespace backend_prod {
 

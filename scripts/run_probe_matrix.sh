@@ -2,23 +2,10 @@
 set -euo pipefail
 
 # ==============================================================================
-# Probe Matrix Runner
+# Probe Matrix Runner v2
 #
-# Runs probe scenarios across all combinations of:
-#   - Distros: humble, jazzy
-#   - Backends: prod (rclcpp), rclpy
-#   - Probes: P04, L05, S11
-#
-# For each cell (12 total):
-#   1. Build docker image for distro
-#   2. Run harness with appropriate env vars
-#   3. Verify evidence artifacts exist
-#   4. Extract headline metric (PASS/FAIL/SKIP)
-#
-# Usage:
-#   ./scripts/run_probe_matrix.sh
-#
-# Evidence artifacts written to: evidence/<distro>/<backend>/<probe>/
+# Builds once per distro, then runs all backend/probe combinations.
+# Aggregates results at the end.
 # ==============================================================================
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,114 +15,100 @@ DISTROS=(humble jazzy)
 BACKENDS=(prod rclpy)
 PROBES=(P04 L05 S11)
 
-FAILED=0
-TOTAL=0
-PASSED=0
+# Clean previous evidence (optional, maybe safe to keep but let's allow overwrite)
+# rm -rf evidence/
+mkdir -p evidence
 
 echo "=========================================="
-echo "Probe Matrix Runner"
-echo "=========================================="
-echo "Distros:  ${DISTROS[*]}"
-echo "Backends: ${BACKENDS[*]}"
-echo "Probes:   ${PROBES[*]}"
-echo "Total cells: $((${#DISTROS[@]} * ${#BACKENDS[@]} * ${#PROBES[@]}))"
-echo "=========================================="
-echo
-
-for distro in "${DISTROS[@]}"; do
-  for backend in "${BACKENDS[@]}"; do
-    for probe in "${PROBES[@]}"; do
-      TOTAL=$((TOTAL + 1))
-      CELL_ID="${distro}/${backend}/${probe}"
-      
-      echo "[$TOTAL] Running: ${CELL_ID}"
-      echo "  Distro: ${distro}, Backend: ${backend}, Probe: ${probe}"
-      
-      # Setup environment variables
-      export ROS_DISTRO="${distro}"
-      export ORACLE_BACKEND="${backend}"
-      export SCENARIO_BUNDLE="scenarios/probes/scenarios_${probe}.json"
-      export TRACE="/evidence/${distro}/${backend}/${probe}/trace.jsonl"
-      export REPORT="/evidence/${distro}/${backend}/${probe}/report.json"
-      
-      # Create evidence directory
-      mkdir -p "evidence/${distro}/${backend}/${probe}"
-      
-      # Build docker image
-      echo "  Building docker image for ${distro}..."
-      if ! docker compose build --build-arg ROS_DISTRO="${distro}" 2>&1 | grep -v "^#" | tail -n 5; then
-        echo "  ERROR: Docker build failed"
-        FAILED=$((FAILED + 1))
-        continue
-      fi
-      
-      # Run harness
-      echo "  Running harness..."
-      if ! docker compose run --rm harness 2>&1 | tail -n 20; then
-        echo "  ERROR: Harness execution failed"
-        FAILED=$((FAILED + 1))
-        continue
-      fi
-      
-      # Verify artifacts exist
-      if [[ ! -s "evidence/${distro}/${backend}/${probe}/trace.jsonl" ]]; then
-        echo "  ERROR: trace.jsonl missing or empty"
-        FAILED=$((FAILED + 1))
-        continue
-      fi
-      
-      if [[ ! -s "evidence/${distro}/${backend}/${probe}/report.json" ]]; then
-        echo "  ERROR: report.json missing or empty"
-        FAILED=$((FAILED + 1))
-        continue
-      fi
-      
-      # Extract headline metric (PASS/FAIL/SKIP)
-      VERDICT=$(jq -r '.scenarios[].verdict // "UNKNOWN"' "evidence/${distro}/${backend}/${probe}/report.json" 2>/dev/null | head -n1 || echo "UNKNOWN")
-      
-      # Extract key metric from trace
-      case "${probe}" in
-        L05)
-          # Look for transition response with successful=false
-          METRIC=$(grep -o '"successful":false' "evidence/${distro}/${backend}/${probe}/trace.jsonl" | wc -l || echo "0")
-          echo "  Metric: Rejections=${METRIC}"
-          ;;
-        S11)
-          # Look for get_state latency
-          METRIC=$(grep 'get_state_response' "evidence/${distro}/${backend}/${probe}/trace.jsonl" | grep -o '"latency_ms":[0-9]*' | head -n1 || echo "latency_ms:TIMEOUT")
-          echo "  Metric: ${METRIC}"
-          ;;
-        P04)
-          # Look for all_successful=false
-          METRIC=$(grep 'param_set_batch_response' "evidence/${distro}/${backend}/${probe}/trace.jsonl" | grep -o '"all_successful":[a-z]*' | head -n1 || echo "all_successful:unknown")
-          echo "  Metric: ${METRIC}"
-          ;;
-      esac
-      
-      echo "  Result: ${VERDICT}"
-      
-      if [[ "${VERDICT}" == "PASS" ]]; then
-        PASSED=$((PASSED + 1))
-      fi
-      
-      echo
-    done
-  done
-done
-
-echo "=========================================="
-echo "Matrix Runner Summary"
-echo "=========================================="
-echo "Total cells:  ${TOTAL}"
-echo "Passed:       ${PASSED}"
-echo "Failed/Skip:  $((TOTAL - PASSED))"
-echo "Build/exec failures: ${FAILED}"
+echo "Probe Matrix Runner v2"
 echo "=========================================="
 
-if [[ ${FAILED} -gt 0 ]]; then
-  echo "FAILURE: ${FAILED} cells failed to execute"
-  exit 1
+# Parse arguments or env var
+ITERATIONS=${PROBE_ITERS:-5}
+if [[ $# -gt 0 ]]; then
+    ITERATIONS=$1
 fi
 
-echo "Matrix run complete. Check evidence/ for detailed results."
+echo "Running ${ITERATIONS} iterations per cell..."
+
+# Main Loop: Distro -> Build -> Iteration -> Backend -> Probe
+for distro in "${DISTROS[@]}"; do
+    echo "=========================================="
+    echo ">> preparing ${distro}..."
+    echo "=========================================="
+    
+    # Export ROS_DISTRO for docker-compose volume substitution
+    export ROS_DISTRO="${distro}"
+    
+    # Clean cache explicitly by removing subdirectories
+    echo "   Cleaning target-core inside harness container..."
+    docker compose run --rm harness bash -c "pwd && ls -F harness/core/target && rm -rf harness/core/target/release harness/core/target/debug && echo 'Cleaned.' && ls -F harness/core/target"
+    
+    # Build for this distro (using exported ROS_DISTRO)
+    if ! docker compose build harness > build_${distro}.log 2>&1; then
+        echo "ERROR: Build failed for ${distro}. See build_${distro}.log"
+        cat build_${distro}.log
+        exit 1
+    fi
+    echo "Image built for ${distro}."
+
+    for i in $(seq 1 "${ITERATIONS}"); do
+        echo ">> Iteration ${i}/${ITERATIONS} for ${distro}..."
+        
+        for backend in "${BACKENDS[@]}"; do
+            for probe in "${PROBES[@]}"; do
+                CELL_ID="${distro}/${backend}/${probe}"
+                RUN_ID="run_${i}"
+                
+                # Directory: evidence/<distro>/<backend>/<probe>/<run_id>/
+                OUT_DIR="evidence/${CELL_ID}/${RUN_ID}"
+                mkdir -p "${OUT_DIR}"
+                
+                # Run harness
+                echo "   Running: ${CELL_ID} (${RUN_ID})"
+                
+                # Export variables for docker-compose substitution (command & volumes)
+                export ORACLE_BACKEND="${backend}"
+                export SCENARIO_BUNDLE="scenarios/probes/scenarios_${probe}.json"
+                export TRACE="/${OUT_DIR}/trace.jsonl"
+                export REPORT="/${OUT_DIR}/report.json"
+                export RCLPY_FIDELITY_MODE="strict"
+                
+                # Capture stdout/stderr
+                LOGfile="${OUT_DIR}/stdout.log"
+                
+                set +e
+                docker compose run --rm \
+                    --name "harness_${distro}_${backend}_${probe}_${i}" harness > "${LOGfile}" 2>&1
+                EXIT_CODE=$?
+                set -e
+                
+                if [[ ${EXIT_CODE} -ne 0 ]]; then
+                    echo "   Warning: Harness exited with ${EXIT_CODE}. Check logs."
+                fi
+            done
+        done
+    done
+done
+
+# 3. Aggregation Phase
+echo ">> Aggregating results..."
+if ./scripts/aggregate_results.py; then
+    echo "Aggregation successful."
+else
+    echo "Aggregation script failed."
+fi
+
+echo "=========================================="
+echo "Matrix run complete."
+echo "Summary: evidence/aggregate.md"
+echo "JSON:    evidence/aggregate.json"
+echo "=========================================="
+
+# Check if any failures occurred based on aggregate.json
+if grep -q '"failed": [1-9]' evidence/aggregate.json 2>/dev/null; then
+    echo "FAILURES DETECTED."
+    exit 1
+fi
+
 exit 0

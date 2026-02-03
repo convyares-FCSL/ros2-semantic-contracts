@@ -43,13 +43,21 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "param_declare_response",
-                                "name": "valid_param",
-                                "successful": true
+                                "type": "op_end",
+                                "detail": {
+                                    "result": {
+                                        "name": "valid_param",
+                                        "successful": true
+                                    }
+                                }
                             },
                             {
-                                "type": "param_set_batch_response",
-                                "all_successful": false
+                                "type": "op_end",
+                                "detail": {
+                                    "result": {
+                                        "all_successful": false
+                                    }
+                                }
                             }
                         ]
                     }

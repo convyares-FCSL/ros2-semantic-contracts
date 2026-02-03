@@ -7,6 +7,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 
 add_executable(backend_prod
   src/main.cpp
@@ -15,6 +16,8 @@ add_executable(backend_prod
   src/internal/bundle_parser.cpp
   src/internal/fs_utils.cpp
   src/ops/actions.cpp
+  src/ops/params.cpp
+  src/ops/lifecycle.cpp
   src/ops/generic.cpp
 )
 
@@ -29,7 +32,7 @@ target_include_directories(backend_prod
 )
 
 target_compile_features(backend_prod PUBLIC cxx_std_20)
-ament_target_dependencies(backend_prod rclcpp)
+ament_target_dependencies(backend_prod rclcpp rclcpp_lifecycle)
 
 # Public header purity check: ensures backend_prod public headers do not leak
 # internal or 3rdparty deps such as nlohmann/json. This target compiles with

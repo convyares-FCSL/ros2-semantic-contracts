@@ -1,0 +1,24 @@
+{
+  "description": "Probe: S11 lifecycle-executor safety test",
+  "group": "S",
+  "pass": true,
+  "scenarios": {
+    "S11_lifecycle_executor_safety": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "System",
+      "notes": "Probe scenario: lifecycle transitions must not deadlock executor. get_state must remain responsive during blocking transitions. Tests SPEC_E06 safe composition.",
+      "outcome": "PASS",
+      "spec_id": "S11",
+      "title": "Lifecycle-Executor safety"
+    }
+  },
+  "summary": {
+    "fail": 0,
+    "pass": 1,
+    "skip": 0
+  },
+  "version": "0.1"
+}

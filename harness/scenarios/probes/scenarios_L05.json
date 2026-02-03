@@ -36,17 +36,31 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "transition_start",
-                                "goal": "configured"
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "change_state_async",
+                                    "payload": {
+                                        "goal_state": "configured"
+                                    }
+                                }
                             },
                             {
-                                "type": "transition_request",
-                                "goal": "inactive"
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "change_state",
+                                    "payload": {
+                                        "goal_state": "inactive"
+                                    }
+                                }
                             },
                             {
-                                "type": "transition_response",
-                                "goal": "inactive",
-                                "successful": false
+                                "type": "op_end",
+                                "detail": {
+                                    "result": {
+                                        "successful": false,
+                                        "code": "BUSY"
+                                    }
+                                }
                             }
                         ]
                     }

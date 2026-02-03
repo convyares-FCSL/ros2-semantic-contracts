@@ -17,7 +17,7 @@ class TraceWriter:
         self.start_time = time.time_ns()
         self.lock = Lock()
     
-    def write_event(self, event_type: str, detail: dict, scenario_id: str = "_run"):
+    def write_event(self, event_type: str, detail: dict, scenario_id: str = "_run", **kwargs):
         """Write a single trace event in oracle schema format."""
         with self.lock:
             event = {
@@ -29,6 +29,8 @@ class TraceWriter:
                 "scenario_id": scenario_id,
                 "detail": detail
             }
+            # Merge optional fields (e.g. op_id)
+            event.update(kwargs)
             self.file.write(json.dumps(event) + '\n')
             self.file.flush()
             self.sequence += 1
