@@ -1,0 +1,24 @@
+{
+  "description": "Harness self-tests (deterministic; not tied to ROS semantics or traceability.md).",
+  "group": "H",
+  "pass": true,
+  "scenarios": {
+    "H00_smoke_trace_roundtrip": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Harness",
+      "notes": "Deterministic stub-only. Proves pipeline and schema enforcement. Not a semantic spec test.",
+      "outcome": "PASS",
+      "spec_id": "H00",
+      "title": "Smoke: scenario load → backend run → JSONL trace → core evaluation"
+    }
+  },
+  "summary": {
+    "fail": 0,
+    "pass": 1,
+    "skip": 0
+  },
+  "version": "0.1"
+}
