@@ -46,4 +46,14 @@ These specifications are organized into **three distinct abstraction layers**, s
 * **Baseline Interoperability Constraints (BIC):** Requirements derived from ecosystem necessity (e.g., Nav2 operability) where upstream specs are silent. Defined in [`system_contract.md`](system/system_contract.md).
 * **Unvalidated Hypotheses:** Marked `⚠️ UNVALIDATED`. These describe expected behavior that has not yet been proven by the Oracle.
 
+---
+
+## Spec ↔ Scenario linking conventions
+
+**Scenario `Layer:` field** — In `docs/provenance/scenario/semantics_*.md` the `Layer:` value (`Core` / `Global` / `System` / `Policy` / `Tooling`) records the *functional level exercised by the scenario*, not the file-path layer of the spec it validates. A scenario labelled `Core` may validate a spec defined in `global/` when the exercised property is a core invariant projected onto the wire.
+
+**Cross-layer spec duplicates** — Some obligations appear at two layers (e.g. `SPEC_SYS06` in `system_contract.md` and `SPEC_A09` in `global/action.md`). Convention: the System-layer spec is the *originating* obligation (typically a BIC); the Global-layer spec is a *projection* — a restatement scoped to the wire-observable interface. Scenarios validate against the originating obligation; the projection inherits coverage implicitly. The originating spec carries the scenario tag.
+
+**Deferred / infra-delegated specs** — Specs whose core assertion requires adversarial stimulus or manual analysis not expressible in the current ops model are labelled `Automation note — deferred`, `— manual/deferred`, or `— infra-delegated` inside their `<details>` block. Tagged scenarios remain as *design intent* but do not constitute exercised coverage until the required primitive is available. Matching `⚠️ Status:` labels appear on the scenario side in `semantics_*.md`.
+
 See `docs/provenance/` for the validation methodology.
