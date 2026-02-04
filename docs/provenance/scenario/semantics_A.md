@@ -21,12 +21,14 @@ Each entry defines:
 
 ---
 
-### A01 — Unique Goal Identity ("No Ghosts")
-**Validates:** `SPEC_AC01`, `SPEC_AC02` (Core)
+### A01 — No Ghosts After Rejection
+**Validates:** `SPEC_AC01` (Core)
 **Layer:** Core
 
 **Claim**
-If a goal is created, it has a unique ID. If rejected, it MUST NOT become observable as an active or completed goal.
+If a goal is rejected, it MUST NOT become observable as an active or completed goal.
+
+> **Note:** Goal ID uniqueness is infrastructure-provided (UUID generation). This scenario validates only the "no ghosts" aspect: rejected goals must not appear in status/feedback/result streams.
 
 <details>
 <summary>Assertions and Non-claims</summary>
@@ -110,7 +112,7 @@ Invalid transitions are rejected deterministically by the system.
 </details>
 
 ### A06 — Status Updates Monotonic
-**Validates:** `SPEC_AC05` (Core), `SPEC_A04` (Global)
+**Validates:** `SPEC_AC05` (Core)
 **Layer:** Core
 
 **Claim**
@@ -139,7 +141,7 @@ Events associated with a goal are ordered deterministically by sequence ID, inde
 </details>
 
 ### A08 — Cancellation Intent Observable
-**Validates:** `SPEC_AC06` (Core), `SPEC_A06` (Global)
+**Validates:** `SPEC_AC06` (Core)
 **Layer:** Core
 
 **Claim**
@@ -169,7 +171,7 @@ The outcome of a cancellation request is policy-defined (can be `Canceled`, `Abo
 </details>
 
 ### A10 — Result Visible After Terminal
-**Validates:** `SPEC_AC07` (Core), `SPEC_A05` (Global)
+**Validates:** `SPEC_AC07` (Core)
 **Layer:** Core
 
 **Claim**
@@ -199,7 +201,7 @@ A goal will only have one terminal result.
 </details>
 
 ### A12 — Supersession via CANCELED
-**Validates:** `SPEC_A03`, `SPEC_ECO03` (Global/System)
+**Validates:** `SPEC_A03` (Global)
 **Layer:** Policy
 
 **Claim**
@@ -252,11 +254,13 @@ The action server is compatible with standard CLI tools (`ros2 action`).
 </details>
 
 ### A15 — No Goal ID Reuse
-**Validates:** `SPEC_AC02` (Core), `SPEC_A08` (Global)
+**Validates:** `SPEC_AC02` (Core)
 **Layer:** Core
 
 **Claim**
 Goal IDs are never reused, even after the original goal is destroyed.
+
+> **Note:** UUID non-collision is infrastructure-provided. This scenario validates that the action server does not accept a new goal with a previously-used ID within the same session.
 
 <details>
 <summary>Assertions and Non-claims</summary>
@@ -266,8 +270,8 @@ Goal IDs are never reused, even after the original goal is destroyed.
 </details>
 
 ### A17 — Abandoned Goal Cleanup
-**Validates:** `SPEC_SYS06` (System), `SPEC_A09` (Global)
-**Layer:** Policy
+**Validates:** `SPEC_SYS06` (System)
+**Layer:** System
 
 **Claim**
 Goals from vanished clients are eventually cleaned up.

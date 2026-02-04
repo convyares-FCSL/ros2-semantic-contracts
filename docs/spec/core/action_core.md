@@ -66,6 +66,9 @@ Goal identity MUST be immutable and non-reusable.
 **Notes**
 - Reusing IDs destroys the ability for clients to correlate late results or status updates.
 
+**Automation note**
+- UUID generation is infrastructure-provided (ROS client library). Non-collision is not falsifiable without adversarial stimulus (collision injection). Scenario A15 validates server-side rejection of reused IDs, not UUID uniqueness itself.
+
 </details>
 
 ---

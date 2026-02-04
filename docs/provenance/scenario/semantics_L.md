@@ -34,19 +34,22 @@ Only lifecycle transitions defined by the canonical state machine are permitted.
 - Only valid edges in the state graph are traversable.
 </details>
 
-### L02 — Invalid Transitions Rejected
-**Validates:** `SPEC_LC02` (Core)
+### L02 — Primary State Visibility
+**Validates:** `SPEC_LC01` (Core)
 **Layer:** Core
 
 **Claim**
-Invalid transition requests are rejected deterministically.
+The lifecycle node exposes only primary states externally; auxiliary states are internal.
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
-- The service returns a failure code.
-- The node state remains unchanged.
+- Primary states (`Unconfigured`, `Inactive`, `Active`, `Finalized`) are queryable.
+- Auxiliary states (`Configuring`, `Activating`, etc.) are not reported as stable states.
+
+**Scope note**
+- L01 validates transition graph validity; L02 validates state visibility.
 </details>
 
 ### L03 — Intermediate States Hidden
@@ -64,7 +67,7 @@ Intermediate lifecycle states (`Configuring`, `Activating`) are not observable a
 - Transition events denote entry/exit of these states, but they are transient.
 </details>
 
-### L04 — Single Active Transition
+### L04 — Single Active Transition (Lock Aspect)
 **Validates:** `SPEC_LC04` (Core)
 **Layer:** Core
 
@@ -76,21 +79,28 @@ Only one transition can be active at any given time.
 
 **Observable assertions**
 - The engine locks the state machine during a transition.
-- Any attempt to trigger another transition during an active transition is rejected.
+- A second transition request during an active transition is not processed.
+
+**Scope note**
+- L04 validates the lock invariant; L05 validates that rejection is observable.
 </details>
 
-### L05 — Concurrent Transition Rejected
+### L05 — Concurrent Transition Rejected (Observable Rejection)
 **Validates:** `SPEC_LC04` (Core)
 **Layer:** Core
 
 **Claim**
-Concurrent transition requests are rejected (Busy).
+Concurrent transition requests are rejected with observable failure (Busy).
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
 - If `change_state` is called while another transition is running, it returns failure/busy.
+- The rejection is deterministic and observable via service response.
+
+**Scope note**
+- L04 validates the lock invariant; L05 validates that rejection is observable.
 </details>
 
 ### L06 — ErrorProcessing Deterministic
