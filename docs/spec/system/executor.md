@@ -106,12 +106,14 @@ Shutdown operations MUST be bounded and deterministic.
 
 ## Callback concurrency model
 
-### SPEC_E04 — Concurrency Model Documentation [S08]
+### SPEC_E04 — Concurrency Model Documentation
 
 The system MUST define and document its concurrency model.
 - Whether callbacks may execute concurrently.
 - Whether per-entity ordering is preserved.
 - Whether starvation is possible.
+
+> Derived / not independently validated: This is a documentation requirement; no single scenario can assert documentation adequacy. Exercised implicitly by any scenario that depends on concurrency behaviour.
 
 <details>
 <summary>Sources and notes</summary>

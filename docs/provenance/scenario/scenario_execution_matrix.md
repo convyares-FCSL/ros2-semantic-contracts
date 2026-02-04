@@ -34,7 +34,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | Spec ID | Scenario ID                        | stub | ros  | PROD | rclrs | Notes                              |
 | ------- | ---------------------------------- | ---- | ---- | ---- | ----- | ---------------------------------- |
 | H00     | H00_harness_smoke                  | PASS | PASS | N/A  | N/A   | Harness calibration                |
-| **A01** | A01_unique_goal_identity           | PASS | PASS | N/A  | N/A   | Action goal identity               |
+| **A01** | A01_no_ghosts_after_rejection      | PASS | PASS | N/A  | N/A   | Action goal identity               |
 | **A02** | A02_terminal_immutability          | PASS | PASS | N/A  | N/A   | Terminal immutability              |
 | **A03** | A03_unknown_not_persistent         | N/A  | SKIP | N/A  | N/A   | Not implemented yet                |
 | **A04** | A04_valid_transitions              | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |

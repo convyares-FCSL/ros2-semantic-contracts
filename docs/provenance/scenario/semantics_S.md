@@ -21,7 +21,7 @@ Each entry defines:
 ---
 
 ### S01 — Load Node Observable
-**Validates:** `SPEC_C02` (Composition), `SPEC_C03`
+**Validates:** `SPEC_C02` (Composition)
 **Layer:** System
 
 **Claim**
@@ -40,7 +40,7 @@ The loading of a node must be observable to external systems within the Settling
 </details>
 
 ### S02 — Load Failure Clean
-**Validates:** `SPEC_C02` (Composition), `SPEC_C05`, `SPEC_C06`
+**Validates:** `SPEC_C02` (Composition)
 **Layer:** System
 
 **Claim**
@@ -58,7 +58,7 @@ If a node fails to load, the system must clean up and leave no "ghost" state.
 </details>
 
 ### S03 — Unload Node Destroyed
-**Validates:** `SPEC_C03` (Composition), `SPEC_C07`, `SPEC_C08`
+**Validates:** `SPEC_C03` (Composition)
 **Layer:** System
 
 **Claim**
@@ -77,7 +77,7 @@ Unloading a node results in its destruction and removal from the graph.
 </details>
 
 ### S04 — Unique Node IDs
-**Validates:** `SPEC_C04` (Composition), `SPEC_C10`
+**Validates:** `SPEC_C04` (Composition)
 **Layer:** System
 
 **Claim**
@@ -95,7 +95,7 @@ Every node in the container must have a unique identifier.
 </details>
 
 ### S05 — Concurrent Load Deterministic
-**Validates:** `SPEC_C05` (Composition), `SPEC_C13`
+**Validates:** `SPEC_C05` (Composition)
 **Layer:** System
 
 **Claim**
@@ -113,7 +113,7 @@ Concurrent load/unload requests are handled deterministically (serialized or bus
 </details>
 
 ### S06 — Remaps Apply at Load
-**Validates:** `SPEC_C06` (Composition), `SPEC_C15`
+**Validates:** `SPEC_C06` (Composition)
 **Layer:** System
 
 **Claim**
