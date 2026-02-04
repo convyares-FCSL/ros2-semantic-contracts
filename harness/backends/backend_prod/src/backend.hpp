@@ -12,7 +12,6 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <test_msgs/action/fibonacci.hpp>
 #include <thread>
-#include <atomic>
 #include <mutex>
 #include <map>
 #include <vector>
@@ -25,17 +24,11 @@ using FibAction = test_msgs::action::Fibonacci;
 struct BackendState {
     // ROS 2 Infrastructure
     rclcpp::Node::SharedPtr node; // Client node
-    rclcpp::Node::SharedPtr server_node; // Server (Rig) node
     rclcpp::executors::SingleThreadedExecutor::SharedPtr executor;
     std::thread spinner_thread;
-    
+
     // Action Logic
     rclcpp_action::Client<FibAction>::SharedPtr client;
-    rclcpp_action::Server<FibAction>::SharedPtr server;
-
-    // Server Policy (Rig)
-    // 0 = Accept, 1 = Reject
-    std::atomic<int> next_goal_policy{0};
 
     // Mapping from ROS 2 UUID (16 bytes) to Scenario Goal ID (string)
     // We use vector<uint8_t> or just string for key? rclcpp_action::GoalUUID is std::array<uint8_t, 16>.

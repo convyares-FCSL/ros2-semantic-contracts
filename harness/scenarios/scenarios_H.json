@@ -38,20 +38,12 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "goal_send",
-                                "goal_id": "g1"
-                            },
-                            {
-                                "type": "goal_response",
+                                "type": "goal_send_decision",
                                 "goal_id": "g1",
                                 "accepted": true
                             },
                             {
-                                "type": "goal_send",
-                                "goal_id": "g2"
-                            },
-                            {
-                                "type": "goal_response",
+                                "type": "goal_send_decision",
                                 "goal_id": "g2",
                                 "accepted": false
                             }

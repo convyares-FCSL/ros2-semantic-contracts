@@ -170,7 +170,14 @@ for BUNDLE in "${TARGETS[@]}"; do
         echo "== Run core for ${NAME} =="
     fi
     
-    "${CORE_BIN}" "${BUNDLE}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}" || FAILED=1
+    if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
+        # prod backend requires an external peer — launch_peer.sh owns the
+        # peer lifecycle (start → sentinel gate → oracle_core → teardown).
+        SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        "${SCRIPTS_DIR}/launch_peer.sh" "${BUNDLE}" "${TRACE}" "${REPORT}" "${BACKEND_BIN}" "${CORE_BIN}" || FAILED=1
+    else
+        "${CORE_BIN}" "${BUNDLE}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}" || FAILED=1
+    fi
     echo
 done
 

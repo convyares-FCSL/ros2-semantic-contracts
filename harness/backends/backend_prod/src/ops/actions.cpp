@@ -5,28 +5,17 @@
 
 namespace backend_prod::ops {
 
-/// Executes send_goal: real ROS 2 Action Call.
-/// 1. Configure "Rig" (Server) policy.
-/// 2. Send Goal via Client.
-/// 3. Wait for Future (GoalResponse).
-/// 4. Emit goal_send_decision.
+/// Executes send_goal: real ROS 2 Action Call against an external peer.
+/// 1. Send Goal via Client.
+/// 2. Wait for Future (GoalResponse).
+/// 3. Emit goal_send_decision.
+/// Note: payload.mode is consumed by the environment (peer launcher) only.
+///       The backend does not read it.
 void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op) {
     if (!op.goal_id) {
         throw BundleError("send_goal: missing goal_id");
     }
     const std::string& goal_id_str = *op.goal_id;
-
-    if (!op.payload || !op.payload->contains("mode")) {
-        throw BundleError("send_goal: missing payload.mode");
-    }
-    std::string mode = (*op.payload)["mode"].get<std::string>();
-
-    // 1. Configure Policy
-    if (mode == "reject") {
-        st.next_goal_policy.store(1);
-    } else {
-        st.next_goal_policy.store(0);
-    }
 
     if (!st.client) {
          throw SystemError("Action client not initialized");
@@ -47,7 +36,7 @@ void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenari
     auto send_goal_options = rclcpp_action::Client<FibAction>::SendGoalOptions();
     
     // Callbacks to detect "Ghosts" (unexpected feedback/result for rejected goals)
-    send_goal_options.result_callback = [&w, scenario_id, goal_id_str](const rclcpp_action::ClientGoalHandle<FibAction>::WrappedResult& result) {
+    send_goal_options.result_callback = [&w, scenario_id, goal_id_str](const rclcpp_action::ClientGoalHandle<FibAction>::WrappedResult& /*result*/) {
          // std::cerr << "DEBUG: Result Callback hit for " << goal_id_str << "\n";
          w.emit({
             {"type", "result"},
@@ -89,17 +78,13 @@ void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenari
         }
     }
 
-    // 4. Emit goal_send_decision
-    json ev = {
+    // 3. Emit goal_send_decision (outcome driven by peer's real response)
+    w.emit({
         {"type", "goal_send_decision"},
         {"scenario_id", scenario_id},
         {"goal_id", goal_id_str},
         {"accepted", accepted}
-    };
-    if (!accepted) {
-        ev["reason"] = "policy_reject";
-    }
-    w.emit(ev);
+    });
 
     // Note: If accepted, we should theoretically wait for result. 
     // But A01 tests rejection. A02 tests terminal.

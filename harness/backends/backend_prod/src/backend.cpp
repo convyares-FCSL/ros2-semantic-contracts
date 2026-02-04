@@ -81,39 +81,22 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
     for (const auto& [id, scenario] : bundle.scenarios) {
         w.emit({{"type", "scenario_start"}, {"scenario_id", id}, {"detail", {{"backend", "prod"}}}});
 
-        // Create per-scenario state with ROS infrastructure
+        if (scenario.ops.empty()) {
+            // No ops — nothing to execute.  Emit end and move on without
+            // spinning up ROS infrastructure.
+            w.emit({{"type", "scenario_end"}, {"scenario_id", id}});
+            continue;
+        }
+
+        // Create per-scenario state with ROS infrastructure (client-only)
         BackendState st;
         st.node = std::make_shared<rclcpp::Node>("backend_prod_client_" + id);
-        st.server_node = std::make_shared<rclcpp::Node>("backend_prod_server_" + id);
-        
+
         st.executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
         st.executor->add_node(st.node);
-        st.executor->add_node(st.server_node);
 
-        // Action Client
+        // Action Client (peer server must already be running)
         st.client = rclcpp_action::create_client<FibAction>(st.node, "test_action");
-
-        // Action Server (Rig)
-        st.server = rclcpp_action::create_server<FibAction>(
-            st.server_node,
-            "test_action",
-            [&st](const rclcpp_action::GoalUUID&, std::shared_ptr<const FibAction::Goal>) {
-                // Goal Callback: Check policy
-                int policy = st.next_goal_policy.load();
-                // std::cerr << "RIG: Goal Request received. Policy=" << policy << "\n";
-                if (policy == 1) {
-                    return rclcpp_action::GoalResponse::REJECT;
-                }
-                return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-            },
-            [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<FibAction>>&) {
-                return rclcpp_action::CancelResponse::ACCEPT;
-            },
-            [](const std::shared_ptr<rclcpp_action::ServerGoalHandle<FibAction>>&) {
-                // Execute
-                std::thread{[](){}}.detach(); 
-            }
-        );
 
         // Start spinner
         st.spinner_thread = std::thread([&st]() {

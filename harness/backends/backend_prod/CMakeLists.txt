@@ -44,7 +44,20 @@ target_include_directories(header_sanity
 )
 target_compile_features(header_sanity PUBLIC cxx_std_20)
 
-install(TARGETS backend_prod DESTINATION lib/${PROJECT_NAME})
+# ---------------------------------------------------------------------------
+# Peer binaries — lightweight action servers launched by the environment.
+# Each peer depends only on rclcpp + rclcpp_action + test_msgs; no internal
+# backend_prod headers are included.
+# ---------------------------------------------------------------------------
+add_executable(peer_reject_always peer/reject_always.cpp)
+target_compile_features(peer_reject_always PUBLIC cxx_std_20)
+ament_target_dependencies(peer_reject_always rclcpp rclcpp_action test_msgs)
+
+add_executable(peer_sequence peer/sequence.cpp)
+target_compile_features(peer_sequence PUBLIC cxx_std_20)
+ament_target_dependencies(peer_sequence rclcpp rclcpp_action test_msgs)
+
+install(TARGETS backend_prod peer_reject_always peer_sequence DESTINATION lib/${PROJECT_NAME})
 
 # Install public headers
 install(DIRECTORY include/ DESTINATION include)
