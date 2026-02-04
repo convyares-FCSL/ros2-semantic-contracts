@@ -121,7 +121,7 @@ echo "=========================================="
 
 # Run aggregation
 echo "[Aggregate] Running aggregation..."
-if python3 "${ROOT}/scripts/aggregate_results.py"; then
+if python3 "${ROOT}/tools/analysis/aggregate_results.py"; then
     echo "[Aggregate] Done. See evidence/aggregate.md"
 else
     echo "[Aggregate] Warning: aggregation script had issues"
