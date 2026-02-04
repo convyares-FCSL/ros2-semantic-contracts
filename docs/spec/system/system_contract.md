@@ -99,8 +99,8 @@ Background work that continues outside these mechanisms violates system-level se
 - Community: None
 - BIC: Definition above (Real-time analysis requirement)
 
-**Automation note**
-- Proving absence of hidden execution is inherently difficult via black-box observation. Scenario S17 validates observable triggers but cannot exhaustively prove no hidden threads exist. Manual code review or static analysis may be required for full assurance.
+**Automation note — manual/deferred**
+- Proving absence of hidden execution is inherently difficult via black-box observation. Scenario S17 validates observable triggers but cannot exhaustively prove no hidden threads exist. Full assurance requires manual code review or static analysis; this spec is not fully exercisable by the harness alone.
 
 </details>
 

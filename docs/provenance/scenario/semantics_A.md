@@ -256,6 +256,7 @@ The action server is compatible with standard CLI tools (`ros2 action`).
 ### A15 — No Goal ID Reuse
 **Validates:** `SPEC_AC02` (Core)
 **Layer:** Core
+**Status:** ⚠️ Deferred — requires adversarial UUID-reuse stimulus not expressible in the current ops model; ops are not yet populated.
 
 **Claim**
 Goal IDs are never reused, even after the original goal is destroyed.

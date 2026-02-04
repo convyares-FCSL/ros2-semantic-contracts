@@ -64,6 +64,9 @@ Active components MUST provide a mechanism for liveness detection to ensure syst
 **Notes**
 - The specific mechanism (e.g., bonds) is ecosystem-defined, but the **guarantee** that a crash is observable is normative.
 
+**Automation note — deferred**
+- Exercising this spec requires a kill-node or adversarial timeout primitive not available in the current ops model. Scenario S13 declares the claim but cannot be deterministically triggered until such a primitive is added.
+
 </details>
 
 ### SPEC_ECO03 — Action Supersession Semantics [A12]

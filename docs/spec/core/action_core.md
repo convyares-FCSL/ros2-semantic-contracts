@@ -48,6 +48,9 @@ Each goal processed by the engine MUST be uniquely identified.
 - REP/RFC: None
 - Community: None
 
+**Automation note — infra-delegated**
+- The "two goals MUST NOT share the same identifier concurrently" sub-claim requires adversarial UUID-collision stimulus not expressible in the current ops model. Scenarios A01 and A03 exercise only the "semantically independent entities" clause (no-ghost / no-persistence). UUID uniqueness is infrastructure-provided via client-library UUID generation.
+
 </details>
 
 ### SPEC_AC02 — Identity Stability and No Reuse [A15]

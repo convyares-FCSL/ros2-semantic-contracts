@@ -89,6 +89,9 @@ Atomic parameter updates: either all succeed or all fail.
 
 **Non-claims**
 - Does not specify internal mechanisms for handling partial applications.
+
+**Scope note**
+- P04 exercises the *decision* layer: the set-operation outcome is all-or-nothing. P09 exercises the *observation* layer: no partial state is visible to external subscribers. Currently both reduce to the same evidence (state unchanged after rejection); they will diverge once per-subscriber visibility primitives are available.
 </details>
 
 ### P05 — Read-Only Enforcement
@@ -176,6 +179,9 @@ Parameter updates must be atomic and externally observable.
 
 **Non-claims**
 - Does not define how atomicity is managed at the backend level.
+
+**Scope note**
+- Overlaps P04 today (both assert full-reject behaviour). Intended divergence: P09 will exercise external event streams independently when per-subscriber observation primitives are available. See P04 scope note.
 </details>
 
 ### P10 — Rejected Updates Silent
@@ -193,6 +199,9 @@ Rejected updates should not emit any parameter change events.
 
 **Non-claims**
 - Does not specify why or how the rejection occurs.
+
+**Scope note**
+- Distinct from P04/P09: P10 asserts *event absence*, not state immutability. A system could pass P04 (state unchanged) while still emitting a spurious event; P10 catches that.
 </details>
 
 ### P11 — Events Describe Changes

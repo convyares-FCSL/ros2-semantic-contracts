@@ -235,6 +235,7 @@ The node is controllable via standard lifecycle managers.
 ### S13 — Liveness Detection
 **Validates:** `SPEC_ECO02` (Ecosystem)
 **Layer:** System
+**Status:** ⚠️ Deferred — requires kill-node or adversarial timeout primitive not available in the current ops model.
 
 **Claim**
 A crashed or unresponsive node is detectable.
@@ -303,6 +304,7 @@ Bringup and teardown sequences are deterministic and observable.
 ### S17 — No Hidden Execution
 **Validates:** `SPEC_SYS03` (System Contract)
 **Layer:** System
+**Status:** ⚠️ Manual/deferred — black-box observation cannot prove absence of hidden threads; requires static analysis or code review.
 
 **Claim**
 Execution occurs only via the executor or explicit triggers.

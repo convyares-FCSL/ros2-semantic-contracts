@@ -178,7 +178,7 @@ Executor and lifecycle semantics MUST compose safely under load.
 
 ## Testing support
 
-### SPEC_E07 — Testable Execution Interface [S14]
+### SPEC_E07 — Testable Execution Interface
 
 Executor behaviour MUST be testable via harness.
 - Must support bounded spin/step capability.
@@ -196,5 +196,6 @@ Executor behaviour MUST be testable via harness.
 
 **Notes**
 - Tooling and test validation is performed via oracle and harnesses, not asserted by this document alone.
+- Derived / not independently validated: No single scenario exercises "harness testability" as an isolated property. Coverage is implicit in every scenario that runs successfully through the harness.
 
 </details>

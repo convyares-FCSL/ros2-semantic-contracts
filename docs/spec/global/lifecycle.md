@@ -198,7 +198,7 @@ Custom user services are NOT automatically gated by the `Inactive` state.
 
 ## Tooling compatibility
 
-### SPEC_L09 — Tooling Introspection [L13]
+### SPEC_L09 — Tooling Introspection
 
 A compliant implementation MUST support lifecycle introspection via standard ROS 2 tools.
 
@@ -210,5 +210,8 @@ A compliant implementation MUST support lifecycle introspection via standard ROS
 - REP/RFC: None
 - Community: None
 - BIC: [system_contract.md#baseline-interoperability-constraints](../system/system_contract.md) (Tooling observability)
+
+**Notes**
+- Derived / not independently validated: Tooling introspection depends on service existence (SPEC_L01 / L13) as a prerequisite but is a distinct capability. No scenario currently isolates the tooling layer.
 
 </details>
