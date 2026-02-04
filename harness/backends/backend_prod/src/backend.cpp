@@ -12,6 +12,7 @@ namespace backend_prod {
 namespace ops {
 void exec_send_goal(TraceWriter& w, const std::string& scenario_id, const Op& op);
 void exec_wait(const Op& op);
+json exec_get_clock(TraceWriter& w, const std::string& scenario_id);
 }
 
 void exec_op(TraceWriter& w, const std::string& scenario_id, const std::string& op_id, const Op& op) {
@@ -22,15 +23,24 @@ void exec_op(TraceWriter& w, const std::string& scenario_id, const std::string& 
         {"detail", {{"op", op.op}}}
     });
 
+    json op_result;  // Optional result to include in op_end.detail
+
     if (op.op == "send_goal") {
         ops::exec_send_goal(w, scenario_id, op);
     } else if (op.op == "wait") {
         ops::exec_wait(op);
+    } else if (op.op == "get_clock") {
+        op_result = ops::exec_get_clock(w, scenario_id);
     } else {
         throw BundleError("unsupported op: " + op.op);
     }
 
-    w.emit({{"type", "op_end"}, {"scenario_id", scenario_id}, {"op_id", op_id}});
+    // Emit op_end with optional result in detail
+    json op_end = {{"type", "op_end"}, {"scenario_id", scenario_id}, {"op_id", op_id}};
+    if (!op_result.is_null()) {
+        op_end["detail"] = op_result;
+    }
+    w.emit(op_end);
 }
 
 void run_backend(const std::string& bundle_path, const std::string& trace_path) {
@@ -56,7 +66,7 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
         {"scenario_id", "_run"},
         {"detail", {
             {"backend", "prod"},
-            {"caps", json::array({"actions.basic"})},
+            {"caps", json::array({"actions.basic", "clock.ros_time"})},
             {"limits", json::object()}
         }}
     });

@@ -5,7 +5,7 @@
     "scenarios": {
         "H00_smoke_trace_roundtrip": {
             "spec_id": "H00",
-            "title": "Smoke: scenario load → backend run → JSONL trace → core evaluation",
+            "title": "Smoke: scenario load -> backend run -> JSONL trace -> core evaluation",
             "layer": "Harness",
             "notes": "Deterministic stub-only. Proves pipeline and schema enforcement. Not a semantic spec test.",
             "ops": [
@@ -54,6 +54,39 @@
                                 "type": "goal_response",
                                 "goal_id": "g2",
                                 "accepted": false
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "H01_ros_clock_smoke": {
+            "spec_id": "H01",
+            "title": "Smoke: ROS clock API returns valid timestamp",
+            "layer": "Harness",
+            "requires": ["clock.ros_time"],
+            "notes": "Exercises real rclcpp node creation and clock API. Proves ROS integration works.",
+            "ops": [
+                {
+                    "op": "get_clock"
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "get_clock"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_clock"
+                                }
                             }
                         ]
                     }

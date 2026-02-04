@@ -16,6 +16,7 @@ add_executable(backend_prod
   src/internal/fs_utils.cpp
   src/ops/actions.cpp
   src/ops/generic.cpp
+  src/ops/clock.cpp
 )
 
 # Include paths: public headers, internal sources, and vendored 3rdparty.
