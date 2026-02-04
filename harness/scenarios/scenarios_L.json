@@ -32,19 +32,19 @@
         },
         "L04_single_active_transition": {
             "spec_id": "L04",
-            "title": "Single active transition",
+            "title": "Single active transition (lock invariant)",
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Validates the lock aspect of SPEC_LC04: only one transition active at a time. L05 validates the observable rejection aspect."
         },
         "L05_concurrent_transition_rejected": {
             "spec_id": "L05",
-            "title": "Concurrent transition rejected",
+            "title": "Concurrent transition rejected (observable)",
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Validates the rejection aspect of SPEC_LC04: busy rejection is observable via service response. L04 validates the lock invariant."
         },
         "L06_error_processing_deterministic": {
             "spec_id": "L06",

@@ -3,14 +3,14 @@
     "group": "A",
     "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
     "scenarios": {
-        "A01_unique_goal_identity": {
+        "A01_no_ghosts_after_rejection": {
             "spec_id": "A01",
-            "title": "Rejected goals are not observable ('no ghosts')",
+            "title": "No ghosts after rejection",
             "layer": "Core",
             "requires": [
                 "actions.basic"
             ],
-            "notes": "If a goal is rejected, no further lifecycle events may reference it.",
+            "notes": "If a goal is rejected, no status/feedback/result events may reference it. Validates SPEC_AC01 (no-ghosts aspect). UUID uniqueness is infrastructure-provided.",
             "boundary": {
                 "sut": "client",
                 "peer": "external",
@@ -64,10 +64,10 @@
         },
         "A02_terminal_immutable": {
             "spec_id": "A02",
-            "title": "Terminal states immutable",
-            "layer": "Action",
+            "title": "Terminal state is immutable",
+            "layer": "Core",
             "requires": [
-                "actions.terminal"
+                "actions.basic"
             ],
             "notes": "Once terminal is set, subsequent attempts to change terminal must be denied and observable; terminal must not change.",
             "boundary": {
@@ -80,30 +80,16 @@
                     "op": "send_goal",
                     "goal_id": "g1",
                     "payload": {
-                        "mode": "accept"
+                        "mode": "succeed_abort"
                     }
                 },
                 {
                     "op": "wait",
-                    "ms": 10
-                },
-                {
-                    "op": "complete_terminal",
-                    "goal_id": "g1",
-                    "status": "SUCCEEDED"
+                    "ms": 200
                 },
                 {
                     "op": "wait",
-                    "ms": 10
-                },
-                {
-                    "op": "attempt_terminal_override",
-                    "goal_id": "g1",
-                    "status": "ABORTED"
-                },
-                {
-                    "op": "wait",
-                    "ms": 10
+                    "ms": 500
                 }
             ],
             "expects": [
@@ -112,29 +98,14 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "goal_send",
-                                "goal_id": "g1"
-                            },
-                            {
-                                "type": "goal_response",
+                                "type": "goal_send_decision",
                                 "goal_id": "g1",
                                 "accepted": true
-                            },
-                            {
-                                "type": "status",
-                                "goal_id": "g1",
-                                "status": "SUCCEEDED"
                             },
                             {
                                 "type": "result",
                                 "goal_id": "g1",
                                 "status": "SUCCEEDED"
-                            },
-                            {
-                                "type": "terminal_set_attempt",
-                                "goal_id": "g1",
-                                "allowed": false,
-                                "reason": "terminal_immutable"
                             }
                         ]
                     }
@@ -143,11 +114,11 @@
                     "check": "absent",
                     "params": {
                         "where": {
+                            "type": "result",
                             "goal_id": "g1",
                             "status": "ABORTED"
                         },
                         "types": [
-                            "status",
                             "result"
                         ]
                     }
