@@ -8,12 +8,12 @@ set -euo pipefail
 # Aggregates results at the end.
 #
 # Usage:
-#   ./scripts/run_reliability.sh           # default N=5
-#   ./scripts/run_reliability.sh 20        # N=20
-#   N=10 ./scripts/run_reliability.sh      # via environment
+#   ./tools/testing/run_reliability.sh           # default N=5
+#   ./tools/testing/run_reliability.sh 20        # N=20
+#   N=10 ./tools/testing/run_reliability.sh      # via environment
 # ==============================================================================
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT}"
 
 # Configuration
