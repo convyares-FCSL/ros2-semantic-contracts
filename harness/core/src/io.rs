@@ -26,6 +26,7 @@ const CORE_TYPES: &[&str] = &[
     "op_end",
     "goal_send",
     "goal_response",
+    "goal_send_decision",
     "status",
     "result",
     "terminal_set_attempt",

@@ -11,6 +11,11 @@
                 "actions.basic"
             ],
             "notes": "If a goal is rejected, no further lifecycle events may reference it.",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            },
             "ops": [
                 {
                     "op": "send_goal",
@@ -30,11 +35,13 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "goal_send",
-                                "goal_id": "g_reject"
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "send_goal"
+                                }
                             },
                             {
-                                "type": "goal_response",
+                                "type": "goal_send_decision",
                                 "goal_id": "g_reject",
                                 "accepted": false
                             }
@@ -63,6 +70,11 @@
                 "actions.terminal"
             ],
             "notes": "Once terminal is set, subsequent attempts to change terminal must be denied and observable; terminal must not change.",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            },
             "ops": [
                 {
                     "op": "send_goal",
@@ -148,7 +160,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A04_valid_transitions": {
             "spec_id": "A04",
@@ -156,7 +173,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A05_invalid_transitions_rejected": {
             "spec_id": "A05",
@@ -164,7 +186,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A06_status_updates_monotonic": {
             "spec_id": "A06",
@@ -172,7 +199,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A07_ordering_time_independent": {
             "spec_id": "A07",
@@ -180,7 +212,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A08_cancel_intent_observable": {
             "spec_id": "A08",
@@ -188,7 +225,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A09_cancel_resolution_policy": {
             "spec_id": "A09",
@@ -196,7 +238,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A10_result_visible_after_terminal": {
             "spec_id": "A10",
@@ -204,7 +251,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A11_single_terminal_result": {
             "spec_id": "A11",
@@ -212,7 +264,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A12_supersession_cancelled": {
             "spec_id": "A12",
@@ -220,7 +277,12 @@
             "layer": "Policy",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Policy).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A13_result_retention": {
             "spec_id": "A13",
@@ -228,7 +290,12 @@
             "layer": "Policy",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Policy).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A14_tooling_compatibility": {
             "spec_id": "A14",
@@ -236,7 +303,12 @@
             "layer": "Tooling",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Tooling)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Tooling).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A15_no_goal_id_reuse": {
             "spec_id": "A15",
@@ -244,7 +316,12 @@
             "layer": "Core",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A16_action_interface_conformity": {
             "spec_id": "A16",
@@ -255,7 +332,12 @@
             ],
             "ops": [],
             "expects": [],
-            "notes": "Interface introspection scenario. Validate action services/topics exist."
+            "notes": "Interface introspection scenario. Validate action services/topics exist.",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         },
         "A17_abandoned_goal_cleanup": {
             "spec_id": "A17",
@@ -263,7 +345,12 @@
             "layer": "System",
             "ops": [],
             "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=System)."
+            "notes": "Populate ops/observations to validate this clause (Layer=System).",
+            "boundary": {
+                "sut": "client",
+                "peer": "external",
+                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+            }
         }
     }
 }

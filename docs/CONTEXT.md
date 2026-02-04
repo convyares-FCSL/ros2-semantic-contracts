@@ -52,3 +52,4 @@ Exit codes: 0 = all pass, 1 = scenario(s) FAIL, 2 = bundle error, 4 = system err
 - Evidence validity gates reject missing/empty/invalid artifacts.
 - See CLAUDE.md for enforced invariants.
 - See docs/harness/RELIABILITY_RULES.md for detailed evidence gates, exit-code semantics, and no-cheating constraints.
+- See docs/provenance/oracle/boundaries.md for SUT/Peer separation rules (Actions enforced).

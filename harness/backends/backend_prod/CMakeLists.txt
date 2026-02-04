@@ -7,6 +7,8 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(test_msgs REQUIRED)
 
 add_executable(backend_prod
   src/main.cpp
@@ -30,7 +32,7 @@ target_include_directories(backend_prod
 )
 
 target_compile_features(backend_prod PUBLIC cxx_std_20)
-ament_target_dependencies(backend_prod rclcpp)
+ament_target_dependencies(backend_prod rclcpp rclcpp_action test_msgs)
 
 # Public header purity check: ensures backend_prod public headers do not leak
 # internal or 3rdparty deps such as nlohmann/json. This target compiles with

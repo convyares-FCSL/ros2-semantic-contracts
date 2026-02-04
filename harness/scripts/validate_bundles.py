@@ -6,6 +6,7 @@ Used in CI to prevent schema regressions.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -45,6 +46,48 @@ def validate_bundle(path: Path) -> list[str]:
     return errors
 
 
+# Action scenario ID pattern (matches A01_, A02_, etc.)
+_ACTION_ID = re.compile(r"^A\d{2}_")
+
+# Copy-paste JSON shape shown in BOUNDARY-A-01 errors for absent boundary.
+_AXX_BOUNDARY_SHAPE = (
+    '      "boundary": {\n'
+    '          "sut": "client",\n'
+    '          "peer": "external",\n'
+    '          "peer_rule": "Action server must be provided by the scenario '
+    'environment. Backend must not host or configure server accept/reject policy."\n'
+    '      }'
+)
+
+
+def check_boundaries(path: Path, data: dict) -> list[str]:
+    """BOUNDARY-A-01: Axx scenarios must declare boundary metadata.
+
+    Fires only on Action scenarios (ID matches A\\d{2}_).  Violations
+    are errors; the pipeline does not pass.
+    """
+    errors = []
+    for scenario_key, scenario in data.get("scenarios", {}).items():
+        if not _ACTION_ID.match(scenario_key):
+            continue
+        boundary = scenario.get("boundary")
+        if boundary is None:
+            errors.append(
+                f"{path.name}: {scenario_key}: BOUNDARY-A-01 [ERROR] "
+                f"no boundary metadata declared. Add to scenario:\n"
+                f"{_AXX_BOUNDARY_SHAPE}\n"
+                f"    See docs/provenance/oracle/boundaries.md"
+            )
+        elif boundary.get("peer") != "external":
+            errors.append(
+                f"{path.name}: {scenario_key}: BOUNDARY-A-01 [ERROR] "
+                f"boundary.peer is \"{boundary.get('peer')}\" but must be "
+                f"\"external\" for Action scenarios. "
+                f"See docs/provenance/oracle/boundaries.md §3"
+            )
+    return errors
+
+
 def main() -> int:
     if not SCENARIOS_DIR.exists():
         print(f"ERROR: Scenarios directory not found: {SCENARIOS_DIR}", file=sys.stderr)
@@ -60,6 +103,7 @@ def main() -> int:
         scenario_count += len(data.get("scenarios", {}))
         errors = validate_bundle(bundle_path)
         all_errors.extend(errors)
+        all_errors.extend(check_boundaries(bundle_path, data))
 
     print(f"Validated {bundle_count} bundles, {scenario_count} scenarios")
 

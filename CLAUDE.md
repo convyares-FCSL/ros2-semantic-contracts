@@ -10,6 +10,7 @@
 - Preserve evidence: never overwrite multi-bundle evidence without per-bundle separation.
 - H00 (baseline smoke scenario) must remain stable; regressions block all other work.
 - Results must be deterministic: 5/5 identical outcomes in Docker validation.
+- Axx scenarios must declare `boundary` metadata (sut/peer). See `docs/provenance/oracle/boundaries.md`.
 
 ## Scope
 - backend_prod (rclcpp) is production-grade C++20.
