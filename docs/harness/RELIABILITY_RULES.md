@@ -34,6 +34,9 @@ Never overwrite evidence from previous runs. The aggregation layer reads all run
 ### Build-Once Pattern
 Build container images once per configuration, then execute multiple runs against the same image. Avoid rebuilding between iterations.
 
+### Base Image Pinning
+The Dockerfile uses a pinned digest (e.g., `ros:jazzy-ros-base-noble@sha256:...`) rather than a floating tag like `ros:jazzy`. This prevents baseline drift when upstream images are updated, ensuring that reliability results remain comparable across time and machines.
+
 ## Exit Code Semantics
 
 ### oracle_core (Rust)

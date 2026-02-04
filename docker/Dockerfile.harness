@@ -1,5 +1,6 @@
-ARG ROS_DISTRO=jazzy
-FROM ros:${ROS_DISTRO}
+# Pinned base image for reproducible builds (see docs/harness/RELIABILITY_RULES.md)
+# To update: docker pull ros:jazzy-ros-base-noble && docker inspect --format='{{index .RepoDigests 0}}' ros:jazzy-ros-base-noble
+FROM ros:jazzy-ros-base-noble@sha256:af9454f13d342c58bb9f3364424e3e7026184e59a47de75f915d241cb7ec6666
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -14,8 +15,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install ROS lifecycle packages (needed for backend_prod lifecycle ops)
 RUN apt-get update && apt-get install -y \
-    ros-${ROS_DISTRO}-lifecycle \
-    ros-${ROS_DISTRO}-lifecycle-msgs \
+    ros-jazzy-lifecycle \
+    ros-jazzy-lifecycle-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust
