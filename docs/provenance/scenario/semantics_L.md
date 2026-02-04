@@ -35,7 +35,7 @@ Only lifecycle transitions defined by the canonical state machine are permitted.
 </details>
 
 ### L02 — Primary State Visibility
-**Validates:** `SPEC_LC01` (Core)
+**Validates:** `SPEC_L02` (Global)
 **Layer:** Core
 
 **Claim**

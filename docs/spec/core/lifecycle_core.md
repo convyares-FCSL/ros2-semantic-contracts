@@ -34,7 +34,7 @@ It specifies lifecycle state truth, transition validity, and failure semantics i
 
 ## Canonical Lifecycle State Model
 
-### SPEC_LC01 — Primary and Auxiliary States [L07]
+### SPEC_LC01 — Primary and Auxiliary States
 
 The core engine MUST enforce a state model consisting of **Primary States** (stable) and **Auxiliary States** (transient).
 
@@ -60,6 +60,7 @@ The core engine MUST enforce a state model consisting of **Primary States** (sta
 
 **Notes**
 - Auxiliary states are **internal semantic states** used to resolve transitions. They are not valid stable states.
+- Derived / not independently validated: The state-model inventory defined here is implicitly exercised by all Lxx scenarios. The visibility projection (what `get_state` reports) is validated directly by L02 and L07 via SPEC_L02.
 
 </details>
 
@@ -67,7 +68,7 @@ The core engine MUST enforce a state model consisting of **Primary States** (sta
 
 ## Transition Validity
 
-### SPEC_LC02 — Strict Transition Graph [L01, L02]
+### SPEC_LC02 — Strict Transition Graph [L01]
 
 The core engine MUST enforce a strict transition graph.
 - Only defined transitions between primary states are permitted.

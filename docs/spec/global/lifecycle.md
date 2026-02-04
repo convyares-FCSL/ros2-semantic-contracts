@@ -55,7 +55,7 @@ Lifecycle semantics MUST be exposed via standard ROS 2 lifecycle services and me
 
 ## Lifecycle state visibility
 
-### SPEC_L02 — Primary State Visibility [L07]
+### SPEC_L02 — Primary State Visibility [L02, L07]
 
 State queries MUST reflect the resolved lifecycle state.
 - `get_state` MUST report only primary lifecycle states (`Unconfigured`, `Inactive`, `Active`, `Finalized`).

@@ -51,7 +51,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **A15** | A15_no_goal_id_reuse               | N/A  | N/A  | N/A  | N/A   | **New**: Identity safety           |
 | **A17** | A17_abandoned_goal_cleanup         | N/A  | N/A  | N/A  | N/A   | **New**: Resource hygiene          |
 | **L01** | L01_defined_transitions            | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **L02** | L02_invalid_transitions_rejected   | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **L02** | L02_primary_state_visibility        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **L03** | L03_intermediate_states_hidden     | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **L04** | L04_single_active_transition       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **L05** | L05_concurrent_transition_rejected | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
