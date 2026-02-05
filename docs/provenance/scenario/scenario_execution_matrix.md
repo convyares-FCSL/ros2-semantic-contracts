@@ -68,9 +68,9 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **P01** | P01_no_fabricated_params           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P02** | P02_dynamic_typing_rules           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P03** | P03_redeclaration_fails            | N/A  | PASS | N/A  | N/A   | Redeclaration of parameter fails   |
-| **P04** | P04_no_partial_application         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **P04** | P04_no_partial_application         | N/A  | PASS | N/A  | N/A   | Atomic batch-set rejection         |
 | **P05** | P05_readonly_enforcement           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **P06** | P06_unknown_params_rejected        | N/A  | PASS | N/A  | N/A   | Not yet validated                  |
+| **P06** | P06_unknown_params_rejected        | N/A  | PASS | N/A  | N/A   | Set undeclared param rejected      |
 | **P07** | P07_change_record_ordering         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P08** | P08_unknown_types_not_set          | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P09** | P09_atomic_updates                 | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
