@@ -47,7 +47,7 @@ Parameters are identified by UTF-8 string names.
 
 </details>
 
-### SPEC_PC02 — Existence States [P01]
+### SPEC_PC02 — Existence States — Derived from SPEC_PC01 [P01]
 
 A parameter exists in exactly one of three semantic states:
 1.  **Declared:** Exists with a defined type and descriptor.

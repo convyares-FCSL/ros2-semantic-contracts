@@ -7,14 +7,14 @@
             "stage": 2,
             "description": "Stub backend for harness self-tests",
             "executed": [
-                "H01"
+                "H00"
             ]
         },
         "ros_local": {
             "stage": 2,
             "description": "Local ROS 2 Jazzy execution (not containerized baseline)",
             "executed": [
-                "H01",
+                "H00",
                 "A01",
                 "A02"
             ]
@@ -35,7 +35,5 @@
             "timestamp"
         ]
     },
-    "notes": {
-        "P03": "Paused due to spec rework; do not force into EXECUTED/VALIDATED."
-    }
+    "notes": {}
 }

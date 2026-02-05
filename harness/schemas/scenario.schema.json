@@ -58,6 +58,8 @@
                                 "op": {
                                     "type": "string",
                                     "enum": [
+                                        "start_actor",
+                                        "stop_actor",
                                         "send_goal",
                                         "wait",
                                         "emit_feedback",

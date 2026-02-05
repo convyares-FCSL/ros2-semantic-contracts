@@ -1,94 +1,180 @@
-# Boundary Contract — SUT / Peer Separation
+# Boundary Contract — Actor / Backend Separation & Scenario Provenance
 
-**Authority:** Normative. Single source of truth for component-role
-assignments in all scenario families.
-**Scope:** All families. Machine-enforced scope: Actions (Axx) initially.
+**Authority:** Normative. Single source of truth for component roles and provenance rules.
+**Scope:** All scenario families. Machine-enforced scope: Actions (Axx) initially.
 **Referenced from:** `docs/CONTEXT.md`, `CLAUDE.md`
 
 ---
 
-## 1. Definitions
+## 1. Components & Roles
 
-### SUT (System Under Test)
+### Backend
 
-The component whose semantic behaviour the scenario exists to validate.
-Only interactions exercised through real client-library APIs on the SUT
-side produce normatively meaningful evidence.
+The **backend** is a runner, observer, and tracer.
 
-### Peer
+It is responsible for:
 
-The counterpart that provides stimuli to — or receives outputs from — the
-SUT.  The peer is harness apparatus, not a validation target.  Its
-behaviour must be independently determined; it must not be scripted to
-produce the specific outcome the scenario checks for.
+* instantiating ROS entities (nodes, clients, servers),
+* sending stimuli via standard ROS interfaces,
+* observing externally visible ROS behaviour,
+* emitting trace events.
 
----
-
-## 2. The Hard Rule
-
-> A backend must never host a policy-driven peer whose decision logic is
-> scripted — directly or indirectly — to produce the outcome that the
-> scenario's `expects` block checks for.
-
-This pattern is a **self-confirming peer**.  It makes a scenario
-unfalsifiable: the peer cannot surprise the SUT, so semantic divergence
-across client libraries cannot be detected.
-
-A peer is self-confirming when **all** of the following hold:
-
-1. It resides in the same backend process, or is spawned / configured by
-   that process.
-2. Its accept / reject / cancel decisions are determined by scenario-
-   supplied parameters (e.g. `ops[].payload.mode`).
-3. Those decisions are the stimulus that the scenario's `expects` block
-   is checking.
-
-**Important:** using real client-library APIs does not exempt a peer from
-this rule.  The APIs may be genuine `rclcpp` calls; what matters is
-whether the *decision logic* is scenario-authored.  This is the gap that
-this contract closes relative to the existing "Strict Fidelity" gate in
-`docs/harness/RELIABILITY_RULES.md` §No-Cheating, which governs API
-realism but not decision autonomy.
+The backend MUST NOT encode semantic outcomes.
+It orchestrates *what happens*, never *what should happen*.
 
 ---
 
-## 3. Rule: Actions (Axx)
+### Actor
 
-For every scenario whose ID matches `A\d{2}_*`:
+An **actor** is a reusable ROS component (node or set of nodes).
 
-| Role | Assignment | Rationale |
-|------|------------|-----------|
-| SUT  | Action **client** | Axx validates client-side goal lifecycle semantics. |
-| Peer | Action **server** | The server decides accept / reject / cancel; it is the stimulus source. |
+Actors:
 
-Enforcement requirements:
+* use real ROS APIs,
+* expose behaviour only through standard ROS mechanisms,
+* are reusable across scenarios,
+* are **scenario-agnostic**.
 
-1. `boundary.sut` MUST be `"client"`.
-2. `boundary.peer` MUST be `"external"` — the action server must be
-   provided by the scenario environment (separate process or container),
-   not authored or policy-configured by the backend.
-3. Evidence must originate from real ROS 2 client-library interactions
-   between the SUT and the external peer.  Backend ops may *communicate a
-   desired stimulus* to the environment (e.g. "please reject this goal"),
-   but the decision and its execution must happen in the external peer,
-   not in backend-local code.
+Actors MUST NOT:
 
----
+* read scenario JSON or bundles,
+* read scenario-derived files, sockets, or side channels,
+* change behaviour based on scenario identity or expectations.
 
-## 4. Other Families
+Actors may have **behavior profiles** only if those profiles:
 
-Lifecycle (Lxx), Parameter (Pxx), and other families may allow self-hosted
-components when that component is itself the SUT (e.g. a lifecycle node
-whose transitions are being validated).  Boundary rules for those families
-are out of scope here and will be defined in future editions of this
-document.
+* are part of a stable, documented actor API,
+* are reused across multiple scenarios,
+* are selectable only via public ROS mechanisms (see §2.3).
 
 ---
 
-## 5. Relationship to Existing Constraints
+### Scenario
 
-| Constraint | What it governs | What it does NOT govern |
-|---|---|---|
-| `RELIABILITY_RULES.md` §Strict Fidelity | API realism (real `rclcpp` calls) | Peer decision autonomy |
-| `CLAUDE.md` §Non-negotiables | No simulated behaviour | Scope of "simulated" w.r.t. policy-driven peers |
-| **This document** | Peer decision autonomy | — |
+A **scenario** defines:
+
+* ordering of operations,
+* expected observations over time.
+
+Scenarios:
+
+* MAY choose inputs and stimuli,
+* MUST NOT choose outcomes,
+* NEVER steer accept/reject/terminal behaviour via hidden control paths.
+
+Scenarios author **expectations**, not **answers**.
+
+---
+
+## 2. The Hard Rule (Provenance Rule)
+
+> **Evidence is only meaningful if outcomes are not determined by scenario payload or hidden control channels.**
+
+A component constitutes a **self-confirming fixture** if its behaviour is shaped to satisfy a scenario’s expected outcome rather than constrained by the protocol under test.
+
+This makes the scenario unfalsifiable.
+
+A fixture is **self-confirming** when **all** of the following hold:
+
+1. Its behaviour is influenced by scenario payload, bundle content, or scenario-derived control channels.
+2. It produces the outcome that the scenario’s `expects` block asserts.
+3. That outcome could not reasonably differ under the same protocol interaction.
+
+**Important:**
+Using real ROS APIs (e.g. `rclcpp_action`) does NOT exempt a component.
+What matters is **decision autonomy**, not API fidelity.
+
+This closes the gap left by `RELIABILITY_RULES.md`, which governs realism of calls but not provenance of decisions.
+
+---
+
+## 3. Allowed vs Forbidden Configuration
+
+### Allowed (Public, Observable)
+
+Actors may be configured via:
+
+* ROS parameters (at startup),
+* standard ROS interactions (topics, services, actions),
+* environment variables **only** for runtime plumbing (namespaces, logging, ports).
+
+These mechanisms must be:
+
+* documented,
+* stable,
+* usable by ordinary ROS users.
+
+---
+
+### Forbidden (Scenario-Shaped Control)
+
+Actors MUST NOT:
+
+* read scenario JSON or bundles,
+* read files/sockets written by the scenario or backend for control,
+* expose custom “control topics/services” whose sole purpose is to steer outcomes (e.g. `/set_mode reject_for_A01`),
+* implement behaviour profiles that exist only to satisfy a single scenario.
+
+A ROS interface that exists only to make one scenario pass is still a fixture.
+
+---
+
+## 4. Actions (Axx) — Boundary Clarification
+
+Action scenarios validate **ROS action protocol semantics as observed on global streams**.
+
+Key clarification:
+
+* The **stimulus** is client-originated (goal submission).
+* The **observable evidence** (status, feedback, result) is published by the server.
+* The contract is about the **protocol**, not about privileging client or server as “the truth”.
+
+Therefore:
+
+* Axx scenarios may choose either side as the SUT depending on how the stimulus is applied (client library vs CLI).
+* What matters is that **no component authors the outcome on behalf of the scenario**.
+
+For Actions (Axx), the following enforcement applies initially:
+
+1. Actors involved in accept/reject/terminal decisions MUST be scenario-agnostic.
+2. No accept/reject/terminal outcome may be selected via scenario payload or private control paths.
+3. Evidence MUST arise from real ROS action interactions and be observable on standard streams.
+
+Whether an action server runs inside the backend or externally is secondary; **scenario-shaped behaviour is the disallowed axis**.
+
+---
+
+## 5. Other Families
+
+Lifecycle (Lxx), Parameters (Pxx), and other families follow the same provenance rule:
+
+* If the spec concerns **server semantics**, the backend may host the server as the SUT.
+* If the spec concerns **client semantics**, the backend hosts the client and interacts with a generic actor.
+
+In all cases:
+
+* the component under test may not control its own verdict,
+* peers must not be scripted to satisfy expectations.
+
+Family-specific refinements will be added in future revisions.
+
+---
+
+## 6. Relationship to Existing Constraints
+
+| Constraint                              | Governs                       | Does NOT govern         |
+| --------------------------------------- | ----------------------------- | ----------------------- |
+| `RELIABILITY_RULES.md` §Strict Fidelity | Real ROS API usage            | Outcome provenance      |
+| `CLAUDE.md` §Non-negotiables            | No simulated behaviour        | Scenario-shaped control |
+| **This document**                       | Outcome autonomy & provenance | —                       |
+
+---
+
+## Summary (Non-Negotiable)
+
+* The enemy is **scenario-shaped behaviour**, not “peers”.
+* Code location (backend vs external) is secondary to **control provenance**.
+* Actors must be reusable, scenario-agnostic, and protocol-constrained.
+* Scenarios define **when** and **what to observe**, never **what must happen**.
+
+This boundary is what keeps evidence meaningful.

@@ -49,8 +49,12 @@ def main():
     total_fail = sum(c["runs_semantic_fail"] for c in cells)
     total_infra = sum(c["runs_infra_fail"] for c in cells)
 
-    print(f"Aggregation complete: {len(cells)} cell(s), {total_runs} run(s)")
-    print(f"  PASS: {total_pass}, SEMANTIC_FAIL: {total_fail}, INFRA_FAIL: {total_infra}")
+    print("==========================================")
+    print("Results Summary:")
+    print(f"  PASS:       {total_pass}")
+    print(f"  FAIL:       {total_fail}")
+    print(f"  INFRA_FAIL: {total_infra}")
+    print("==========================================")
 
 
 def process_cell(distro: str, backend: str, cell_dir: Path) -> Dict[str, Any]:

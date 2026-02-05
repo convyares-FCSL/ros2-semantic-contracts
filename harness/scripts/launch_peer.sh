@@ -41,25 +41,85 @@ SENTINEL="/tmp/peer_ready_${RUN_ID}"
 TIMEOUT="${PEER_SENTINEL_TIMEOUT:-5}"
 
 # ---------------------------------------------------------------------------
-# 2. Select peer binary based on bundle content.
-#    Scan all send_goal ops; use the FIRST one's payload.mode.
-#    "reject" → reject_always.  Anything else → sequence.
+# 2. Select peer binary based on TARGET_SCENARIO_ID or strict bundle scan.
 # ---------------------------------------------------------------------------
-MODE=$(python3 -c "
+
+# Detect start_actor usage. If present, we bypass external peer launch.
+HAS_ACTOR=$(python3 -c "
 import json, sys
-bundle = json.load(open('${BUNDLE}'))
-for sid, sc in sorted(bundle.get('scenarios', {}).items()):
-    for op in sc.get('ops', []):
-        if op.get('op') == 'send_goal':
-            print(op.get('payload', {}).get('mode', 'accept'))
-            sys.exit(0)
-print('accept')
+try:
+    bundle = json.load(open('${BUNDLE}'))
+    found = False
+    for s in bundle.get('scenarios', {}).values():
+        for op in s.get('ops', []):
+            if op.get('op') == 'start_actor':
+                found = True
+                break
+        if found: break
+    print('yes' if found else 'no')
+except:
+    print('no')
 ")
 
-if [[ "${MODE}" == "reject" ]]; then
-    PEER_BIN="${PEER_DIR}/peer_reject_always"
+if [[ "${HAS_ACTOR}" == "yes" ]]; then
+    # Actor Model: Backend manages the actor lifecycle. No external peer needed.
+    echo "DEBUG: launch_peer detected start_actor op — skipping external peer launch" >&2
+    
+    # Just run the core (wrapper) -> backend
+    "${CORE_BIN}" "${BUNDLE}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}"
+    exit $?
+fi
+
+TARGET_ID="${TARGET_SCENARIO_ID:-}"
+
+if [[ -n "${TARGET_ID}" ]]; then
+    # Explicit selection from environment
+    if [[ "${TARGET_ID}" == "A01"* ]]; then
+        MODE="reject"
+    elif [[ "${TARGET_ID}" == "A02"* ]]; then
+        MODE="succeed_abort"
+    else
+        MODE="sequence"
+    fi
 else
-    PEER_BIN="${PEER_DIR}/peer_sequence"
+    # Auto-detection from bundle (Strict Mode)
+    # Fail fast if multiple Axx scenarios are detected without explicit target.
+    # Legacy Cleanup: The old 'reject' and 'succeed_abort' peers are gone.
+    # If we are here, we are likely running an H-series scenario which defaults to 'sequence'.
+    # If A01/A02 are detected here (which shouldn't happen if they use start_actor), we warn.
+
+    DETECTED_MODES=$(python3 -c "
+import json, sys
+try:
+    bundle = json.load(open('${BUNDLE}'))
+    modes = set()
+    for sid in bundle.get('scenarios', {}):
+        if sid.startswith('H'): modes.add('sequence')
+        elif sid.startswith('A'): modes.add('actor_should_handle')
+        else: modes.add('sequence')
+
+    if 'actor_should_handle' in modes:
+        print('ACTOR_MISMATCH')
+    else:
+        print('sequence')
+except:
+    print('sequence')
+")
+
+    if [[ "${DETECTED_MODES}" == "ACTOR_MISMATCH" ]]; then
+        echo "ERROR: launch_peer invoked for A-series scenario. These should use start_actor and bypass this script." >&2
+        exit 4
+    fi
+    MODE="sequence"
+    echo "DEBUG: launch_peer detected mode: ${MODE}" >&2
+fi
+
+if [[ "${MODE}" == "sequence" ]]; then
+    PEER_BIN="${PEER_DIR}/sequence_actor"
+else
+    # Fallback/Error
+    echo "ERROR: Unknown peer mode '${MODE}' requested." >&2
+    exit 4
 fi
 
 if [[ ! -x "${PEER_BIN}" ]]; then

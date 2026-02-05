@@ -113,7 +113,7 @@ Read-only parameters cannot be modified after declaration.
 </details>
 
 ### P06 — Unknown Parameters Rejected
-**Validates:** `SPEC_PC06` (Core), `SPEC_P02` (Global)
+**Validates:** `SPEC_PC06` (Core)
 **Layer:** Core
 
 **Claim**
@@ -143,6 +143,9 @@ The system respects a deterministic record ordering for parameter operations.
 
 **Non-claims**
 - Does not assert specific implementation details regarding how order is maintained.
+
+**Scope note**
+- Core↔Global composite: SPEC_PC07 defines the logical change-record model; SPEC_P05 defines the wire-observable event semantics. Both are exercised because the parameter event IS the change record exposed over the service layer.
 </details>
 
 ### P08 — Unknown Types NOT_SET
@@ -161,6 +164,9 @@ Unknown parameters are represented with a `NOT_SET` type.
 
 **Non-claims**
 - Does not specify how unknown types are handled internally.
+
+**Scope note**
+- Core↔Global composite: SPEC_PC03 defines type enforcement at the decision layer; SPEC_P03 defines the NOT_SET wire response. Both are exercised because the NOT_SET response is the observable manifestation of an unknown parameter's type state.
 </details>
 
 ### P09 — Atomic Updates (External)
@@ -267,6 +273,21 @@ Parameter deletion (if supported) is observable via parameter events.
 
 **Non-claims**
 - Does not specify how deletion is triggered or managed within the system.
+
+**Scope note**
+- Core↔Global composite: SPEC_PC08 defines deletion at the decision layer; SPEC_P08 defines deletion reporting on the wire. Both are exercised because event emission is the observable consequence of the deletion decision.
+</details>
+
+### P15 — Parameter Interface Conformity
+**Validates:** `SPEC_P01` (Global)
+**Layer:** Global
+
+**Claim:** The node exposes the standard ROS 2 parameter interface graph topology.
+
+<details>
+<summary>Assertions</summary>
+- Services `describe_parameters`, `get_parameter_types`, `get_parameters`, `list_parameters`, `set_parameters` exist.
+- Topic `parameter_events` exists.
 </details>
 
 ### P16 — Explicit Declaration Mode
@@ -281,13 +302,4 @@ Node enforces the declaration mode (Strict vs Lenient).
 
 **Observable assertions**
 - Behavior matches the `allow_undeclared` configuration.
-</details>
-### P15 — Parameter Interface Conformity
-**Validates:** `SPEC_P01` (Global)
-**Layer:** Global
-**Claim:** The node exposes the standard ROS 2 parameter interface graph topology.
-<details>
-<summary>Assertions</summary>
-- Services `describe_parameters`, `get_parameter_types`, `get_parameters`, `list_parameters`, `set_parameters` exist.
-- Topic `parameter_events` exists.
 </details>

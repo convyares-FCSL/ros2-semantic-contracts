@@ -14,19 +14,27 @@
             "boundary": {
                 "sut": "client",
                 "peer": "external",
-                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+                "peer_rule": "Peer is a generic scenario-agnostic actor. Backend configures its behavior profile via ROS parameters through the start_actor op, per boundaries.md section 3."
             },
             "ops": [
                 {
-                    "op": "send_goal",
-                    "goal_id": "g_reject",
-                    "payload": {
-                        "mode": "reject"
+                    "op": "start_actor",
+                    "actor": "action_server",
+                    "params": {
+                        "goal_response": "reject"
                     }
                 },
                 {
+                    "op": "send_goal",
+                    "goal_id": "g_reject"
+                },
+                {
                     "op": "wait",
-                    "ms": 10
+                    "ms": 100
+                },
+                {
+                    "op": "stop_actor",
+                    "actor": "action_server"
                 }
             ],
             "expects": [
@@ -73,15 +81,20 @@
             "boundary": {
                 "sut": "client",
                 "peer": "external",
-                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
+                "peer_rule": "Peer is a generic scenario-agnostic actor. Backend configures its behavior profile via ROS parameters through the start_actor op, per boundaries.md section 3."
             },
             "ops": [
                 {
-                    "op": "send_goal",
-                    "goal_id": "g1",
-                    "payload": {
-                        "mode": "succeed_abort"
+                    "op": "start_actor",
+                    "actor": "action_server",
+                    "params": {
+                        "goal_response": "accept",
+                        "outcome_sequence": "succeed,abort"
                     }
+                },
+                {
+                    "op": "send_goal",
+                    "goal_id": "g1"
                 },
                 {
                     "op": "wait",
@@ -90,6 +103,10 @@
                 {
                     "op": "wait",
                     "ms": 500
+                },
+                {
+                    "op": "stop_actor",
+                    "actor": "action_server"
                 }
             ],
             "expects": [

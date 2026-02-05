@@ -42,6 +42,20 @@ Op parse_op(const json& j) {
         }
         op.status = j["status"].get<std::string>();
     }
+
+    if (j.contains("actor")) {
+        if (!j["actor"].is_string()) {
+            throw BundleError("op['actor'] must be string");
+        }
+        op.actor = j["actor"].get<std::string>();
+    }
+
+    if (j.contains("params")) {
+        if (!j["params"].is_object()) {
+            throw BundleError("op['params'] must be object");
+        }
+        op.params = j["params"];
+    }
     
     if (j.contains("payload")) {
         op.payload = j["payload"];

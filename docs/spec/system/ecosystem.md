@@ -69,7 +69,7 @@ Active components MUST provide a mechanism for liveness detection to ensure syst
 
 </details>
 
-### SPEC_ECO03 — Action Supersession Semantics [A12]
+### SPEC_ECO03 — Action Supersession Semantics — Derived from SPEC_A03 [A12]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -89,6 +89,7 @@ When a new goal supersedes an existing active goal (preemption), the server must
 **Notes**
 - This constraint reflects ecosystem expectations for safe behavior in long-running action servers.
 
+**Derived** — SPEC_ECO03 and SPEC_A03 (global/action.md) state substantively equivalent supersession obligations at System and Global layers respectively. Scenario A12 validates SPEC_A03; this spec inherits that coverage.
 
 </details>
 

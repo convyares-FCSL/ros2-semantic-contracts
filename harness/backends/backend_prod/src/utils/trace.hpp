@@ -7,6 +7,7 @@
 #include <fstream>
 #include <chrono>
 #include <nlohmann/json.hpp>
+#include <mutex>
 
 namespace backend_prod {
 
@@ -26,6 +27,7 @@ public:
     TraceWriter& operator=(const TraceWriter&) = delete;
 
 private:
+    std::mutex mutex_;
     std::ofstream ofs_;
     uint64_t seq_{0};
     std::chrono::steady_clock::time_point t0_;

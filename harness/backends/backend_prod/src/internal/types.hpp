@@ -20,6 +20,8 @@ struct Op {
     std::optional<std::string> goal_id;
     std::optional<uint64_t> ms;
     std::optional<std::string> status;
+    std::optional<std::string> actor; // for start_actor, stop_actor
+    std::optional<json> params;       // for start_actor (ROS params)
     std::optional<json> payload;
 };
 

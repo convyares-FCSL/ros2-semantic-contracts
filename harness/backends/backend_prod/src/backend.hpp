@@ -42,6 +42,9 @@ struct BackendState {
     /// goal_id -> terminal set attempts count
     std::unordered_map<std::string, uint32_t> terminal_attempts;
 
+    /// Actor name -> PID
+    std::map<std::string, pid_t> pid_map;
+
     // Destructor to ensure proper shutdown
     ~BackendState() {
         if (executor) {

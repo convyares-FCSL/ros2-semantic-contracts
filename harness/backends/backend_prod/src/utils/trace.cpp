@@ -19,6 +19,7 @@ TraceWriter::~TraceWriter() {
 }
 
 void TraceWriter::emit(json event) {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto now = std::chrono::steady_clock::now();
     uint64_t t_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now - t0_).count();
 

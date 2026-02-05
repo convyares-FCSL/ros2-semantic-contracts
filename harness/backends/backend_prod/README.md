@@ -1,114 +1,140 @@
 # backend_prod
 
-Production-grade C++20 backend for the Oracle Harness.
+## 1. What backend_prod Is
+
+`backend_prod` is a reference backend used to exercise ROS 2 semantics against the harness.
+
+It exists to generate **externally observable evidence** via **real ROS 2 client-library APIs** and emit that evidence as schema-valid JSONL trace events for oracle evaluation.
+
+It is **not an application**, **not a test fixture**, and **not a simulator**.
+
+## 2. What backend_prod Is Not (Hard Prohibitions)
+
+`backend_prod` MUST NOT:
+
+- Host **policy-driven peers** (servers / fixtures) **when the scenario’s SUT is the client**.
+- Contain logic that decides accept / reject / terminal outcomes **for scenarios where the backend is not the SUT**.
+- Read scenario fields to influence peer behavior.
+- Emit fabricated, advisory, or oracle-directed events.
+- Emit trace event types outside `trace_event.schema.json`.
+
+These are **architectural boundaries**, not guidelines.
+
+## 3. SUT / Peer Boundary Rule
+
+Each scenario defines **what is under test** (the SUT) and **what provides stimulus** (the peer).
+
+The backend’s allowed behavior depends on that boundary.
+
+### Client-Semantics Scenarios (e.g. Actions Axx with `sut=client`)
+
+For scenarios validating **client-side semantics**:
+
+- `backend_prod` is **client-only**
+- Action / lifecycle / parameter servers are provided **externally by the scenario environment**
+- Evidence must arise solely from:
+  - real ROS 2 client APIs (`async_send_goal`, `wait_for_action_server`, callbacks)
+  - graph-observable outcomes (results, status, absence of events)
+
+`backend_prod` MUST NOT host or configure peers whose behavior can be scripted to satisfy the scenario.
+
+This prevents **self-confirming peers**.
+
+Reference: `docs/provenance/oracle/boundaries.md`
+
+### Server- or Node-Semantics Scenarios (future families)
+
+For scenarios validating **server-side or node-internal semantics** (e.g. lifecycle node correctness, parameter service behavior):
+
+- The backend **may implement the server or node**, because it is the SUT
+- The peer (client / driver) must be external
+- Evidence is judged by externally observable behavior
+
+This is allowed because the backend is not grading its own policy outcomes.
+
+## 4. Evidence Discipline
+
+Events are emitted **only** as a reflection of real ROS 2 API outcomes.
+
+- `goal_send_decision` reflects actual goal negotiation completion
+- `result` reflects `WrappedResult.code`, mapped canonically
+- Absence of events is valid evidence and is evaluated by the oracle, not the backend
+
+The backend never infers or declares verdicts.
+
+## 5. Concurrency & Trace Integrity
+
+`TraceWriter` is thread-safe.
+
+Writes are serialized to guarantee **one complete JSONL line per event**.
+This guarantees trace integrity, not semantic ordering.
+
+Event ordering remains governed by executor scheduling and ROS runtime behavior.
+
+## 6. Scenario Isolation Assumption
+
+`backend_prod` does not select peers.
+
+Peer selection and lifecycle are owned by the environment
+(e.g. `launch_peer.sh`, Docker, or runner scripts).
+
+Scenario isolation is achieved via:
+- ephemeral bundles
+- environment variables
+- runner-level orchestration
+
+Never backend logic.
+
+## 7. Change Control
+
+Any change that alters:
+- backend role (client vs server)
+- peer assumptions
+- event semantics
+- trace guarantees
+
+must be reviewed against:
+
+- `trace_event.schema.json`
+- `docs/provenance/oracle/boundaries.md`
+
+Violations are architectural regressions.
+
+---
 
 ## Overview
 
-`backend_prod` is a deterministic, bundle-driven backend that executes ROS 2 scenario bundles and emits JSONL trace events. It serves as the production baseline for validating ROS 2 behavioral contracts.
-
-## Architecture
-
-- **Input**: Scenario bundle (JSON) defining operations to execute
-- **Output**: JSONL trace of observations with envelope metadata
-- **State**: Ephemeral; no persistence beyond trace file
+- **Input**: Scenario bundle (JSON)
+- **Output**: JSONL trace of observations
+- **State**: Ephemeral; no persistence beyond the trace file
 
 ## Structure
 
 ```
-include/backend_prod/          # Public API
-  backend.hpp                  # run_backend() interface
-  types.hpp                    # Bundle/Op/Scenario types
-  trace.hpp                    # TraceWriter class
-include/3rdparty/              # Vendored dependencies
-  nlohmann/json.hpp            # JSON library (v3.11.3)
-src/
-  main.cpp                     # Entry point, ROS init/shutdown
-  backend.cpp                  # Bundle parsing + execution loop
-  backend.hpp                  # Internal coordination header
-  ops/                         # Operation implementations
-    actions.cpp                # Action ops (send_goal)
-    generic.cpp                # Generic ops (wait)
-    lifecycle.cpp              # Lifecycle ops (placeholder)
-    params.cpp                 # Parameter ops (placeholder)
-  internal/                    # Implementation details
-    trace.cpp                  # TraceWriter implementation
-    ros_utils.cpp              # ROS conversions (if needed)
+
+
+## Project Structure
+
+- `include/backend_prod/`: Public headers.
+- `src/`: Core backend library and operations.
+- `actors/`: Standalone executables (actors) that run alongside the backend. These are first-class siblings to `src/` and dependencies of the environment, not the backend library.
+
 ```
 
 ## Dependencies
 
-- **ROS 2**: `rclcpp` (Jazzy)
-- **JSON**: Vendored `nlohmann/json` v3.11.3 (no apt install required)
-- **C++**: C++20 standard
-- **CMake**: 3.8+ (ROS 2 Jazzy standard)
-
-## Building
-
-```bash
-# From repository root
-colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release
-```
-
-## Usage
-
-```bash
-# Direct invocation
-./install/backend_prod/lib/backend_prod/backend_prod <bundle_path> <trace_path>
-
-# Via harness script
-export ORACLE_BACKEND=prod
-./harness/scripts/run_harness.sh harness/scenarios/scenarios_H.json /tmp/trace.jsonl /tmp/report.json
-```
+- ROS 2 Jazzy (`rclcpp`)
+- Vendored `nlohmann/json` v3.11.3
+- C++20
 
 ## Exit Codes
 
-- **0**: Successful execution
-- **2**: Usage error (invalid args, malformed bundle, unsupported op)
-- **4**: System error (I/O failure, internal error)
-
-## Supported Operations
-
-### H00 (Harness Smoke Test)
-- `send_goal`: Emit goal_send + goal_response (driven by `payload.mode`)
-- `wait`: Sleep for specified milliseconds
-
-### Future Scenarios
-- Lifecycle operations (scenario_L)
-- Parameter operations (scenario_P)
-- Advanced action operations (scenario_A)
+- `0` — success
+- `2` — usage / bundle error
+- `4` — system / ROS error
 
 ## Trace Format
 
-JSONL (one JSON object per line) with envelope:
+JSONL, schema-governed by `trace_event.schema.json`.
 
-```json
-{"version":"0.1","run_id":"run_prod","t_ns":1234567,"sequence":0,"type":"run_start","scenario_id":"_run","detail":{"backend":"prod"}}
-```
-
-**Envelope fields** (always present):
-- `version`: Trace schema version
-- `run_id`: Backend run identifier
-- `t_ns`: Nanoseconds since process start (steady_clock)
-- `sequence`: Monotonic event counter
-
-## Design Principles
-
-1. **Bundle-driven**: All behavior driven by scenario bundle, not hardcoded
-2. **Deterministic**: Predictable event ordering and timing
-3. **Minimal API**: Small public surface for stability
-4. **Clean boundaries**: Public headers never include `src/` internals
-5. **No external deps**: Vendored JSON library for Docker compatibility
-
-## Testing
-
-```bash
-# Local
-export ORACLE_BACKEND=prod
-./harness/scripts/run_harness.sh harness/scenarios/scenarios_H.json /tmp/trace.jsonl /tmp/report.json
-
-# Docker
-docker compose build
-docker compose up --abort-on-container-exit
-```
-
-Expected output: `PASS H00_smoke_trace_roundtrip`
+Each line is a complete, independent observation.

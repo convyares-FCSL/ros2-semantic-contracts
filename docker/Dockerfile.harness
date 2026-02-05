@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
     ros-jazzy-lifecycle \
     ros-jazzy-lifecycle-msgs \
+    ros-jazzy-test-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust

@@ -35,23 +35,26 @@ void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenari
 
     auto send_goal_options = rclcpp_action::Client<FibAction>::SendGoalOptions();
     
-    // Callbacks to detect "Ghosts" (unexpected feedback/result for rejected goals)
-    send_goal_options.result_callback = [&w, scenario_id, goal_id_str](const rclcpp_action::ClientGoalHandle<FibAction>::WrappedResult& /*result*/) {
-         // std::cerr << "DEBUG: Result Callback hit for " << goal_id_str << "\n";
+    // Result callback: Map WrappedResult code to canonical status string
+    send_goal_options.result_callback = [&w, scenario_id, goal_id_str](const rclcpp_action::ClientGoalHandle<FibAction>::WrappedResult& result) {
+         // Map status code to string
+         std::string status_str;
+         switch (result.code) {
+             case rclcpp_action::ResultCode::SUCCEEDED: status_str = "SUCCEEDED"; break;
+             case rclcpp_action::ResultCode::ABORTED:   status_str = "ABORTED"; break;
+             case rclcpp_action::ResultCode::CANCELED:  status_str = "CANCELED"; break;
+             default:                                   status_str = "UNKNOWN"; break;
+         }
+
          w.emit({
             {"type", "result"},
             {"scenario_id", scenario_id},
             {"goal_id", goal_id_str},
-            {"status", "UNKNOWN_RESULT_CALLBACK"} // Placeholder, purely to fail "Absent" checks
+            {"status", status_str}
          });
     };
-
-    // We can't force the UUID easily in rclcpp_action without hacking. 
-    // We Rely on mapping. 
-    // Problem: We need the UUID *before* we send? No, we get it from the handle.
-    // But handle comes *after* response?
-    // Actually, future resolves to handle. Handle has ID.
     
+    // Send goal
     // std::cerr << "DEBUG: Sending goal async...\n";
     auto future_goal_handle = st.client->async_send_goal(goal_msg, send_goal_options);
 

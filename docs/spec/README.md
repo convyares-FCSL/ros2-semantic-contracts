@@ -1,4 +1,4 @@
-# ROS 2 Semantic Specifications
+`# ROS 2 Semantic Specifications
 
 This directory contains the normative contracts that define the "Professional Baseline" of ROS 2.
 These specifications are organized into **three distinct abstraction layers**, separating "Physics" from "Protocol" from "Operation."

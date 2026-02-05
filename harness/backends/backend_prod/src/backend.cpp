@@ -17,6 +17,11 @@ void exec_complete_terminal(TraceWriter& w, BackendState& st, const std::string&
 void exec_attempt_terminal_override(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 }
 
+namespace runtime {
+json exec_start_actor(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_stop_actor(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+}
+
 void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, const std::string& op_id, const Op& op) {
     w.emit({
         {"type", "op_start"},
@@ -37,8 +42,12 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         ops::exec_complete_terminal(w, st, scenario_id, op);
     } else if (op.op == "attempt_terminal_override") {
         ops::exec_attempt_terminal_override(w, st, scenario_id, op);
+    } else if (op.op == "start_actor") {
+        op_result = runtime::exec_start_actor(w, st, scenario_id, op);
+    } else if (op.op == "stop_actor") {
+        op_result = runtime::exec_stop_actor(w, st, scenario_id, op);
     } else {
-        throw BundleError("unsupported op: " + op.op);
+        throw BundleError("unsupported op: '" + op.op + "'");
     }
 
     // Emit op_end with optional result in detail

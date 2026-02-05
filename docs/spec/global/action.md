@@ -54,7 +54,7 @@ Action semantics MUST be exposed via standard ROS 2 action services and topics.
 
 ## Goal lifecycle and outcomes
 
-### SPEC_A02 — Observable Lifecycle and Outcomes [A04, A10]
+### SPEC_A02 — Observable Lifecycle and Outcomes — Derived from SPEC_AC04 [A04], SPEC_AC07 [A10]
 
 Each goal MUST proceed through a well-defined lifecycle.
 - Terminal outcomes MUST convey semantic meaning to clients.
@@ -99,7 +99,7 @@ When a new goal supersedes an existing active goal (preemption):
 
 ## Ordering guarantees
 
-### SPEC_A04 — Per-Goal Ordering [A06]
+### SPEC_A04 — Per-Goal Ordering — Derived from SPEC_AC05 [A06]
 
 Status and feedback updates MUST be ordered per goal.
 - Ordering is defined by per-goal sequence progression, not wall-clock time.
@@ -119,7 +119,7 @@ Status and feedback updates MUST be ordered per goal.
 
 ## Result retention
 
-### SPEC_A05 — Non-Zero Result Retention [A10, A13]
+### SPEC_A05 — Non-Zero Result Retention [A13] — A10 coverage Derived from SPEC_AC07
 
 Results MUST be retained for some non-zero duration to allow late retrieval.
 - Retention duration is implementation-defined and MUST be documented.
@@ -139,7 +139,7 @@ Results MUST be retained for some non-zero duration to allow late retrieval.
 
 ## Cancellation behaviour
 
-### SPEC_A06 — Observable Cancellation Intent [A08]
+### SPEC_A06 — Observable Cancellation Intent — Derived from SPEC_AC06 [A08]
 
 Cancellation intent MUST be observable via the cancel service.
 - Cancellation MAY resolve to different terminal outcomes depending on timing and implementation policy.
@@ -181,7 +181,7 @@ A compliant implementation MUST support standard ROS 2 tools for:
 
 ## Identity and Cleanup
 
-### SPEC_A08 — Goal Identity Reuse Forbidden [A15]
+### SPEC_A08 — Goal Identity Reuse Forbidden — Derived from SPEC_AC02 [A15]
 
 Goal identifiers (UUIDs) MUST NOT be reused within the lifetime of the action server.
 - Once a goal UUID reaches a terminal state, it MUST NOT be used for a subsequent goal.
@@ -198,7 +198,7 @@ Goal identifiers (UUIDs) MUST NOT be reused within the lifetime of the action se
 
 </details>
 
-### SPEC_A09 — Abandoned Goal Cleanup [A17]
+### SPEC_A09 — Abandoned Goal Cleanup — Projection: coverage inherited from SPEC_SYS06 [A17]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -217,5 +217,7 @@ Action servers MUST eventually clean up goals from clients that have vanished or
 
 **Notes**
 - "Vanished" implies the client node no longer exists in discovery, or the transport link is severed.
+
+**Projection** — SPEC_A09 is a wire-scoped restatement of SPEC_SYS06 (system_contract.md). Scenario A17 validates the originating obligation; this spec inherits coverage implicitly per cross-layer convention.
 
 </details>

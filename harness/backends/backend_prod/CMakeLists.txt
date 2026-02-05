@@ -19,6 +19,7 @@ add_executable(backend_prod
   src/ops/actions.cpp
   src/ops/generic.cpp
   src/ops/clock.cpp
+  src/runtime/actor_ops.cpp
 )
 
 # Include paths: public headers, internal sources, and vendored 3rdparty.
@@ -49,15 +50,15 @@ target_compile_features(header_sanity PUBLIC cxx_std_20)
 # Each peer depends only on rclcpp + rclcpp_action + test_msgs; no internal
 # backend_prod headers are included.
 # ---------------------------------------------------------------------------
-add_executable(peer_reject_always peer/reject_always.cpp)
-target_compile_features(peer_reject_always PUBLIC cxx_std_20)
-ament_target_dependencies(peer_reject_always rclcpp rclcpp_action test_msgs)
+add_executable(action_server actors/action_server.cpp)
+target_compile_features(action_server PUBLIC cxx_std_20)
+ament_target_dependencies(action_server rclcpp rclcpp_action test_msgs)
 
-add_executable(peer_sequence peer/sequence.cpp)
-target_compile_features(peer_sequence PUBLIC cxx_std_20)
-ament_target_dependencies(peer_sequence rclcpp rclcpp_action test_msgs)
+add_executable(sequence_actor actors/sequence.cpp)
+target_compile_features(sequence_actor PUBLIC cxx_std_20)
+ament_target_dependencies(sequence_actor rclcpp rclcpp_action test_msgs)
 
-install(TARGETS backend_prod peer_reject_always peer_sequence DESTINATION lib/${PROJECT_NAME})
+install(TARGETS backend_prod action_server sequence_actor DESTINATION lib/${PROJECT_NAME})
 
 # Install public headers
 install(DIRECTORY include/ DESTINATION include)

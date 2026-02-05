@@ -34,6 +34,7 @@ If a goal is rejected, it MUST NOT become observable as an active or completed g
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
+- Stimulus: Generic actor configured with `goal_response='reject'` rejects the goal.
 - A rejected goal ID never appears in status, feedback, or result streams.
 - No terminal or intermediate state is emitted for the rejected goal.
 
@@ -53,6 +54,7 @@ Once a goal reaches a terminal state (`Succeeded`, `Aborted`, `Canceled`), its s
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
+- Stimulus: Generic actor configured with `outcome_sequence='succeed,abort'` accepts, succeeds, then attempts abort.
 - Any subsequent attempt to change terminal state is rejected.
 - No conflicting terminal events are emitted.
 
