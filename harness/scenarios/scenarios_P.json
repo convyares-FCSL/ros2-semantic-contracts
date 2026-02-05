@@ -26,7 +26,7 @@
             "requires": [
                 "ros.params.declare"
             ],
-            "notes": "Declaring the same parameter twice must fail deterministically.",
+            "notes": "Declaring the same parameter twice must fail deterministically. Outcomes recorded in op_end.detail; second declare triggers rclcpp ParameterAlreadyDeclaredException.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -47,22 +47,21 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "param_declare_request",
-                                "name": "test_redeclare_param"
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "test_redeclare_param",
+                                    "declared": true
+                                }
                             },
                             {
-                                "type": "param_declare_response",
-                                "name": "test_redeclare_param",
-                                "successful": true
-                            },
-                            {
-                                "type": "param_declare_request",
-                                "name": "test_redeclare_param"
-                            },
-                            {
-                                "type": "param_declare_response",
-                                "name": "test_redeclare_param",
-                                "successful": false
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "test_redeclare_param",
+                                    "declared": false,
+                                    "reason": "AlreadyDeclared"
+                                }
                             }
                         ]
                     }

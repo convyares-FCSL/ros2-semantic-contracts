@@ -68,6 +68,7 @@
                                         "request_cancel",
                                         "set_param",
                                         "get_param",
+                                        "declare_param",
                                         "call_service"
                                     ]
                                 },

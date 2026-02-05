@@ -18,6 +18,7 @@ add_executable(backend_prod
   src/internal/fs_utils.cpp
   src/ops/actions.cpp
   src/ops/generic.cpp
+  src/ops/params.cpp
   src/ops/clock.cpp
   src/runtime/actor_ops.cpp
 )

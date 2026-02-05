@@ -95,7 +95,7 @@ if scenario_arg:
 # We explode ALL scenarios into individual ephemeral bundles to ensure:
 # 1. Immediate reporting of results (per user request)
 # 2. No peer conflicts (H vs A)
-bundles = sorted(glob.glob('harness/scenarios/scenarios_[AH]*.json'))
+bundles = sorted(glob.glob('harness/scenarios/scenarios_[AHP]*.json'))
 for b_path in bundles:
     try:
         with open(b_path) as f:
