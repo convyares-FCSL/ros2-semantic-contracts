@@ -9,8 +9,6 @@ namespace backend_prod::ops {
 /// 1. Send Goal via Client.
 /// 2. Wait for Future (GoalResponse).
 /// 3. Emit goal_send_decision.
-/// Note: payload.mode is consumed by the environment (peer launcher) only.
-///       The backend does not read it.
 void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op) {
     if (!op.goal_id) {
         throw BundleError("send_goal: missing goal_id");

@@ -8,7 +8,7 @@
 ///
 /// Behavior:
 ///   - Configured via ROS parameters at startup.
-///   - Writes sentinel /tmp/peer_ready_<RUN_ID> on readiness.
+///   - Writes sentinel file to path defined by ACTOR_READY_PATH environment variable.
 ///   - Clean shutdown on SIGTERM.
 
 #include <rclcpp/rclcpp.hpp>

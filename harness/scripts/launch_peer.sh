@@ -74,10 +74,9 @@ TARGET_ID="${TARGET_SCENARIO_ID:-}"
 
 if [[ -n "${TARGET_ID}" ]]; then
     # Explicit selection from environment
-    if [[ "${TARGET_ID}" == "A01"* ]]; then
-        MODE="reject"
-    elif [[ "${TARGET_ID}" == "A02"* ]]; then
-        MODE="succeed_abort"
+    if [[ "${TARGET_ID}" == "A01"* ]] || [[ "${TARGET_ID}" == "A02"* ]]; then
+        echo "ERROR: A01/A02 use start_actor; do not set TARGET_SCENARIO_ID for these." >&2
+        exit 4
     else
         MODE="sequence"
     fi
