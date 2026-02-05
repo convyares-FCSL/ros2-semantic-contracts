@@ -70,7 +70,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **P03** | P03_redeclaration_fails            | N/A  | PASS | N/A  | N/A   | Redeclaration of parameter fails   |
 | **P04** | P04_no_partial_application         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P05** | P05_readonly_enforcement           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **P06** | P06_unknown_params_rejected        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **P06** | P06_unknown_params_rejected        | N/A  | PASS | N/A  | N/A   | Not yet validated                  |
 | **P07** | P07_change_record_ordering         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P08** | P08_unknown_types_not_set          | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P09** | P09_atomic_updates                 | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |

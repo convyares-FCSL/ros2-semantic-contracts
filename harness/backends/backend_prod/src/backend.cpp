@@ -16,6 +16,7 @@ json exec_get_clock(TraceWriter& w, const std::string& scenario_id);
 void exec_complete_terminal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 void exec_attempt_terminal_override(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_declare_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_set_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 }
 
 namespace runtime {
@@ -49,6 +50,8 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         op_result = runtime::exec_stop_actor(w, st, scenario_id, op);
     } else if (op.op == "declare_param") {
         op_result = ops::exec_declare_param(w, st, scenario_id, op);
+    } else if (op.op == "set_param") {
+        op_result = ops::exec_set_param(w, st, scenario_id, op);
     } else {
         throw BundleError("unsupported op: '" + op.op + "'");
     }
@@ -84,7 +87,7 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
         {"scenario_id", "_run"},
         {"detail", {
             {"backend", "prod"},
-            {"caps", json::array({"actions.basic", "actions.terminal", "clock.ros_time", "ros.params.declare"})},
+            {"caps", json::array({"actions.basic", "actions.terminal", "clock.ros_time", "ros.params.declare", "ros.params.set"})},
             {"limits", json::object()}
         }}
     });
@@ -102,7 +105,11 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
 
         // Create per-scenario state with ROS infrastructure (client-only)
         BackendState st;
-        st.node = std::make_shared<rclcpp::Node>("backend_prod_client_" + id);
+
+        auto opts = rclcpp::NodeOptions()
+            .allow_undeclared_parameters(false)
+            .automatically_declare_parameters_from_overrides(false);
+        st.node = std::make_shared<rclcpp::Node>("backend_prod_client_" + id, opts);
 
         st.executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
         st.executor->add_node(st.node);

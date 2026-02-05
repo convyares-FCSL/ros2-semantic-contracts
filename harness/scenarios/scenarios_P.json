@@ -136,7 +136,7 @@
             "requires": [
                 "ros.params.set"
             ],
-            "notes": "Setting an undeclared parameter must be rejected by the node.",
+            "notes": "Setting an undeclared parameter must be rejected by the node. Outcome recorded in op_end.detail; node is constructed with allow_undeclared_parameters(false) pinned in NodeOptions.",
             "ops": [
                 {
                     "op": "set_param",
@@ -153,13 +153,12 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "param_set_request",
-                                "name": "param_does_not_exist"
-                            },
-                            {
-                                "type": "param_set_response",
-                                "name": "param_does_not_exist",
-                                "successful": false
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "param_does_not_exist",
+                                    "successful": false
+                                }
                             }
                         ]
                     }
