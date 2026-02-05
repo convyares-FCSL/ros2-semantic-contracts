@@ -48,7 +48,8 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **A12** | A12_supersession_cancelled         | N/A  | SKIP | N/A  | N/A   | Policy-layer behavior, unvalidated |
 | **A13** | A13_result_retention               | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **A14** | A14_tooling_compatibility          | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **A15** | A15_no_goal_id_reuse               | N/A  | N/A  | N/A  | N/A   | **New**: Identity safety           |
+| **A15** | A15_no_goal_id_reuse               | N/A  | N/A  | N/A  | N/A   | ⚠️ Deferred — adversarial UUID-reuse stimulus not expressible in current ops model |
+| **A16** | A16_action_interface_conformity    | N/A  | N/A  | N/A  | N/A   | **New**: Interface Conformity      |
 | **A17** | A17_abandoned_goal_cleanup         | N/A  | N/A  | N/A  | N/A   | **New**: Resource hygiene          |
 | **L01** | L01_defined_transitions            | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **L02** | L02_primary_state_visibility        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
@@ -62,6 +63,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **L10** | L10_shutdown_deterministic         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **L11** | L11_shutdown_via_deactivate        | N/A  | N/A  | N/A  | N/A   | **New**: Active shutdown logic     |
 | **L12** | L12_services_not_gated             | N/A  | N/A  | N/A  | N/A   | **New**: Service availability      |
+| **L13** | L13_lifecycle_interface_conformity | N/A  | N/A  | N/A  | N/A   | **New**: Interface Conformity      |
 | **G01** | G01_inactive_suppresses_pubs       | N/A  | N/A  | N/A  | N/A   | Gate rule                          |
 | **P01** | P01_no_fabricated_params           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P02** | P02_dynamic_typing_rules           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
@@ -77,6 +79,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **P12** | P12_describe_unknown_consistent    | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P13** | P13_list_complete_stable           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P14** | P14_deletion_reported_events       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **P15** | P15_parameter_interface_conformity | N/A  | N/A  | N/A  | N/A   | **New**: Interface Conformity      |
 | **P16** | P16_explicit_declaration_mode      | N/A  | N/A  | N/A  | N/A   | **New**: Declaration modes         |
 | **S01** | S01_load_node_observable           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S02** | S02_load_failure_clean             | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
@@ -90,14 +93,11 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **S10** | S10_callback_failure_visible       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S11** | S11_lifecycle_executor_safety      | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S12** | S12_lifecycle_orchestration        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **S13** | S13_liveness_detection             | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **S13** | S13_liveness_detection             | N/A  | N/A  | N/A  | N/A   | ⚠️ Deferred — requires kill-node or adversarial timeout primitive |
 | **S14** | S14_tooling_interoperability       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S15** | S15_explicit_ownership_lifetime    | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S16** | S16_deterministic_bringup          | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **S17** | S17_no_hidden_execution            | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **S17** | S17_no_hidden_execution            | N/A  | N/A  | N/A  | N/A   | ⚠️ Manual/deferred — not automatable; requires static analysis |
 | **S18** | S18_observable_failure             | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **S19** | S19_graph_hygiene                    | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **A16** | A16_action_interface_conformity      | N/A  | N/A  | N/A  | N/A   | New: Interface Conformity          |
-| **L13** | L13_lifecycle_interface_conformity   | N/A  | N/A  | N/A  | N/A   | New: Interface Conformity          |
-| **P15** | P15_parameter_interface_conformity   | N/A  | N/A  | N/A  | N/A   | New: Interface Conformity          |
-| **S21** | S21_composition_interface_conformity | N/A  | N/A  | N/A  | N/A   | New: Interface Conformity          |
+| **S20** | S20_composition_interface_conformity | N/A  | N/A  | N/A  | N/A   | Interface Conformity               |

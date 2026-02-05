@@ -112,7 +112,7 @@ Appropriate RFC 2119 keyword usage. `SHALL` appears only once (correctly used).
 | **S19** | S19_graph_hygiene                  | N/A  | N/A  | N/A  | N/A   | Not yet validated                  || A16 | A16_action_interface_conformity      | N/A | N/A | N/A | N/A | New: Interface Conformity |
 ```
 
-The newly added scenarios (A16, L13, P15, S21) are appended inline, breaking the table structure.
+The newly added scenarios (A16, L13, P15, S20) are appended inline, breaking the table structure.
 
 **Recommendation:** 
 Insert proper row separators:
@@ -212,8 +212,8 @@ harness/
 ### Gap Analysis (Harness JSON vs Matrix)
 
 After recent updates:
-- **Missing implementations:** A03-A14, L01-L12, P01-P14, S01-S20
-- **Placeholder entries:** A15, A16, A17, L11-L13, P15-P16, S21 (added but empty)
+- **Missing implementations:** A03-A14, L01-L12, P01-P14, S01-S19
+- **Placeholder entries:** A15, A16, A17, L11-L13, P15-P16, S20 (added but empty)
 
 ---
 

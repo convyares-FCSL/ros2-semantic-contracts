@@ -89,7 +89,7 @@ Some specs describe properties enforced by ROS infrastructure (UUID generation, 
 | G01 | SPEC_L07 | Clean | Keep | SPEC_L07 |
 | H00 | N/A (harness) | Harness | Keep | N/A |
 | H01 | N/A (harness) | Harness | Keep | N/A |
-| S01-S21 | Various | Clean | Keep | (unchanged) |
+| S01-S20 | Various | Clean | Keep | (unchanged) |
 
 ---
 

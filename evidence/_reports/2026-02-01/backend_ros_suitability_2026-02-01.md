@@ -47,7 +47,7 @@ The `backend_ros` is a Rust implementation with action-focused ops (`send_goal`,
 | P16 | Parameter | ❌ NOT RUNNABLE | Status: planned | Planned | — |
 | **G01** | Gating | ❌ NOT RUNNABLE | Stub (empty ops/expects) | Stub | — |
 | **S01-S19** | System | ❌ NOT RUNNABLE | All stubs (require composition/executor infra) | Stub | — |
-| S21 | System | ⚠️ RUNNABLE? | Interface introspection, implemented | Implemented | — |
+| S20 | System | ⚠️ RUNNABLE? | Interface introspection, implemented | Implemented | — |
 
 ---
 
@@ -63,7 +63,7 @@ The `backend_ros` is a Rust implementation with action-focused ops (`send_goal`,
 | `params.set` | P06 | ✅ Supported |
 | `params.describe` | P12 | ✅ Supported |
 | `params.atomic` | P04, P09 | 🔧 Needs impl |
-| `graph.observe` | A16, L13, P15, S21 | ⚠️ Interface only |
+| `graph.observe` | A16, L13, P15, S20 | ⚠️ Interface only |
 | `composition.container` | S01-S07 | 🔧 Needs infra |
 | `executor.spin` | S08-S11 | 🔧 Needs infra |
 | `harness.smoke` | H00 | ✅ Supported |
@@ -94,7 +94,7 @@ The `backend_ros` is a Rust implementation with action-focused ops (`send_goal`,
 
 | Scenario | Risk |
 |----------|------|
-| A16, L13, P15, S21 | Graph discovery timing (interface introspection) |
+| A16, L13, P15, S20 | Graph discovery timing (interface introspection) |
 | L09 | Transition event timing |
 | S13 | Liveness detection timing windows |
 

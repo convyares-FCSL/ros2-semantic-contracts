@@ -155,8 +155,8 @@
             "expects": [],
             "notes": "Populate ops/observations to validate this clause (Layer=System)."
         },
-        "S21_composition_interface_conformity": {
-            "spec_id": "S21",
+        "S20_composition_interface_conformity": {
+            "spec_id": "S20",
             "title": "Composition Interface Conformity",
             "layer": "System",
             "requires": [

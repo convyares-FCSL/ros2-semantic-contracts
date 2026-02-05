@@ -265,6 +265,9 @@ The system is compatible with standard CLI tools (`ros2 node`, `ros2 lifecycle`)
 
 **Non-claims**
 - Does not specify required tooling.
+
+**Scope note**
+- Cross-subsystem composite: SPEC_ECO04 defines the ecosystem-wide tooling-introspection expectation; SPEC_C07 defines composition-layer CLI compatibility. Both are exercised because CLI tooling exercises the composition interface as part of ecosystem observability.
 </details>
 
 ### S15 — Explicit Ownership/Lifetime
@@ -352,7 +355,7 @@ The system maintains a clean graph (no orphaned entities).
 **Non-claims**
 - Does not specify enforcement mechanisms.
 </details>
-### S21 — Composition Interface Conformity
+### S20 — Composition Interface Conformity
 **Validates:** `SPEC_C01` (System)
 **Layer:** System
 **Claim:** The container exposes the standard ROS 2 composition interface graph topology.
