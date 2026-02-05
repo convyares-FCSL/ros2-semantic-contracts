@@ -33,9 +33,9 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 
 | Spec ID | Scenario ID                        | stub | ros  | PROD | rclrs | Notes                              |
 | ------- | ---------------------------------- | ---- | ---- | ---- | ----- | ---------------------------------- |
-| H00     | H00_harness_smoke                  | PASS | PASS | N/A  | N/A   | Harness calibration                |
-| **A01** | A01_no_ghosts_after_rejection      | PASS | PASS | N/A  | N/A   | Action goal identity               |
-| **A02** | A02_terminal_immutability          | PASS | PASS | N/A  | N/A   | Terminal immutability              |
+| H00     | H00_harness_smoke                  | PASS | N/A  | PASS | N/A   | Harness calibration                |
+| **A01** | A01_no_ghosts_after_rejection      | PASS | N/A  | PASS | N/A   | Action goal identity               |
+| **A02** | A02_terminal_immutability          | PASS | N/A  | PASS | N/A   | Terminal immutability              |
 | **A03** | A03_unknown_not_persistent         | N/A  | SKIP | N/A  | N/A   | Not implemented yet                |
 | **A04** | A04_valid_transitions              | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **A05** | A05_invalid_transitions_rejected   | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
@@ -67,12 +67,12 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **G01** | G01_inactive_suppresses_pubs       | N/A  | N/A  | N/A  | N/A   | Gate rule                          |
 | **P01** | P01_no_fabricated_params           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P02** | P02_dynamic_typing_rules           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **P03** | P03_redeclaration_fails            | N/A  | PASS | N/A  | N/A   | Redeclaration of parameter fails   |
-| **P04** | P04_no_partial_application         | N/A  | PASS | N/A  | N/A   | Atomic batch-set rejection         |
-| **P05** | P05_readonly_enforcement           | N/A  | PASS | N/A  | N/A   | Read-only enforcement              |
-| **P06** | P06_unknown_params_rejected        | N/A  | PASS | N/A  | N/A   | Set undeclared param rejected      |
+| **P03** | P03_redeclaration_fails            | N/A  | N/A  | PASS | N/A   | Redeclaration of parameter fails   |
+| **P04** | P04_no_partial_application         | N/A  | N/A  | PASS | N/A   | Atomic batch-set rejection         |
+| **P05** | P05_readonly_enforcement           | N/A  | N/A  | PASS | N/A   | Read-only enforcement              |
+| **P06** | P06_unknown_params_rejected        | N/A  | N/A  | PASS | N/A   | Set undeclared param rejected      |
 | **P07** | P07_change_record_ordering         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **P08** | P08_unknown_types_not_set          | N/A  | PASS | N/A  | N/A   | Undeclared param returns NOT_SET   |
+| **P08** | P08_unknown_types_not_set          | N/A  | N/A  | PASS | N/A   | Undeclared param returns NOT_SET   |
 | **P09** | P09_atomic_updates                 | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P10** | P10_rejected_updates_silent        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P11** | P11_events_describe_changes        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
