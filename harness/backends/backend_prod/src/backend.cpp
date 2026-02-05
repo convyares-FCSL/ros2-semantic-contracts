@@ -17,6 +17,8 @@ void exec_complete_terminal(TraceWriter& w, BackendState& st, const std::string&
 void exec_attempt_terminal_override(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_declare_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_set_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_get_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_set_params_batch(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 }
 
 namespace runtime {
@@ -52,6 +54,10 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         op_result = ops::exec_declare_param(w, st, scenario_id, op);
     } else if (op.op == "set_param") {
         op_result = ops::exec_set_param(w, st, scenario_id, op);
+    } else if (op.op == "get_param") {
+        op_result = ops::exec_get_param(w, st, scenario_id, op);
+    } else if (op.op == "set_params_batch") {
+        op_result = ops::exec_set_params_batch(w, st, scenario_id, op);
     } else {
         throw BundleError("unsupported op: '" + op.op + "'");
     }
@@ -87,7 +93,7 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
         {"scenario_id", "_run"},
         {"detail", {
             {"backend", "prod"},
-            {"caps", json::array({"actions.basic", "actions.terminal", "clock.ros_time", "ros.params.declare", "ros.params.set"})},
+            {"caps", json::array({"actions.basic", "actions.terminal", "clock.ros_time", "ros.params.declare", "ros.params.set", "ros.params.get", "ros.params.set_batch"})},
             {"limits", json::object()}
         }}
     });

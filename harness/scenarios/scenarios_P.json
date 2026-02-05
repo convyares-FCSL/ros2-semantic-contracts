@@ -74,12 +74,19 @@
             "layer": "Core",
             "requires": [
                 "ros.params.set_batch",
-                "ros.params.declare"
+                "ros.params.declare",
+                "ros.params.get"
             ],
-            "notes": "Batch parameter updates with one invalid must reject entirely (atomic).",
+            "notes": "Atomic batch-set with one undeclared param must reject entirely. Uses set_parameters_atomically; state verified with get_param before/after. Both params remain unchanged on rejection. Validates SPEC_PC05+SPEC_P04 atomicity.",
             "ops": [
                 {
                     "op": "declare_param",
+                    "payload": {
+                        "name": "valid_param"
+                    }
+                },
+                {
+                    "op": "get_param",
                     "payload": {
                         "name": "valid_param"
                     }
@@ -100,6 +107,12 @@
                             }
                         ]
                     }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "valid_param"
+                    }
                 }
             ],
             "expects": [
@@ -108,13 +121,41 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "param_declare_response",
-                                "name": "valid_param",
-                                "successful": true
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "valid_param",
+                                    "declared": true
+                                }
                             },
                             {
-                                "type": "param_set_batch_response",
-                                "all_successful": false
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "valid_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": ""
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "valid_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": ""
+                                }
                             }
                         ]
                     }
