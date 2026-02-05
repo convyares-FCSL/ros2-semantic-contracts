@@ -34,6 +34,9 @@ json exec_set_param(TraceWriter& /*w*/, BackendState& st, const std::string& /*s
     } catch (const rclcpp::exceptions::ParameterNotDeclaredException&) {
         result["successful"] = false;
         result["reason"]     = "NotDeclared";
+    } catch (const std::exception& e) {
+        result["successful"] = false;
+        result["reason"]     = std::string("Exception: ") + e.what();
     }
     return result;
 }
@@ -48,9 +51,27 @@ json exec_declare_param(TraceWriter& /*w*/, BackendState& st, const std::string&
     result["op"] = "declare_param";
     result["name"] = name;
 
+    // Parse descriptor (optional)
+    rcl_interfaces::msg::ParameterDescriptor desc;
+    if (op.payload->contains("descriptor")) {
+        const json& d = (*op.payload)["descriptor"];
+        if (d.contains("read_only")) desc.read_only = d["read_only"].get<bool>();
+        if (d.contains("dynamic_typing")) desc.dynamic_typing = d["dynamic_typing"].get<bool>();
+    }
+
+    // Parse default value (string only)
+    std::string default_value = op.payload->contains("value") ?
+        (*op.payload)["value"].get<std::string>() : "";
+
     try {
-        st.node->declare_parameter<std::string>(name, "");
+        st.node->declare_parameter<std::string>(name, default_value, desc);
         result["declared"] = true;
+
+        // Echo descriptor for trace inspection
+        if (desc.read_only) {
+            result["descriptor"] = json::object();
+            result["descriptor"]["read_only"] = true;
+        }
     } catch (const rclcpp::exceptions::ParameterAlreadyDeclaredException&) {
         result["declared"] = false;
         result["reason"] = "AlreadyDeclared";
@@ -71,6 +92,8 @@ json exec_get_param(TraceWriter& /*w*/, BackendState& st, const std::string& /*s
     // Check declaration status first
     if (!st.node->has_parameter(name)) {
         result["declared"] = false;
+        result["set"] = false;
+        result["type"] = "NOT_SET";
         return result;
     }
 

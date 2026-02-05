@@ -166,9 +166,94 @@
             "spec_id": "P05",
             "title": "Read-only enforcement",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get"
+            ],
+            "notes": "Validates SPEC_PC05: parameters declared read-only cannot be modified. Descriptor with read_only=true passed to declare_param; subsequent set_param must fail and leave value unchanged.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "readonly_test",
+                        "value": "initial",
+                        "descriptor": {
+                            "read_only": true
+                        }
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "readonly_test"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "readonly_test",
+                        "type": "string",
+                        "value": "modified"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "readonly_test"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "readonly_test",
+                                    "declared": true,
+                                    "descriptor": {
+                                        "read_only": true
+                                    }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "readonly_test",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "initial"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "readonly_test",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "readonly_test",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "initial"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P06_unknown_params_rejected": {
             "spec_id": "P06",
@@ -219,14 +304,14 @@
             "title": "Unknown types NOT_SET",
             "layer": "Core",
             "requires": [
-                "ros.params.describe"
+                "ros.params.get"
             ],
-            "notes": "Describing an unknown parameter must return type=NOT_SET (uninitialized). This validates ROS 2's parameter type system.",
+            "notes": "Validates that querying an undeclared parameter returns NOT_SET type. get_param op implements GetParameters semantics: has_parameter() returns false -> declared:false, type:NOT_SET.",
             "ops": [
                 {
-                    "op": "describe_param",
+                    "op": "get_param",
                     "payload": {
-                        "name": "param_that_does_not_exist_xyz"
+                        "name": "missing_param"
                     }
                 }
             ],
@@ -236,13 +321,13 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "param_describe_request",
-                                "name": "param_that_does_not_exist_xyz"
-                            },
-                            {
-                                "type": "param_describe_response",
-                                "name": "param_that_does_not_exist_xyz",
-                                "param_type": "NOT_SET"
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
+                                }
                             }
                         ]
                     }
