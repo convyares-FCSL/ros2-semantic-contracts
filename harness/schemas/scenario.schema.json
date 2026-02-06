@@ -70,7 +70,8 @@
                                         "get_param",
                                         "declare_param",
                                         "set_params_batch",
-                                        "call_service"
+                                        "call_service",
+                                        "describe_param"
                                     ]
                                 },
                                 "ms": {

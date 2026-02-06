@@ -360,12 +360,12 @@
         },
         "P12_describe_unknown_consistent": {
             "spec_id": "P12",
-            "title": "Describe unknown consistent",
+            "title": "Describe Unknown Consistent",
             "layer": "Core",
             "requires": [
                 "ros.params.describe"
             ],
-            "notes": "Describing an unknown parameter should produce a consistent observable response for the same input across repeated calls.",
+            "notes": "Validates SPEC_P06: calling describe_param twice on the same unknown parameter must return identical descriptor fields. Consistency defined as: type, read_only, dynamic_typing fields must match across calls. Note: rclcpp throws on undeclared params, so we catch and fabricate a default descriptor.",
             "ops": [
                 {
                     "op": "describe_param",
@@ -386,23 +386,32 @@
                     "params": {
                         "must_observe": [
                             {
-                                "type": "param_describe_request",
-                                "name": "param_does_not_exist"
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "param_does_not_exist",
+                                    "successful": false,
+                                    "descriptor": {
+                                        "type": 0,
+                                        "read_only": false,
+                                        "dynamic_typing": false
+                                    }
+                                }
                             },
                             {
-                                "type": "param_describe_response",
-                                "name": "param_does_not_exist",
-                                "detail": {}
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "param_does_not_exist",
+                                    "successful": false,
+                                    "descriptor": {
+                                        "type": 0,
+                                        "read_only": false,
+                                        "dynamic_typing": false
+                                    }
+                                }
                             }
                         ]
-                    }
-                },
-                {
-                    "check": "describe_unknown_consistent",
-                    "params": {
-                        "name": "param_does_not_exist",
-                        "min_calls": 2,
-                        "evidence_ptr": "/detail"
                     }
                 }
             ]

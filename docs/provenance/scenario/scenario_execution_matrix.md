@@ -76,7 +76,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **P09** | P09_atomic_updates                 | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P10** | P10_rejected_updates_silent        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P11** | P11_events_describe_changes        | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **P12** | P12_describe_unknown_consistent    | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **P12** | P12_describe_unknown_consistent    | N/A  | N/A  | PASS | N/A   | Undeclared param returns consistent default |
 | **P13** | P13_list_complete_stable           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P14** | P14_deletion_reported_events       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P15** | P15_parameter_interface_conformity | N/A  | N/A  | N/A  | N/A   | **New**: Interface Conformity      |

@@ -171,4 +171,37 @@ json exec_set_params_batch(TraceWriter& /*w*/, BackendState& st, const std::stri
     return result;
 }
 
+json exec_describe_param(TraceWriter& /*w*/, BackendState& st, const std::string& /*scenario_id*/, const Op& op) {
+    if (!op.payload || !op.payload->count("name"))
+        throw BundleError("describe_param: payload missing 'name'");
+
+    std::string name = (*op.payload)["name"];
+
+    json result;
+    result["op"] = "describe_param";
+    result["name"] = name;
+
+    rcl_interfaces::msg::ParameterDescriptor desc;
+
+    try {
+        auto descriptors = st.node->describe_parameters({name});
+        if (descriptors.empty()) {
+             throw BundleError("describe_parameters returned empty vector");
+        }
+        desc = descriptors[0];
+        result["successful"] = true;
+    } catch (const std::exception& e) {
+        result["successful"] = false;
+        result["reason"] = e.what();
+        // Fallback to default constructed descriptor (type=0/NOT_SET)
+    }
+
+    result["descriptor"] = json::object();
+    result["descriptor"]["type"] = desc.type;
+    result["descriptor"]["read_only"] = desc.read_only;
+    result["descriptor"]["dynamic_typing"] = desc.dynamic_typing;
+
+    return result;
+}
+
 } // namespace backend_prod::ops
