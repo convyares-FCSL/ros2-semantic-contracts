@@ -58,12 +58,12 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 16 scenarios | PASS: 7 | N/A-only: 9</strong></summary>
+<summary><strong>Parameters (P): 16 scenarios | PASS: 8 | N/A-only: 8</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
 | **P01** | P01_no_fabricated_params         | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
-| **P02** | P02_dynamic_typing_rules         | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
+| **P02** | P02_dynamic_typing_rules         | N/A  | N/A | PASS | PASS | N/A   | Static rejects type change; dynamic allows it |
 | **P03** | P03_redeclaration_fails          | N/A  | N/A | PASS | PASS | N/A   | Redeclaration of parameter fails            |
 | **P04** | P04_no_partial_application       | N/A  | N/A | PASS | PASS | N/A   | Atomic batch-set rejection                  |
 | **P05** | P05_readonly_enforcement         | N/A  | N/A | PASS | PASS | N/A   | Read-only enforcement                       |
