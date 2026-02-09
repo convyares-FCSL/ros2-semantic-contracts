@@ -408,9 +408,137 @@
             "spec_id": "P07",
             "title": "Change record ordering",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get"
+            ],
+            "notes": "Validates SPEC_PC07 baseline hypothesis at operation level: sequential writes must be externally observable in the same order via immediate reads. This scenario does not assert /parameter_events payloads directly.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "ordered_param",
+                        "value": "v0"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "ordered_param",
+                        "type": "string",
+                        "value": "v1"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "ordered_param"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "ordered_param",
+                        "type": "string",
+                        "value": "v2"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "ordered_param"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "ordered_param",
+                        "type": "string",
+                        "value": "v3"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "ordered_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "ordered_param",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "ordered_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "ordered_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "v1"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "ordered_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "ordered_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "v2"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "ordered_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "ordered_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "v3"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P08_unknown_types_not_set": {
             "spec_id": "P08",

@@ -58,7 +58,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 16 scenarios | PASS: 8 | N/A-only: 8</strong></summary>
+<summary><strong>Parameters (P): 16 scenarios | PASS: 9 | N/A-only: 7</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
@@ -68,7 +68,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P04** | P04_no_partial_application       | N/A  | N/A | PASS | PASS | N/A   | Atomic batch-set rejection                  |
 | **P05** | P05_readonly_enforcement         | N/A  | N/A | PASS | PASS | N/A   | Read-only enforcement                       |
 | **P06** | P06_unknown_params_rejected      | N/A  | N/A | PASS | PASS | N/A   | Set undeclared param rejected               |
-| **P07** | P07_change_record_ordering       | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
+| **P07** | P07_change_record_ordering       | N/A  | N/A | PASS | PASS | N/A   | Sequential writes observed in deterministic order |
 | **P08** | P08_unknown_types_not_set        | N/A  | N/A | PASS | PASS | N/A   | Undeclared param returns NOT_SET            |
 | **P09** | P09_atomic_updates               | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
 | **P10** | P10_rejected_updates_silent      | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
