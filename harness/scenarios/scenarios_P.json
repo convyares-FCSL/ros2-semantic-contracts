@@ -7,9 +7,85 @@
             "spec_id": "P01",
             "title": "No fabricated parameters",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.get",
+                "ros.params.declare"
+            ],
+            "notes": "Validates SPEC_PC01/SPEC_PC02 baseline at query boundary: unknown parameters must remain undeclared/NOT_SET, and parameter identity is case-sensitive (no fabricated alias).",
+            "ops": [
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "ghost_param"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "CaseParam"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "caseparam"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "CaseParam"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "ghost_param",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "CaseParam",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "caseparam",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "CaseParam",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": ""
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P02_dynamic_typing_rules": {
             "spec_id": "P02",

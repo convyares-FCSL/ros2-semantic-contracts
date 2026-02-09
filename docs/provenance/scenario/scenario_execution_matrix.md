@@ -58,11 +58,11 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 16 scenarios | PASS: 9 | N/A-only: 7</strong></summary>
+<summary><strong>Parameters (P): 16 scenarios | PASS: 10 | N/A-only: 6</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
-| **P01** | P01_no_fabricated_params         | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
+| **P01** | P01_no_fabricated_params         | N/A  | N/A | PASS | PASS | N/A   | Unknown/case-mismatch names remain undeclared (NOT_SET) |
 | **P02** | P02_dynamic_typing_rules         | N/A  | N/A | PASS | PASS | N/A   | Static rejects type change; dynamic allows it |
 | **P03** | P03_redeclaration_fails          | N/A  | N/A | PASS | PASS | N/A   | Redeclaration of parameter fails            |
 | **P04** | P04_no_partial_application       | N/A  | N/A | PASS | PASS | N/A   | Atomic batch-set rejection                  |
