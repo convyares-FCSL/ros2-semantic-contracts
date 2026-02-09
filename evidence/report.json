@@ -1,0 +1,201 @@
+{
+  "description": "Skeleton scenarios generated from traceability.md (grouped, keyed by scenario id).",
+  "group": "A",
+  "pass": true,
+  "scenarios": {
+    "A01_no_ghosts_after_rejection": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "If a goal is rejected, no status/feedback/result events may reference it. Validates SPEC_AC01 (no-ghosts aspect). UUID uniqueness is infrastructure-provided.",
+      "outcome": "PASS",
+      "spec_id": "A01",
+      "title": "No ghosts after rejection"
+    },
+    "A02_terminal_immutable": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Once terminal is set, subsequent attempts to change terminal must be denied and observable; terminal must not change.",
+      "outcome": "PASS",
+      "spec_id": "A02",
+      "title": "Terminal state is immutable"
+    },
+    "A03_unknown_not_persistent": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A03",
+      "title": "Unknown not persistent"
+    },
+    "A04_valid_transitions": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A04",
+      "title": "Valid transitions only"
+    },
+    "A05_invalid_transitions_rejected": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A05",
+      "title": "Invalid transitions rejected"
+    },
+    "A06_status_updates_monotonic": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Validates SPEC_AC05: status updates are monotonically ordered per goal. Canonical path: ACCEPTED → EXECUTING → SUCCEEDED. Sequence numbers validate ordering.",
+      "outcome": "PASS",
+      "spec_id": "A06",
+      "title": "Status updates monotonic"
+    },
+    "A07_ordering_time_independent": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A07",
+      "title": "Event ordering determined by sequence, not wall-clock time"
+    },
+    "A08_cancel_intent_observable": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A08",
+      "title": "Cancellation intent observable"
+    },
+    "A09_cancel_resolution_policy": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A09",
+      "title": "Cancel resolution policy-defined"
+    },
+    "A10_result_visible_after_terminal": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A10",
+      "title": "Result visible after terminal"
+    },
+    "A11_single_terminal_result": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A11",
+      "title": "Single terminal result"
+    },
+    "A12_supersession_cancelled": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Policy",
+      "notes": "Populate ops/observations to validate this clause (Layer=Policy).",
+      "outcome": "SKIP",
+      "spec_id": "A12",
+      "title": "Supersession via CANCELED"
+    },
+    "A13_result_retention": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Policy",
+      "notes": "Populate ops/observations to validate this clause (Layer=Policy).",
+      "outcome": "SKIP",
+      "spec_id": "A13",
+      "title": "Result retention non-zero"
+    },
+    "A14_tooling_compatibility": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Tooling",
+      "notes": "Populate ops/observations to validate this clause (Layer=Tooling).",
+      "outcome": "SKIP",
+      "spec_id": "A14",
+      "title": "Tooling compatibility"
+    },
+    "A15_no_goal_id_reuse": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "Core",
+      "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+      "outcome": "SKIP",
+      "spec_id": "A15",
+      "title": "No Goal ID Reuse"
+    },
+    "A16_action_interface_conformity": {
+      "details": {
+        "capability_missing": [
+          "graph.observe"
+        ]
+      },
+      "layer": "Global",
+      "notes": "Interface introspection scenario. Validate action services/topics exist.",
+      "outcome": "SKIP",
+      "spec_id": "A16",
+      "title": "Action Interface Conformity"
+    },
+    "A17_abandoned_goal_cleanup": {
+      "details": {
+        "observed_end": true,
+        "observed_start": true
+      },
+      "layer": "System",
+      "notes": "Populate ops/observations to validate this clause (Layer=System).",
+      "outcome": "SKIP",
+      "spec_id": "A17",
+      "title": "Abandoned Goal Cleanup"
+    }
+  },
+  "summary": {
+    "fail": 0,
+    "pass": 3,
+    "skip": 14
+  },
+  "version": "0.1"
+}

@@ -11,7 +11,8 @@ namespace backend_prod {
 // Forward declarations from ops/
 namespace ops {
 void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
-void exec_wait(const Op& op);
+void exec_cancel_goal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+void exec_wait(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_get_clock(TraceWriter& w, const std::string& scenario_id);
 void exec_complete_terminal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 void exec_attempt_terminal_override(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
@@ -39,8 +40,10 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
 
     if (op.op == "send_goal") {
         ops::exec_send_goal(w, st, scenario_id, op);
+    } else if (op.op == "cancel_goal") {
+        ops::exec_cancel_goal(w, st, scenario_id, op);
     } else if (op.op == "wait") {
-        ops::exec_wait(op);
+        ops::exec_wait(w, st, scenario_id, op);
     } else if (op.op == "get_clock") {
         op_result = ops::exec_get_clock(w, scenario_id);
     } else if (op.op == "complete_terminal") {

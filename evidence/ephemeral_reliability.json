@@ -1,0 +1,64 @@
+{
+  "version": "0.1",
+  "group": "Reliability",
+  "scenarios": {
+    "P12_describe_unknown_consistent": {
+      "spec_id": "P12",
+      "title": "Describe Unknown Consistent",
+      "layer": "Core",
+      "requires": [
+        "ros.params.describe"
+      ],
+      "notes": "Validates SPEC_P06: calling describe_param twice on the same unknown parameter must return identical descriptor fields. Consistency defined as: type, read_only, dynamic_typing fields must match across calls. Note: rclcpp throws on undeclared params, so we catch and fabricate a default descriptor.",
+      "ops": [
+        {
+          "op": "describe_param",
+          "payload": {
+            "name": "param_does_not_exist"
+          }
+        },
+        {
+          "op": "describe_param",
+          "payload": {
+            "name": "param_does_not_exist"
+          }
+        }
+      ],
+      "expects": [
+        {
+          "check": "custom",
+          "params": {
+            "must_observe": [
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "describe_param",
+                  "name": "param_does_not_exist",
+                  "successful": false,
+                  "descriptor": {
+                    "type": 0,
+                    "read_only": false,
+                    "dynamic_typing": false
+                  }
+                }
+              },
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "describe_param",
+                  "name": "param_does_not_exist",
+                  "successful": false,
+                  "descriptor": {
+                    "type": 0,
+                    "read_only": false,
+                    "dynamic_typing": false
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

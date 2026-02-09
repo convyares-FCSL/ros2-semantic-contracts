@@ -5,11 +5,15 @@
 ///   - goal_response (string, default "accept"): "accept" or "reject".
 ///   - outcome_sequence (string, default "succeed"): Comma-separated list of
 ///     outcomes to attempt: "succeed", "abort", "cancel".
+///   - execute_delay_ms (int, default 0): Milliseconds to "work" before processing
+///     outcome_sequence. During this delay, goal stays EXECUTING and cancel requests
+///     can arrive. The execute loop checks is_canceling() every 10ms during delay.
 ///
 /// Behavior:
 ///   - Configured via ROS parameters at startup.
 ///   - Writes sentinel file to path defined by ACTOR_READY_PATH environment variable.
 ///   - Clean shutdown on SIGTERM.
+///   - Cancel-aware: if cancel arrives during execute_delay, transitions to CANCELED.
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -84,6 +88,7 @@ int main(int argc, char** argv) {
     // --- Parameters ---
     node->declare_parameter("goal_response", "accept");
     node->declare_parameter("outcome_sequence", "succeed");
+    node->declare_parameter("execute_delay_ms", 0);
 
     // --- Action server ---
     auto server = rclcpp_action::create_server<FibAction>(
@@ -105,11 +110,32 @@ int main(int argc, char** argv) {
         [node](const std::shared_ptr<rclcpp_action::ServerGoalHandle<FibAction>>& goal_handle) {
             std::string seq_str = node->get_parameter("outcome_sequence").as_string();
             std::vector<std::string> sequence = split_outcome_sequence(seq_str);
+            int64_t delay_ms = node->get_parameter("execute_delay_ms").as_int();
 
-            std::thread([goal_handle, sequence]() {
+            std::thread([goal_handle, sequence, delay_ms]() {
                 auto result = std::make_shared<FibAction::Result>();
                 result->sequence = {1, 1, 2, 3, 5};
 
+                // Execute delay: sleep in small increments, checking for cancel
+                const int64_t check_interval_ms = 10;
+                int64_t elapsed_ms = 0;
+                while (elapsed_ms < delay_ms) {
+                    // Check if goal is being canceled
+                    if (goal_handle->is_canceling()) {
+                        goal_handle->canceled(result);
+                        return;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(check_interval_ms));
+                    elapsed_ms += check_interval_ms;
+                }
+
+                // Final check after delay completes
+                if (goal_handle->is_canceling()) {
+                    goal_handle->canceled(result);
+                    return;
+                }
+
+                // Process outcome sequence
                 for (const auto& outcome : sequence) {
                     try {
                         if (outcome == "succeed") {

@@ -185,14 +185,62 @@
             "spec_id": "A06",
             "title": "Status updates monotonic",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "requires": [
+                "actions.basic"
+            ],
+            "notes": "Validates SPEC_AC05: status updates are monotonically ordered per goal. Canonical path: ACCEPTED → EXECUTING → SUCCEEDED. Sequence numbers validate ordering.",
             "boundary": {
                 "sut": "client",
                 "peer": "external",
-                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
-            }
+                "peer_rule": "Peer is a generic scenario-agnostic actor. Backend configures its behavior profile via ROS parameters through the start_actor op, per boundaries.md section 3."
+            },
+            "ops": [
+                {
+                    "op": "start_actor",
+                    "actor": "action_server",
+                    "params": {
+                        "goal_response": "accept",
+                        "outcome_sequence": "succeed"
+                    }
+                },
+                {
+                    "op": "send_goal",
+                    "goal_id": "g_mono"
+                },
+                {
+                    "op": "wait",
+                    "ms": 300
+                },
+                {
+                    "op": "stop_actor",
+                    "actor": "action_server"
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "goal_send_decision",
+                                "goal_id": "g_mono",
+                                "accepted": true
+                            },
+                            {
+                                "type": "result",
+                                "goal_id": "g_mono",
+                                "status": "SUCCEEDED"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "check": "status_monotonic",
+                    "params": {
+                        "goal_id": "g_mono"
+                    }
+                }
+            ]
         },
         "A07_ordering_time_independent": {
             "spec_id": "A07",
@@ -211,14 +259,74 @@
             "spec_id": "A08",
             "title": "Cancellation intent observable",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core).",
+            "requires": [
+                "actions.basic"
+            ],
+            "notes": "Validates SPEC_AC06: cancellation intent must be observable via cancel service and status topic. Observable assertions: (1) cancel service interaction (cancel_request + cancel_response), (2) STATUS_CANCELING transition. Does NOT assert terminal outcome after Canceling (that's A09).",
             "boundary": {
                 "sut": "client",
                 "peer": "external",
-                "peer_rule": "Action server must be provided by the scenario environment. Backend must not host or configure server accept/reject policy."
-            }
+                "peer_rule": "Peer is a generic scenario-agnostic actor. Backend configures its behavior profile via ROS parameters through the start_actor op, per boundaries.md section 3."
+            },
+            "ops": [
+                {
+                    "op": "start_actor",
+                    "actor": "action_server",
+                    "params": {
+                        "goal_response": "accept",
+                        "outcome_sequence": "succeed",
+                        "execute_delay_ms": 200
+                    }
+                },
+                {
+                    "op": "send_goal",
+                    "goal_id": "g_cancel"
+                },
+                {
+                    "op": "wait",
+                    "ms": 50
+                },
+                {
+                    "op": "cancel_goal",
+                    "goal_id": "g_cancel"
+                },
+                {
+                    "op": "wait",
+                    "ms": 200
+                },
+                {
+                    "op": "stop_actor",
+                    "actor": "action_server"
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "goal_send_decision",
+                                "goal_id": "g_cancel",
+                                "accepted": true
+                            },
+                            {
+                                "type": "cancel_request",
+                                "goal_id": "g_cancel"
+                            },
+                            {
+                                "type": "cancel_response",
+                                "goal_id": "g_cancel",
+                                "accepted": true
+                            },
+                            {
+                                "type": "status",
+                                "goal_id": "g_cancel",
+                                "status": "STATUS_CANCELING"
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "A09_cancel_resolution_policy": {
             "spec_id": "A09",

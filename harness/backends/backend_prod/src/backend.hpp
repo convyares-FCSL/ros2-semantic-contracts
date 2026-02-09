@@ -4,6 +4,7 @@
 #define BACKEND_PROD_SRC_BACKEND_HPP_
 
 #include "internal/types.hpp"
+#include <deque>
 #include "internal/errors.hpp"
 #include "utils/trace.hpp"
 #include <unordered_map>
@@ -30,12 +31,27 @@ struct BackendState {
     // Action Logic
     rclcpp_action::Client<FibAction>::SharedPtr client;
 
+    // NEW: Status subscription (shared across scenarios)
+    rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr status_sub;
+
     // Mapping from ROS 2 UUID (16 bytes) to Scenario Goal ID (string)
     // We use vector<uint8_t> or just string for key? rclcpp_action::GoalUUID is std::array<uint8_t, 16>.
     // std::map doesn't support array key easily without comparator, but we can use generic comparator or cheat.
     // Let's use a simple vector or string key.
     std::mutex map_mutex;
     std::map<std::vector<uint8_t>, std::string> uuid_map;
+
+    // NEW: UUID to scenario_id mapping (for status callback context)
+    std::map<std::vector<uint8_t>, std::string> uuid_scenario_map;
+
+    // NEW: Goal handle storage (for cancel operations)
+    // goal_id (string) -> goal_handle (shared_ptr)
+    std::map<std::string, rclcpp_action::ClientGoalHandle<FibAction>::SharedPtr> goal_handles;
+
+    // NEW: Thread-safe buffer for pending status events
+    // Status subscription appends here; ops drain and emit via TraceWriter
+    std::mutex status_buffer_mutex;
+    std::deque<json> pending_status_events;
 
     /// goal_id -> terminal_status (e.g. "SUCCEEDED")
     std::unordered_map<std::string, std::string> terminal;

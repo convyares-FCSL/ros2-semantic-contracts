@@ -39,9 +39,9 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **A03** | A03_unknown_not_persistent         | N/A  | SKIP | N/A  | N/A   | Not implemented yet                |
 | **A04** | A04_valid_transitions              | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **A05** | A05_invalid_transitions_rejected   | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **A06** | A06_status_updates_monotonic       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **A06** | A06_status_updates_monotonic       | N/A  | N/A  | PASS | N/A   | Status updates monotonic (seq checks) |
 | **A07** | A07_ordering_time_independent      | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **A08** | A08_cancel_intent_observable       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
+| **A08** | A08_cancel_intent_observable       | N/A  | N/A  | PASS | N/A   | Cancel service interaction + STATUS_CANCELING observable |
 | **A09** | A09_cancel_resolution_policy       | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **A10** | A10_result_visible_after_terminal  | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **A11** | A11_single_terminal_result         | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |

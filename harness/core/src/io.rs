@@ -29,6 +29,8 @@ const CORE_TYPES: &[&str] = &[
     "goal_send_decision",
     "status",
     "result",
+    "cancel_request",
+    "cancel_response",
     "terminal_set_attempt",
     "backend_capabilities",
     "param_set_request",

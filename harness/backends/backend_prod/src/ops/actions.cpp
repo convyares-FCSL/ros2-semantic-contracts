@@ -1,6 +1,9 @@
 /// @file actions.cpp
 /// @brief Action-specific operations (send_goal, etc.).
 #include "../backend.hpp"
+#include <action_msgs/msg/goal_status.hpp>
+#include <action_msgs/msg/goal_status_array.hpp>
+#include "status_drain.hpp"
 #include "internal/errors.hpp"
 
 namespace backend_prod::ops {
@@ -18,6 +21,81 @@ void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenari
     if (!st.client) {
          throw SystemError("Action client not initialized");
     }
+
+    // Create status subscription if not already created
+    // SAFETY: Callback does NOT capture TraceWriter& w - only appends to buffer
+    if (!st.status_sub) {
+        st.status_sub = st.node->create_subscription<action_msgs::msg::GoalStatusArray>(
+            "test_action/_action/status",
+            10,
+            [&st](const action_msgs::msg::GoalStatusArray::SharedPtr msg) {
+                // CRITICAL: Do NOT capture TraceWriter& w here (dangling reference risk)
+                // CRITICAL: Avoid lock inversion - build events locally, then append to buffer
+
+                // Step 1: Lock map_mutex, build events locally, unlock
+                std::vector<json> events_to_append;
+                {
+                    std::lock_guard<std::mutex> map_lock(st.map_mutex);
+                    for (const auto& status_item : msg->status_list) {
+                        // Convert UUID to vector<uint8_t> for map lookup
+                        std::vector<uint8_t> uuid_vec(
+                            status_item.goal_info.goal_id.uuid.begin(),
+                            status_item.goal_info.goal_id.uuid.end()
+                        );
+
+                        // Check if this goal belongs to our scenarios
+                        auto goal_it = st.uuid_map.find(uuid_vec);
+                        auto scenario_it = st.uuid_scenario_map.find(uuid_vec);
+
+                        if (goal_it != st.uuid_map.end() && scenario_it != st.uuid_scenario_map.end()) {
+                            const std::string& goal_id = goal_it->second;
+                            const std::string& scenario_id = scenario_it->second;
+
+                            // Map action_msgs::GoalStatus to status string
+                            std::string status_str;
+                            switch (status_item.status) {
+                                case action_msgs::msg::GoalStatus::STATUS_ACCEPTED:
+                                    status_str = "STATUS_ACCEPTED"; break;
+                                case action_msgs::msg::GoalStatus::STATUS_EXECUTING:
+                                    status_str = "STATUS_EXECUTING"; break;
+                                case action_msgs::msg::GoalStatus::STATUS_CANCELING:
+                                    status_str = "STATUS_CANCELING"; break;
+                                case action_msgs::msg::GoalStatus::STATUS_SUCCEEDED:
+                                    status_str = "STATUS_SUCCEEDED"; break;
+                                case action_msgs::msg::GoalStatus::STATUS_CANCELED:
+                                    status_str = "STATUS_CANCELED"; break;
+                                case action_msgs::msg::GoalStatus::STATUS_ABORTED:
+                                    status_str = "STATUS_ABORTED"; break;
+                                default:
+                                    status_str = "STATUS_UNKNOWN"; break;
+                            }
+
+                            // Build event locally
+                            events_to_append.push_back({
+                                {"type", "status"},
+                                {"scenario_id", scenario_id},
+                                {"goal_id", goal_id},
+                                {"status", status_str}
+                            });
+                        }
+                    }
+                } // map_lock released here
+
+                // Step 2: Lock status_buffer_mutex, append events, unlock
+                if (!events_to_append.empty()) {
+                    std::lock_guard<std::mutex> buffer_lock(st.status_buffer_mutex);
+                    st.pending_status_events.insert(
+                        st.pending_status_events.end(),
+                        events_to_append.begin(),
+                        events_to_append.end()
+                    );
+                }
+            }
+        );
+    }
+
+    // Drain any pending status events from previous operations
+    drain_status_buffer(w, st);
     
     // Ensure server is ready
     // std::cerr << "DEBUG: Waiting for action server...\n";
@@ -76,6 +154,9 @@ void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenari
         {
             std::lock_guard<std::mutex> lock(st.map_mutex);
             st.uuid_map[uuid_vec] = goal_id_str;
+            st.uuid_scenario_map[uuid_vec] = scenario_id;
+            // Store goal handle for cancel operations
+            st.goal_handles[goal_id_str] = goal_handle;
         }
     }
 
@@ -87,10 +168,85 @@ void exec_send_goal(TraceWriter& w, BackendState& st, const std::string& scenari
         {"accepted", accepted}
     });
 
-    // Note: If accepted, we should theoretically wait for result. 
+    // Drain status events that arrived during send_goal
+    drain_status_buffer(w, st);
+
+    // Note: If accepted, we should theoretically wait for result.
     // But A01 tests rejection. A02 tests terminal.
     // For A02, we need to handle result.
     // But for this task (A01), we stop here.
+}
+
+/// Executes cancel_goal: cancels an active goal via the ROS 2 Action cancel API.
+/// 1. Look up goal handle by goal_id.
+/// 2. Emit cancel_request.
+/// 3. Call async_cancel_goal.
+/// 4. Wait for response and emit cancel_response with accepted status.
+void exec_cancel_goal(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op) {
+    if (!op.goal_id) {
+        throw BundleError("cancel_goal: missing goal_id");
+    }
+    const std::string& goal_id_str = *op.goal_id;
+
+    // Drain any pending status events before cancel
+    drain_status_buffer(w, st);
+
+    // Look up goal handle
+    rclcpp_action::ClientGoalHandle<FibAction>::SharedPtr goal_handle;
+    {
+        std::lock_guard<std::mutex> lock(st.map_mutex);
+        auto it = st.goal_handles.find(goal_id_str);
+        if (it == st.goal_handles.end()) {
+            throw BundleError("cancel_goal: goal_id '" + goal_id_str + "' not found in active goals");
+        }
+        goal_handle = it->second;
+    }
+
+    if (!goal_handle) {
+        throw BundleError("cancel_goal: goal_handle is null for goal_id '" + goal_id_str + "'");
+    }
+
+    // Emit cancel_request (intent to cancel)
+    w.emit({
+        {"type", "cancel_request"},
+        {"scenario_id", scenario_id},
+        {"goal_id", goal_id_str}
+    });
+
+    if (!st.client) {
+        throw SystemError("Action client not initialized");
+    }
+
+    // Call async_cancel_goal on the client (not the goal_handle)
+    auto future_cancel = st.client->async_cancel_goal(goal_handle);
+
+    // Wait for cancel response
+    auto status = future_cancel.wait_for(std::chrono::seconds(2));
+    if (status != std::future_status::ready) {
+        throw SystemError("Timeout waiting for cancel response");
+    }
+
+    auto cancel_response = future_cancel.get();
+
+    // Map return code to int and determine if cancel was accepted
+    // rclcpp_action::CancelResponse has return_code field
+    int return_code = static_cast<int>(cancel_response->return_code);
+
+    // According to action_msgs/srv/CancelGoal:
+    // ERROR_NONE = 0 (success), ERROR_REJECTED = 1, ERROR_UNKNOWN_GOAL_ID = 2, ERROR_GOAL_TERMINATED = 3
+    bool accepted = (return_code == 0);  // ERROR_NONE means cancel accepted
+
+    // Emit cancel_response (observable outcome)
+    w.emit({
+        {"type", "cancel_response"},
+        {"scenario_id", scenario_id},
+        {"goal_id", goal_id_str},
+        {"accepted", accepted},
+        {"return_code", return_code}
+    });
+
+    // Drain status events that may have arrived during cancel
+    drain_status_buffer(w, st);
 }
 
 /// Executes complete_terminal: sets goal to terminal status.

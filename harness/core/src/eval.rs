@@ -189,6 +189,115 @@ fn evaluate_scenario(
                 }
             }
 
+            "status_monotonic" => {
+                let params = ex.params.as_ref().unwrap_or(&Value::Null);
+
+                let goal_id = params
+                    .get("goal_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        CoreError::UnsupportedExpect(
+                            "status_monotonic requires params.goal_id".to_string(),
+                        )
+                    })?;
+
+                // Filter status events for this goal, ordered by sequence
+                let mut status_events: Vec<_> = events
+                    .iter()
+                    .filter(|ev| {
+                        ev.get("type") == Some(&json!("status"))
+                            && ev.get("goal_id") == Some(&json!(goal_id))
+                    })
+                    .collect();
+
+                // Sort by sequence number to establish ordering
+                status_events
+                    .sort_by_key(|ev| ev.get("sequence").and_then(|v| v.as_u64()).unwrap_or(0));
+
+                // Extract status sequence
+                let statuses: Vec<&str> = status_events
+                    .iter()
+                    .filter_map(|ev| ev.get("status").and_then(|v| v.as_str()))
+                    .collect();
+
+                if statuses.is_empty() {
+                    pass = false;
+                    violations
+                        .entry("status_monotonic")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({
+                            "goal_id": goal_id,
+                            "reason": "no status events found"
+                        }));
+                    continue;
+                }
+
+                // Valid transitions per SPEC_AC04 (action_core.md)
+                fn is_valid_transition(from: &str, to: &str) -> bool {
+                    match (from, to) {
+                        // From ACCEPTED
+                        ("STATUS_ACCEPTED", "STATUS_EXECUTING") => true,
+                        ("STATUS_ACCEPTED", "STATUS_CANCELING") => true,
+                        ("STATUS_ACCEPTED", "STATUS_SUCCEEDED") => true,
+                        ("STATUS_ACCEPTED", "STATUS_ABORTED") => true,
+                        ("STATUS_ACCEPTED", "STATUS_CANCELED") => true,
+
+                        // From EXECUTING
+                        ("STATUS_EXECUTING", "STATUS_CANCELING") => true,
+                        ("STATUS_EXECUTING", "STATUS_SUCCEEDED") => true,
+                        ("STATUS_EXECUTING", "STATUS_ABORTED") => true,
+
+                        // From CANCELING
+                        ("STATUS_CANCELING", "STATUS_CANCELED") => true,
+                        ("STATUS_CANCELING", "STATUS_SUCCEEDED") => true,
+                        ("STATUS_CANCELING", "STATUS_ABORTED") => true,
+
+                        // Terminal states are immutable (no further transitions)
+                        ("STATUS_SUCCEEDED", _) => false,
+                        ("STATUS_ABORTED", _) => false,
+                        ("STATUS_CANCELED", _) => false,
+
+                        // Same state (re-publication is allowed)
+                        (a, b) if a == b => true,
+
+                        // All other transitions are invalid
+                        _ => false,
+                    }
+                }
+
+                // Validate monotonicity: each transition must be valid
+                let mut regressions = Vec::new();
+                for i in 0..statuses.len().saturating_sub(1) {
+                    let from = statuses[i];
+                    let to = statuses[i + 1];
+
+                    if !is_valid_transition(from, to) {
+                        regressions.push(json!({
+                            "sequence_index": i,
+                            "from": from,
+                            "to": to,
+                            "reason": "invalid transition (regression or illegal state jump)"
+                        }));
+                    }
+                }
+
+                if !regressions.is_empty() {
+                    pass = false;
+                    violations
+                        .entry("status_monotonic")
+                        .or_insert_with(|| json!([]))
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({
+                            "goal_id": goal_id,
+                            "status_sequence": statuses,
+                            "regressions": regressions
+                        }));
+                }
+            }
+
             // P12: compare a scenario-declared evidence sub-value across repeated responses.
             //
             // This check is intentionally strict:
