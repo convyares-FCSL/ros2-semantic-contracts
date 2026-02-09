@@ -58,7 +58,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 16 scenarios | PASS: 16 | N/A-only: 0</strong></summary>
+<summary><strong>Parameters (P): 20 scenarios | PASS: 20 | N/A-only: 0</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
@@ -71,13 +71,17 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P07** | P07_change_record_ordering       | N/A  | N/A | PASS | PASS | N/A   | Sequential writes observed in deterministic order |
 | **P08** | P08_unknown_types_not_set        | N/A  | N/A | PASS | PASS | N/A   | Undeclared param returns NOT_SET            |
 | **P09** | P09_atomic_updates               | N/A  | N/A | PASS | PASS | N/A   | Mixed batch failure shows no externally visible partial update |
-| **P10** | P10_rejected_updates_silent      | N/A  | N/A | PASS | PASS | N/A   | Proxy: rejected set leaves no observable state change |
-| **P11** | P11_events_describe_changes      | N/A  | N/A | PASS | PASS | N/A   | Proxy: successful updates yield observable value/type transitions |
+| **P10** | P10_rejected_updates_silent      | N/A  | N/A | PASS | PASS | N/A   | Direct: rejected update emits no `parameter_event` in observation window and state remains unchanged |
+| **P11** | P11_events_describe_changes      | N/A  | N/A | PASS | PASS | N/A   | Direct: `parameter_event` payloads reflect successful value/type transitions |
 | **P12** | P12_describe_unknown_consistent  | N/A  | N/A | PASS | PASS | N/A   | Undeclared param returns consistent default |
-| **P13** | P13_list_complete_stable         | N/A  | N/A | PASS | PASS | N/A   | Proxy: repeated reads over declared set remain complete/stable |
-| **P14** | P14_deletion_reported_events     | N/A  | N/A | PASS | PASS | N/A   | Proxy: dynamic-typed undeclare removes parameter from observable state |
+| **P13** | P13_list_complete_stable         | N/A  | N/A | PASS | PASS | N/A   | Direct: `list_params` prefix/depth filtering is complete and stable across repeated calls |
+| **P14** | P14_deletion_reported_events     | N/A  | N/A | PASS | PASS | N/A   | Direct (Jazzy observed): undeclare removes parameter state; no declare/undeclare `parameter_event` observed |
 | **P15** | P15_parameter_interface_conformity | N/A | N/A | PASS | PASS | N/A   | Proxy: standard parameter ops are executable and coherent end-to-end |
 | **P16** | P16_explicit_declaration_mode    | N/A  | N/A | PASS | PASS | N/A   | Strict declaration mode enforced (undeclared set rejected) |
+| **P17** | P17_non_atomic_batch_callback_rejection | N/A | N/A | PASS | PASS | N/A | Direct discovery: non-atomic batch allows partial application (`a` updated, rejected `b` unchanged) |
+| **P18** | P18_atomic_batch_callback_rejection | N/A | N/A | PASS | PASS | N/A | Direct discovery: atomic batch rejection preserves all-or-nothing state |
+| **P19** | P19_pre_set_removal_semantics    | N/A  | N/A | PASS | PASS | N/A   | Direct discovery: pre-set callback can remove parameters from atomic batch input |
+| **P20** | P20_parameter_event_cardinality_batch | N/A | N/A | PASS | PASS | N/A | Direct discovery: one `parameter_event` carries all changed parameters for accepted atomic batch |
 </details>
 
 <details>

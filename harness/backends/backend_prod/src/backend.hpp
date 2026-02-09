@@ -11,6 +11,7 @@
 #include <string>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
+#include <rcl_interfaces/msg/parameter_event.hpp>
 #include <test_msgs/action/fibonacci.hpp>
 #include <thread>
 #include <mutex>
@@ -33,6 +34,11 @@ struct BackendState {
 
     // NEW: Status subscription (shared across scenarios)
     rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr status_sub;
+    rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_event_sub;
+
+    // Parameter callback handles kept alive for scenario lifetime.
+    rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr on_set_params_cb_handle;
+    rclcpp::Node::PreSetParametersCallbackHandle::SharedPtr pre_set_params_cb_handle;
 
     // Mapping from ROS 2 UUID (16 bytes) to Scenario Goal ID (string)
     // We use vector<uint8_t> or just string for key? rclcpp_action::GoalUUID is std::array<uint8_t, 16>.
@@ -52,6 +58,10 @@ struct BackendState {
     // Status subscription appends here; ops drain and emit via TraceWriter
     std::mutex status_buffer_mutex;
     std::deque<json> pending_status_events;
+
+    // Thread-safe buffer for pending parameter events.
+    std::mutex param_event_buffer_mutex;
+    std::deque<json> pending_param_events;
 
     /// goal_id -> terminal_status (e.g. "SUCCEEDED")
     std::unordered_map<std::string, std::string> terminal;

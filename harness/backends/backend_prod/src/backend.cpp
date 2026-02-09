@@ -21,6 +21,11 @@ json exec_set_param(TraceWriter& w, BackendState& st, const std::string& scenari
 json exec_get_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_describe_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_set_params_batch(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_set_params_non_atomic(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_register_param_callback(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_register_pre_set_callback(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_observe_param_events(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_list_params(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_undeclare_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 }
 
@@ -65,6 +70,16 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         op_result = ops::exec_describe_param(w, st, scenario_id, op);
     } else if (op.op == "set_params_batch") {
         op_result = ops::exec_set_params_batch(w, st, scenario_id, op);
+    } else if (op.op == "set_params_non_atomic") {
+        op_result = ops::exec_set_params_non_atomic(w, st, scenario_id, op);
+    } else if (op.op == "register_param_callback") {
+        op_result = ops::exec_register_param_callback(w, st, scenario_id, op);
+    } else if (op.op == "register_pre_set_callback") {
+        op_result = ops::exec_register_pre_set_callback(w, st, scenario_id, op);
+    } else if (op.op == "observe_param_events") {
+        op_result = ops::exec_observe_param_events(w, st, scenario_id, op);
+    } else if (op.op == "list_params") {
+        op_result = ops::exec_list_params(w, st, scenario_id, op);
     } else if (op.op == "undeclare_param") {
         op_result = ops::exec_undeclare_param(w, st, scenario_id, op);
     } else {
@@ -102,7 +117,22 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
         {"scenario_id", "_run"},
         {"detail", {
             {"backend", "prod"},
-            {"caps", json::array({"actions.basic", "actions.terminal", "clock.ros_time", "ros.params.declare", "ros.params.set", "ros.params.get", "ros.params.set_batch", "ros.params.describe", "ros.params.delete"})},
+            {"caps", json::array({
+                "actions.basic",
+                "actions.terminal",
+                "clock.ros_time",
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.set_non_atomic",
+                "ros.params.describe",
+                "ros.params.delete",
+                "ros.params.list",
+                "ros.params.callback",
+                "ros.params.pre_set_callback",
+                "ros.params.observe_events"
+            })},
             {"limits", json::object()}
         }}
     });

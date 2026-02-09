@@ -774,9 +774,10 @@
             "requires": [
                 "ros.params.declare",
                 "ros.params.set",
-                "ros.params.get"
+                "ros.params.get",
+                "ros.params.observe_events"
             ],
-            "notes": "Proxy validation for SPEC_P04 rejection-silence: because parameter event messages are not yet traced, this scenario asserts failed update + unchanged externally observable parameter state.",
+            "notes": "Direct validation for rejection-silence using parameter_event observation: rejected type-mismatch update must not produce a parameter_event and must leave value unchanged.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -786,12 +787,20 @@
                     }
                 },
                 {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
                     "op": "set_param",
                     "payload": {
                         "name": "reject_silent_param",
                         "type": "integer",
                         "value": 1
                     }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
                 },
                 {
                     "op": "get_param",
@@ -816,9 +825,24 @@
                             {
                                 "type": "op_end",
                                 "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
                                     "op": "set_param",
                                     "name": "reject_silent_param",
                                     "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
                                 }
                             },
                             {
@@ -844,9 +868,10 @@
             "requires": [
                 "ros.params.declare",
                 "ros.params.set",
-                "ros.params.get"
+                "ros.params.get",
+                "ros.params.observe_events"
             ],
-            "notes": "Proxy validation for SPEC_P05: parameter-event payloads are not yet traced, so this scenario asserts that successful updates produce externally observable value/type transitions.",
+            "notes": "Direct validation for SPEC_P05: successful updates must emit parameter_event records with changed parameter payloads reflecting value/type transitions.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -859,12 +884,20 @@
                     }
                 },
                 {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
                     "op": "set_param",
                     "payload": {
                         "name": "change_visible_param",
                         "type": "string",
                         "value": "beta"
                     }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
                 },
                 {
                     "op": "get_param",
@@ -879,6 +912,10 @@
                         "type": "integer",
                         "value": 5
                     }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
                 },
                 {
                     "op": "get_param",
@@ -903,9 +940,36 @@
                             {
                                 "type": "op_end",
                                 "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
                                     "op": "set_param",
                                     "name": "change_visible_param",
                                     "successful": true
+                                }
+                            },
+                            {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "change_visible_param",
+                                        "type": 4,
+                                        "value": "beta"
+                                    }
+                                ],
+                                "new_parameters": [],
+                                "deleted_parameters": []
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 1
                                 }
                             },
                             {
@@ -925,6 +989,26 @@
                                     "op": "set_param",
                                     "name": "change_visible_param",
                                     "successful": true
+                                }
+                            },
+                            {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "change_visible_param",
+                                        "type": 2,
+                                        "value": 5
+                                    }
+                                ],
+                                "new_parameters": [],
+                                "deleted_parameters": []
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 1
                                 }
                             },
                             {
@@ -1007,46 +1091,56 @@
             "layer": "Tooling",
             "requires": [
                 "ros.params.declare",
-                "ros.params.get"
+                "ros.params.list"
             ],
-            "notes": "Proxy validation for SPEC_P07: list_parameters operation is not yet implemented, so this scenario asserts stable repeated retrieval over a declared parameter set.",
+            "notes": "Direct validation for SPEC_P07: list_params with prefix/depth filters returns complete and stable names across repeated calls.",
             "ops": [
                 {
                     "op": "declare_param",
                     "payload": {
-                        "name": "stable_alpha",
+                        "name": "stable.alpha",
                         "value": "a"
                     }
                 },
                 {
                     "op": "declare_param",
                     "payload": {
-                        "name": "stable_beta",
+                        "name": "stable.beta",
                         "value": "b"
                     }
                 },
                 {
-                    "op": "get_param",
+                    "op": "declare_param",
                     "payload": {
-                        "name": "stable_alpha"
+                        "name": "other.gamma",
+                        "value": "c"
                     }
                 },
                 {
-                    "op": "get_param",
+                    "op": "list_params",
                     "payload": {
-                        "name": "stable_beta"
+                        "prefixes": [
+                            "stable"
+                        ],
+                        "depth": 0
                     }
                 },
                 {
-                    "op": "get_param",
+                    "op": "list_params",
                     "payload": {
-                        "name": "stable_alpha"
+                        "prefixes": [
+                            "stable"
+                        ],
+                        "depth": 0
                     }
                 },
                 {
-                    "op": "get_param",
+                    "op": "list_params",
                     "payload": {
-                        "name": "stable_beta"
+                        "prefixes": [
+                            "stable"
+                        ],
+                        "depth": 1
                     }
                 }
             ],
@@ -1059,7 +1153,7 @@
                                 "type": "op_end",
                                 "detail": {
                                     "op": "declare_param",
-                                    "name": "stable_alpha",
+                                    "name": "stable.alpha",
                                     "declared": true
                                 }
                             },
@@ -1067,30 +1161,53 @@
                                 "type": "op_end",
                                 "detail": {
                                     "op": "declare_param",
-                                    "name": "stable_beta",
+                                    "name": "stable.beta",
                                     "declared": true
                                 }
                             },
                             {
                                 "type": "op_end",
                                 "detail": {
-                                    "op": "get_param",
-                                    "name": "stable_alpha",
-                                    "declared": true,
-                                    "set": true,
-                                    "type": "string",
-                                    "value": "a"
+                                    "op": "list_params",
+                                    "prefixes_in": [
+                                        "stable"
+                                    ],
+                                    "depth": 0,
+                                    "names": [
+                                        "stable.alpha",
+                                        "stable.beta"
+                                    ],
+                                    "count": 2
                                 }
                             },
                             {
                                 "type": "op_end",
                                 "detail": {
-                                    "op": "get_param",
-                                    "name": "stable_beta",
-                                    "declared": true,
-                                    "set": true,
-                                    "type": "string",
-                                    "value": "b"
+                                    "op": "list_params",
+                                    "prefixes_in": [
+                                        "stable"
+                                    ],
+                                    "depth": 0,
+                                    "names": [
+                                        "stable.alpha",
+                                        "stable.beta"
+                                    ],
+                                    "count": 2
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "list_params",
+                                    "prefixes_in": [
+                                        "stable"
+                                    ],
+                                    "depth": 1,
+                                    "names": [
+                                        "stable.alpha",
+                                        "stable.beta"
+                                    ],
+                                    "count": 2
                                 }
                             }
                         ]
@@ -1100,14 +1217,15 @@
         },
         "P14_deletion_reported_events": {
             "spec_id": "P14",
-            "title": "Deletion reported via events",
+            "title": "Deletion observable and event behavior stable",
             "layer": "Policy",
             "requires": [
                 "ros.params.declare",
                 "ros.params.delete",
-                "ros.params.get"
+                "ros.params.get",
+                "ros.params.observe_events"
             ],
-            "notes": "Proxy validation for SPEC_PC08/SPEC_P08: parameter-event deletion payloads are not traced yet, so this scenario asserts deterministic undeclare behavior and observable removal from parameter state.",
+            "notes": "Direct observation on Jazzy: undeclare removes parameter from observable state; no parameter_event is emitted. Consistent with corrected SPEC_P08/SPEC_PC08 (SHOULD, not MUST).",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1120,10 +1238,18 @@
                     }
                 },
                 {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
                     "op": "undeclare_param",
                     "payload": {
                         "name": "to_be_deleted"
                     }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
                 },
                 {
                     "op": "get_param",
@@ -1148,9 +1274,25 @@
                             {
                                 "type": "op_end",
                                 "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
                                     "op": "undeclare_param",
                                     "name": "to_be_deleted",
                                     "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
                                 }
                             },
                             {
@@ -1420,6 +1562,686 @@
                                     "set": true,
                                     "type": "string",
                                     "value": "updated"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P17_non_atomic_batch_callback_rejection": {
+            "spec_id": "P17",
+            "title": "Non-Atomic Batch Set with Callback Rejection",
+            "layer": "Global",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_non_atomic",
+                "ros.params.callback"
+            ],
+            "notes": "Discovery scenario: measures externally visible state after non-atomic set_parameters() when one parameter is rejected by callback.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p17_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p17_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "reject_names",
+                        "reject": [
+                            "p17_param_b"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_params_non_atomic",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p17_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p17_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p17_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p17_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "reject_names",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_non_atomic",
+                                    "count": 2
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p17_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p17_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P18_atomic_batch_callback_rejection": {
+            "spec_id": "P18",
+            "title": "Atomic Batch Set with Callback Rejection",
+            "layer": "Global",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.callback"
+            ],
+            "notes": "Discovery scenario: measures externally visible state after set_parameters_atomically() with callback-based rejection.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p18_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p18_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "reject_names",
+                        "reject": [
+                            "p18_param_b"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p18_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p18_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p18_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p18_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "reject_names",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 2,
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p18_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p18_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P19_pre_set_removal_semantics": {
+            "spec_id": "P19",
+            "title": "Pre-Set Callback Removal Semantics",
+            "layer": "Global",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.pre_set_callback"
+            ],
+            "notes": "Discovery scenario: measures pre-set callback behavior when a parameter is removed from an atomic batch.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p19_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p19_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "register_pre_set_callback",
+                    "payload": {
+                        "mode": "remove_names",
+                        "remove": [
+                            "p19_param_b"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p19_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p19_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p19_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p19_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_pre_set_callback",
+                                    "mode": "remove_names",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 2
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p19_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p19_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P20_parameter_event_cardinality_batch": {
+            "spec_id": "P20",
+            "title": "Parameter Event Cardinality for Atomic Batch",
+            "layer": "Global",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set_batch",
+                "ros.params.observe_events"
+            ],
+            "notes": "Discovery scenario: captures parameter_event stream after atomic batch update.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p20_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p20_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p20_param_c",
+                        "value": "c0"
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p20_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p20_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            },
+                            {
+                                "name": "p20_param_c",
+                                "type": "string",
+                                "value": "c1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 3,
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P21_descriptor_tracks_value_type": {
+            "spec_id": "P21",
+            "title": "Descriptor type tracks value type after dynamic set",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.describe"
+            ],
+            "notes": "Validates SPEC_PC09: after setting a dynamically typed parameter to a different type, describe_parameters must report the new type. Hypothesis: rclcpp updates descriptor.type on set.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p21_meta_probe",
+                        "value": "hello",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "p21_meta_probe"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p21_meta_probe",
+                        "type": "integer",
+                        "value": 42
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "p21_meta_probe"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p21_meta_probe",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "p21_meta_probe",
+                                    "descriptor": {
+                                        "type": 4
+                                    }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p21_meta_probe",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "p21_meta_probe",
+                                    "descriptor": {
+                                        "type": 2
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P22_explicit_descriptor_type_enforcement": {
+            "spec_id": "P22",
+            "title": "Explicit ParameterDescriptor.type enforcement on declare",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.describe"
+            ],
+            "notes": "Validates SPEC_PC10: when declaring with explicit ParameterDescriptor.type, the declared type must be enforced. Requires declare_param to accept descriptor.type field. Hypothesis: rclcpp enforces descriptor.type over value-deduced type.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p22_typed_param",
+                        "value": 42,
+                        "descriptor": {
+                            "type": 2
+                        }
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "p22_typed_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p22_typed_param",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "p22_typed_param",
+                                    "descriptor": {
+                                        "type": 2
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P23_declare_without_default": {
+            "spec_id": "P23",
+            "title": "Declare static-typed parameter without default value",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get"
+            ],
+            "notes": "Validates SPEC_PC11: declaring a parameter without a default must not unconditionally raise. Requires declare_param to support omitting value. Hypothesis: rclcpp allows declaration without default, parameter starts as NOT_SET.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p23_no_default",
+                        "descriptor": {
+                            "type": 2
+                        }
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p23_no_default"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p23_no_default",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p23_no_default",
+                                    "declared": true,
+                                    "type": "not_set"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P24_get_parameter_types_response_length": {
+            "spec_id": "P24",
+            "title": "GetParameterTypes response length matches request",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get_parameter_types"
+            ],
+            "notes": "Validates SPEC_PC12: get_parameter_types must return 1:1 response mapping. Requires new get_parameter_types op. Hypothesis: response length equals request length, undeclared params get type 0 (NOT_SET).",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p24_known_param",
+                        "value": "hello"
+                    }
+                },
+                {
+                    "op": "get_parameter_types",
+                    "payload": {
+                        "names": [
+                            "p24_known_param",
+                            "p24_unknown_a",
+                            "p24_unknown_b"
+                        ]
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p24_known_param",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_parameter_types",
+                                    "count": 3,
+                                    "types": [
+                                        4,
+                                        0,
+                                        0
+                                    ]
                                 }
                             }
                         ]

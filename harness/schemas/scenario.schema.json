@@ -71,6 +71,11 @@
                                         "declare_param",
                                         "undeclare_param",
                                         "set_params_batch",
+                                        "set_params_non_atomic",
+                                        "register_param_callback",
+                                        "register_pre_set_callback",
+                                        "observe_param_events",
+                                        "list_params",
                                         "call_service",
                                         "describe_param"
                                     ]

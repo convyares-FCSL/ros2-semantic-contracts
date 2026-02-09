@@ -1,12 +1,89 @@
 """Parameter operation handlers."""
 
-from typing import Dict, Any, Optional
+import time
+from typing import Dict, Any, Optional, List
+import rclpy
 import rclpy.exceptions
 from rclpy.parameter import Parameter
-from rcl_interfaces.msg import ParameterDescriptor
+from rclpy.qos import qos_profile_parameter_events
+from rcl_interfaces.msg import (
+    ParameterDescriptor,
+    ParameterType,
+    SetParametersResult,
+    ParameterEvent,
+)
 from ..trace_writer import TraceWriter
 from ..backend_state import BackendState
 from ..errors import BundleError
+
+
+def _build_parameter_list(params_list: Any, scenario_id: str, op_name: str) -> List[Parameter]:
+    """Build rclpy Parameter list from payload params array."""
+    if not isinstance(params_list, list):
+        raise BundleError(f"{op_name}: 'params' must be a list in scenario {scenario_id}")
+
+    type_map = {
+        'string': Parameter.Type.STRING,
+        'integer': Parameter.Type.INTEGER,
+        'double': Parameter.Type.DOUBLE,
+        'bool': Parameter.Type.BOOL,
+    }
+
+    parameters = []
+    for idx, param_spec in enumerate(params_list):
+        name = param_spec.get('name')
+        param_type = param_spec.get('type')
+        value = param_spec.get('value')
+
+        if not name:
+            raise BundleError(f"{op_name}: param[{idx}] missing 'name' in scenario {scenario_id}")
+        if param_type is None:
+            raise BundleError(f"{op_name}: param[{idx}] missing 'type' in scenario {scenario_id}")
+        if value is None:
+            raise BundleError(f"{op_name}: param[{idx}] missing 'value' in scenario {scenario_id}")
+
+        if param_type not in type_map:
+            raise BundleError(f"{op_name}: param[{idx}] unsupported type '{param_type}' in scenario {scenario_id}")
+
+        parameters.append(Parameter(name, type_map[param_type], value))
+
+    return parameters
+
+
+def _parameter_value_to_json(value_msg: Any) -> Dict[str, Any]:
+    """Convert ParameterValue message to trace JSON."""
+    result: Dict[str, Any] = {'type': int(value_msg.type)}
+    if value_msg.type == ParameterType.PARAMETER_BOOL:
+        result['value'] = bool(value_msg.bool_value)
+    elif value_msg.type == ParameterType.PARAMETER_INTEGER:
+        result['value'] = int(value_msg.integer_value)
+    elif value_msg.type == ParameterType.PARAMETER_DOUBLE:
+        result['value'] = float(value_msg.double_value)
+    elif value_msg.type == ParameterType.PARAMETER_STRING:
+        result['value'] = value_msg.string_value
+    elif value_msg.type == ParameterType.PARAMETER_BYTE_ARRAY:
+        result['value'] = list(value_msg.byte_array_value)
+    elif value_msg.type == ParameterType.PARAMETER_BOOL_ARRAY:
+        result['value'] = list(value_msg.bool_array_value)
+    elif value_msg.type == ParameterType.PARAMETER_INTEGER_ARRAY:
+        result['value'] = list(value_msg.integer_array_value)
+    elif value_msg.type == ParameterType.PARAMETER_DOUBLE_ARRAY:
+        result['value'] = list(value_msg.double_array_value)
+    elif value_msg.type == ParameterType.PARAMETER_STRING_ARRAY:
+        result['value'] = list(value_msg.string_array_value)
+    return result
+
+
+def _parameter_to_json(param_msg: Any) -> Dict[str, Any]:
+    """Convert Parameter message to trace JSON."""
+    value = _parameter_value_to_json(param_msg.value)
+    item: Dict[str, Any] = {
+        'name': param_msg.name,
+        'type': value['type'],
+    }
+    if 'value' in value:
+        item['value'] = value['value']
+    return item
 
 
 def exec_declare_param(
@@ -297,35 +374,7 @@ def exec_set_params_batch(
     if params_list is None:
         raise BundleError(f"set_params_batch: payload missing 'params' in scenario {scenario_id}")
 
-    if not isinstance(params_list, list):
-        raise BundleError(f"set_params_batch: 'params' must be a list in scenario {scenario_id}")
-
-    # Build parameter list
-    type_map = {
-        'string': Parameter.Type.STRING,
-        'integer': Parameter.Type.INTEGER,
-        'double': Parameter.Type.DOUBLE,
-        'bool': Parameter.Type.BOOL,
-    }
-
-    parameters = []
-    for idx, param_spec in enumerate(params_list):
-        name = param_spec.get('name')
-        param_type = param_spec.get('type')
-        value = param_spec.get('value')
-
-        if not name:
-            raise BundleError(f"set_params_batch: param[{idx}] missing 'name' in scenario {scenario_id}")
-        if param_type is None:
-            raise BundleError(f"set_params_batch: param[{idx}] missing 'type' in scenario {scenario_id}")
-        if value is None:
-            raise BundleError(f"set_params_batch: param[{idx}] missing 'value' in scenario {scenario_id}")
-
-        if param_type not in type_map:
-            raise BundleError(f"set_params_batch: param[{idx}] unsupported type '{param_type}' in scenario {scenario_id}")
-
-        param = Parameter(name, type_map[param_type], value)
-        parameters.append(param)
+    parameters = _build_parameter_list(params_list, scenario_id, 'set_params_batch')
 
     # Initialize result
     result = {
@@ -354,6 +403,221 @@ def exec_set_params_batch(
         result['reason'] = f'Exception: {str(e)}'
 
     return result
+
+
+def exec_set_params_non_atomic(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Execute set_params_non_atomic using Node.set_parameters()."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"set_params_non_atomic: missing payload in scenario {scenario_id}")
+
+    params_list = payload.get('params')
+    if params_list is None:
+        raise BundleError(f"set_params_non_atomic: payload missing 'params' in scenario {scenario_id}")
+
+    parameters = _build_parameter_list(params_list, scenario_id, 'set_params_non_atomic')
+
+    result: Dict[str, Any] = {
+        'op': 'set_params_non_atomic',
+        'count': len(parameters),
+        'successful': True,
+        'results': [],
+    }
+
+    try:
+        set_results = st.node.set_parameters(parameters)
+        all_successful = True
+        per_param: List[Dict[str, Any]] = []
+        for idx, set_result in enumerate(set_results):
+            item: Dict[str, Any] = {
+                'name': parameters[idx].name,
+                'successful': bool(set_result.successful),
+            }
+            if not set_result.successful and set_result.reason:
+                item['reason'] = set_result.reason
+            if not set_result.successful:
+                all_successful = False
+            per_param.append(item)
+        result['successful'] = all_successful
+        result['results'] = per_param
+    except rclpy.exceptions.ParameterNotDeclaredException:
+        result['successful'] = False
+        result['reason'] = 'NotDeclared'
+    except Exception as e:
+        result['successful'] = False
+        result['reason'] = f'Exception: {str(e)}'
+
+    return result
+
+
+def exec_register_param_callback(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Register add_on_set_parameters_callback with reject-name mode."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"register_param_callback: missing payload in scenario {scenario_id}")
+
+    mode = payload.get('mode')
+    if mode != 'reject_names':
+        raise BundleError(f"register_param_callback: unsupported mode '{mode}' in scenario {scenario_id}")
+
+    reject = payload.get('reject')
+    if not isinstance(reject, list) or not all(isinstance(name, str) for name in reject):
+        raise BundleError(f"register_param_callback: payload.reject must be a string list in scenario {scenario_id}")
+
+    reject_names = set(reject)
+
+    if st.on_set_param_callback is not None:
+        st.node.remove_on_set_parameters_callback(st.on_set_param_callback)
+        st.on_set_param_callback = None
+
+    def _callback(params: List[Parameter]) -> SetParametersResult:
+        out = SetParametersResult()
+        out.successful = True
+        for param in params:
+            if param.name in reject_names:
+                out.successful = False
+                out.reason = f"RejectedByCallback:{param.name}"
+                return out
+        return out
+
+    st.node.add_on_set_parameters_callback(_callback)
+    st.on_set_param_callback = _callback
+
+    return {
+        'op': 'register_param_callback',
+        'mode': mode,
+        'reject': reject,
+        'registered': True,
+    }
+
+
+def exec_register_pre_set_callback(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Register add_pre_set_parameters_callback with remove-name mode."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"register_pre_set_callback: missing payload in scenario {scenario_id}")
+
+    mode = payload.get('mode')
+    if mode != 'remove_names':
+        raise BundleError(f"register_pre_set_callback: unsupported mode '{mode}' in scenario {scenario_id}")
+
+    remove = payload.get('remove')
+    if not isinstance(remove, list) or not all(isinstance(name, str) for name in remove):
+        raise BundleError(f"register_pre_set_callback: payload.remove must be a string list in scenario {scenario_id}")
+
+    remove_names = set(remove)
+
+    if st.pre_set_param_callback is not None:
+        st.node.remove_pre_set_parameters_callback(st.pre_set_param_callback)
+        st.pre_set_param_callback = None
+
+    def _callback(params: List[Parameter]) -> List[Parameter]:
+        return [param for param in params if param.name not in remove_names]
+
+    st.node.add_pre_set_parameters_callback(_callback)
+    st.pre_set_param_callback = _callback
+
+    return {
+        'op': 'register_pre_set_callback',
+        'mode': mode,
+        'remove': remove,
+        'registered': True,
+    }
+
+
+def exec_observe_param_events(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Observe /parameter_events and emit parameter_event trace entries."""
+    wait_ms = op.get('ms')
+    if wait_ms is None:
+        wait_ms = (op.get('payload') or {}).get('ms', 100)
+    if not isinstance(wait_ms, int) or wait_ms < 0:
+        raise BundleError(f"observe_param_events: ms must be a non-negative integer in scenario {scenario_id}")
+
+    if st.param_event_sub is None:
+        def _param_event_cb(msg: ParameterEvent) -> None:
+            st.param_event_buffer.append({
+                'type': 'parameter_event',
+                'scenario_id': scenario_id,
+                'node': msg.node,
+                'stamp': {'sec': msg.stamp.sec, 'nanosec': msg.stamp.nanosec},
+                'new_parameters': [_parameter_to_json(p) for p in msg.new_parameters],
+                'changed_parameters': [_parameter_to_json(p) for p in msg.changed_parameters],
+                'deleted_parameters': [_parameter_to_json(p) for p in msg.deleted_parameters],
+            })
+
+        st.param_event_sub = st.node.create_subscription(
+            ParameterEvent,
+            '/parameter_events',
+            _param_event_cb,
+            qos_profile_parameter_events,
+        )
+
+    deadline = time.monotonic() + (wait_ms / 1000.0)
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        rclpy.spin_once(st.node, timeout_sec=min(0.05, max(remaining, 0.0)))
+
+    drained = list(st.param_event_buffer)
+    st.param_event_buffer.clear()
+
+    for ev in drained:
+        w.emit(ev)
+
+    return {
+        'op': 'observe_param_events',
+        'window_ms': wait_ms,
+        'count': len(drained),
+    }
+
+
+def exec_list_params(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """List declared parameters with optional prefix/depth filtering."""
+    payload = op.get('payload') or {}
+
+    prefixes = payload.get('prefixes', [])
+    if not isinstance(prefixes, list) or not all(isinstance(p, str) for p in prefixes):
+        raise BundleError(f"list_params: payload.prefixes must be a string list in scenario {scenario_id}")
+
+    depth = payload.get('depth', 0)
+    if not isinstance(depth, int) or depth < 0:
+        raise BundleError(f"list_params: payload.depth must be a non-negative integer in scenario {scenario_id}")
+
+    listed = st.node.list_parameters(prefixes, depth)
+    return {
+        'op': 'list_params',
+        'prefixes_in': prefixes,
+        'depth': depth,
+        'names': list(listed.names),
+        'prefixes': list(listed.prefixes),
+        'count': len(listed.names),
+    }
 
 
 def exec_describe_param(

@@ -59,13 +59,7 @@ The Dockerfile uses a pinned digest (e.g., `ros:jazzy-ros-base-noble@sha256:...`
 ## No-Cheating Constraints
 
 ### Trace Schema Lock
-Only emit approved event types from `harness/schemas/trace_event.schema.json`:
-- `run_start`, `run_end`
-- `backend_capabilities`
-- `scenario_start`, `scenario_end`
-- `op_start`, `op_end`
-- `goal_send`, `goal_response`, `goal_cancel`, `goal_status`, `goal_result`
-- `feedback`, `diagnostic`
+Only emit approved event types from `harness/schemas/trace_event.schema.json` (for example: `run_start`, `scenario_start`, `op_start`, `op_end`, `status`, `result`, `cancel_*`, `parameter_event`).
 
 Forbidden fields in any event: `ok`, `pass`, `fail`, `verdict`, `assertion`.
 Operation outcomes belong in `op_end.detail`.

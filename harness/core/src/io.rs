@@ -22,6 +22,7 @@ const CORE_TYPES: &[&str] = &[
     "scenario_end",
     "env",
     "diagnostic",
+    "parameter_event",
     "op_start",
     "op_end",
     "goal_send",

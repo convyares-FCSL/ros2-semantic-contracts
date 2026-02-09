@@ -15,8 +15,13 @@ from .ops.params import (
     exec_set_param,
     exec_get_param,
     exec_set_params_batch,
+    exec_set_params_non_atomic,
     exec_describe_param,
     exec_undeclare_param,
+    exec_register_param_callback,
+    exec_register_pre_set_callback,
+    exec_observe_param_events,
+    exec_list_params,
 )
 
 
@@ -29,8 +34,13 @@ OP_HANDLERS = {
     'set_param': exec_set_param,
     'get_param': exec_get_param,
     'set_params_batch': exec_set_params_batch,
+    'set_params_non_atomic': exec_set_params_non_atomic,
     'describe_param': exec_describe_param,
     'undeclare_param': exec_undeclare_param,
+    'register_param_callback': exec_register_param_callback,
+    'register_pre_set_callback': exec_register_pre_set_callback,
+    'observe_param_events': exec_observe_param_events,
+    'list_params': exec_list_params,
 }
 
 
@@ -118,8 +128,13 @@ def run_backend(bundle_path: str, trace_path: str) -> None:
                     'ros.params.set',
                     'ros.params.get',
                     'ros.params.set_batch',
+                    'ros.params.set_non_atomic',
                     'ros.params.describe',
                     'ros.params.delete',
+                    'ros.params.list',
+                    'ros.params.callback',
+                    'ros.params.pre_set_callback',
+                    'ros.params.observe_events',
                 ],
                 'limits': {}
             }

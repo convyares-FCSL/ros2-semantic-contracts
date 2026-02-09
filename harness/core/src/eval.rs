@@ -128,11 +128,22 @@ fn evaluate_scenario(
                         )
                     })?;
 
-                let missing: Vec<_> = must
-                    .iter()
-                    .filter(|pattern| !events.iter().any(|ev| matches_pattern(ev, pattern)))
-                    .cloned()
-                    .collect();
+                // Match each pattern against remaining events in order, consuming one
+                // event per successful match. This prevents duplicate patterns from
+                // matching the same event and avoids false-pass outcomes.
+                let mut next_idx = 0usize;
+                let mut missing = Vec::new();
+                for pattern in must {
+                    let found_rel = events[next_idx..]
+                        .iter()
+                        .position(|ev| matches_pattern(ev, pattern));
+
+                    if let Some(rel) = found_rel {
+                        next_idx += rel + 1;
+                    } else {
+                        missing.push(pattern.clone());
+                    }
+                }
 
                 if !missing.is_empty() {
                     pass = false;
@@ -432,5 +443,90 @@ fn matches_pattern(event: &Value, pattern: &Value) -> bool {
         }),
         (Value::Array(ea), Value::Array(pa)) => ea == pa,
         _ => event == pattern,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::evaluate_scenario;
+    use crate::model::{Expect, Outcome, Scenario};
+    use serde_json::{json, Value};
+    use std::collections::HashSet;
+
+    fn custom_scenario(must_observe: Value) -> Scenario {
+        Scenario {
+            spec_id: "TEST".to_string(),
+            title: "custom matcher test".to_string(),
+            layer: None,
+            notes: None,
+            requires: vec![],
+            ops: vec![],
+            expects: vec![Expect {
+                check: "custom".to_string(),
+                params: Some(json!({ "must_observe": must_observe })),
+            }],
+        }
+    }
+
+    #[test]
+    fn custom_duplicate_patterns_require_distinct_events() {
+        let scenario = custom_scenario(json!([
+            {"type": "op_end", "detail": {"op": "declare_param", "name": "p1"}},
+            {"type": "op_end", "detail": {"op": "declare_param", "name": "p1"}}
+        ]));
+
+        let events = vec![
+            json!({"type": "scenario_start"}),
+            json!({"type": "op_end", "detail": {"op": "declare_param", "name": "p1"}}),
+            json!({"type": "scenario_end"}),
+        ];
+
+        let (outcome, details) =
+            evaluate_scenario(&scenario, &events, &HashSet::new()).expect("evaluation should run");
+        assert_eq!(outcome, Outcome::Fail);
+        assert_eq!(
+            details["violations"]["missing_expectations"]
+                .as_array()
+                .map(|a| a.len()),
+            Some(1)
+        );
+    }
+
+    #[test]
+    fn custom_matching_is_order_sensitive() {
+        let scenario = custom_scenario(json!([
+            {"type": "op_end", "detail": {"op": "second"}},
+            {"type": "op_end", "detail": {"op": "first"}}
+        ]));
+
+        let events = vec![
+            json!({"type": "scenario_start"}),
+            json!({"type": "op_end", "detail": {"op": "first"}}),
+            json!({"type": "op_end", "detail": {"op": "second"}}),
+            json!({"type": "scenario_end"}),
+        ];
+
+        let (outcome, _details) =
+            evaluate_scenario(&scenario, &events, &HashSet::new()).expect("evaluation should run");
+        assert_eq!(outcome, Outcome::Fail);
+    }
+
+    #[test]
+    fn custom_matching_passes_when_patterns_follow_event_order() {
+        let scenario = custom_scenario(json!([
+            {"type": "op_end", "detail": {"op": "first"}},
+            {"type": "op_end", "detail": {"op": "second"}}
+        ]));
+
+        let events = vec![
+            json!({"type": "scenario_start"}),
+            json!({"type": "op_end", "detail": {"op": "first"}}),
+            json!({"type": "op_end", "detail": {"op": "second"}}),
+            json!({"type": "scenario_end"}),
+        ];
+
+        let (outcome, _details) =
+            evaluate_scenario(&scenario, &events, &HashSet::new()).expect("evaluation should run");
+        assert_eq!(outcome, Outcome::Pass);
     }
 }
