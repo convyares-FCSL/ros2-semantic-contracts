@@ -10,7 +10,13 @@ from .errors import BundleError
 from .ops.clock import exec_get_clock
 from .ops.generic import exec_wait
 from .ops.actions import exec_send_goal
-from .ops.params import exec_declare_param
+from .ops.params import (
+    exec_declare_param,
+    exec_set_param,
+    exec_get_param,
+    exec_set_params_batch,
+    exec_describe_param,
+)
 
 
 # Operation handler registry
@@ -19,6 +25,10 @@ OP_HANDLERS = {
     'wait': exec_wait,
     'send_goal': exec_send_goal,
     'declare_param': exec_declare_param,
+    'set_param': exec_set_param,
+    'get_param': exec_get_param,
+    'set_params_batch': exec_set_params_batch,
+    'describe_param': exec_describe_param,
 }
 
 
@@ -99,7 +109,15 @@ def run_backend(bundle_path: str, trace_path: str) -> None:
             'scenario_id': '_run',
             'detail': {
                 'backend': 'py',
-                'caps': ['actions.basic', 'clock.ros_time', 'ros.params.declare'],
+                'caps': [
+                    'actions.basic',
+                    'clock.ros_time',
+                    'ros.params.declare',
+                    'ros.params.set',
+                    'ros.params.get',
+                    'ros.params.set_batch',
+                    'ros.params.describe',
+                ],
                 'limits': {}
             }
         })
