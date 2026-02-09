@@ -20,11 +20,25 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-test-msgs \
     && rm -rf /var/lib/apt/lists/*
 
+# Python backend support (rclpy comes from ros-jazzy packages)
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-setuptools \
+    ros-jazzy-rclpy \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /work
 COPY . /work
+
+# Build backend_prod for peer binaries (sequence_actor needed by backend_py)
+RUN . /opt/ros/jazzy/setup.sh && \
+    colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+# Install backend_py package (editable mode for development)
+RUN cd harness/backends/backend_py && pip3 install -e . --break-system-packages
 
 ENV ORACLE_BACKEND=prod

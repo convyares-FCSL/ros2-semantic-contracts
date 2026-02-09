@@ -72,9 +72,13 @@ case "${ORACLE_BACKEND}" in
     # Assumes colcon build from root output
     BACKEND_BIN="${ROOT}/install/backend_prod/lib/backend_prod/backend_prod"
     ;;
+  py)
+    BACKEND_DIR="${ROOT}/harness/backends/backend_py"
+    BACKEND_BIN="backend_py"  # Installed via pip, on PATH
+    ;;
   *)
     echo "ERROR: Unknown ORACLE_BACKEND='${ORACLE_BACKEND}'"
-    echo "Supported: stub, ros, prod"
+    echo "Supported: stub, ros, prod, py"
     exit 2
     ;;
 esac
@@ -118,6 +122,9 @@ if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
     # Build using colcon from root
     # Ensure setup.bash is sourced by the caller or docker env
     ( cd "${ROOT}" && colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release )
+elif [[ "${ORACLE_BACKEND}" == "py" ]]; then
+    # Build using pip (--break-system-packages for local non-venv testing)
+    ( cd "${BACKEND_DIR}" && pip3 install -e . --break-system-packages )
 else
     ( cd "${BACKEND_DIR}" && cargo build --release )
 fi
@@ -129,7 +136,10 @@ echo
 
 # ---- Verify binaries ----
 
-[[ -x "${BACKEND_BIN}" ]] || { echo "ERROR: backend binary missing: ${BACKEND_BIN}"; exit 2; }
+# Skip verification for py backend (pip ensures it's available)
+if [[ "${ORACLE_BACKEND}" != "py" ]]; then
+    [[ -x "${BACKEND_BIN}" ]] || { echo "ERROR: backend binary missing: ${BACKEND_BIN}"; exit 2; }
+fi
 [[ -x "${CORE_BIN}" ]] || { echo "ERROR: core binary missing: ${CORE_BIN}"; exit 2; }
 
 # ---- Run ----
@@ -170,10 +180,16 @@ for BUNDLE in "${TARGETS[@]}"; do
         echo "== Run core for ${NAME} =="
     fi
     
-    if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
-        # prod backend requires an external peer — launch_peer.sh owns the
+    if [[ "${ORACLE_BACKEND}" == "prod" ]] || [[ "${ORACLE_BACKEND}" == "py" ]]; then
+        # prod and py backends require an external peer — launch_peer.sh owns the
         # peer lifecycle (start → sentinel gate → oracle_core → teardown).
         SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        
+        # For py backend, set PEER_DIR to use prod's peer binaries
+        if [[ "${ORACLE_BACKEND}" == "py" ]]; then
+            export PEER_DIR="${ROOT}/install/backend_prod/lib/backend_prod"
+        fi
+        
         "${SCRIPTS_DIR}/launch_peer.sh" "${BUNDLE}" "${TRACE}" "${REPORT}" "${BACKEND_BIN}" "${CORE_BIN}" || FAILED=1
     else
         "${CORE_BIN}" "${BUNDLE}" "${TRACE}" "${REPORT}" --backend "${BACKEND_BIN}" || FAILED=1

@@ -1,0 +1,2 @@
+[console_scripts]
+backend_py = backend_py.__main__:main

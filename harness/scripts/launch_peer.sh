@@ -30,7 +30,9 @@ BACKEND_BIN="$4"
 CORE_BIN="$5"
 
 # Locate peer binaries relative to backend_prod binary location.
-PEER_DIR="$(dirname "${BACKEND_BIN}")"
+# Allow override via PEER_DIR env var (for backends like py that use prod's peers)
+PEER_DIR_AUTO="$(dirname "${BACKEND_BIN}")"
+PEER_DIR="${PEER_DIR:-${PEER_DIR_AUTO}}"
 
 # ---------------------------------------------------------------------------
 # 1. RUN_ID

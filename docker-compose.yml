@@ -5,6 +5,11 @@ services:
       dockerfile: docker/Dockerfile.harness
       args:
         - ROS_DISTRO=${ROS_DISTRO:-jazzy}
+    # Backend selection via ORACLE_BACKEND env var:
+    #   prod - C++ rclcpp backend (default for Track 1)
+    #   py   - Python rclpy backend (Track 2 probe)
+    #   ros  - Rust backend (legacy)
+    #   stub - Deterministic stub (smoke tests)
     environment:
       - ORACLE_BACKEND=${ORACLE_BACKEND:-prod}
       - CARGO_TERM_PROGRESS_WHEN=never

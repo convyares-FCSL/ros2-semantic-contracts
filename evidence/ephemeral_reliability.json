@@ -1,64 +1,89 @@
 {
-  "version": "0.1",
-  "group": "Reliability",
-  "scenarios": {
-    "P12_describe_unknown_consistent": {
-      "spec_id": "P12",
-      "title": "Describe Unknown Consistent",
-      "layer": "Core",
-      "requires": [
-        "ros.params.describe"
-      ],
-      "notes": "Validates SPEC_P06: calling describe_param twice on the same unknown parameter must return identical descriptor fields. Consistency defined as: type, read_only, dynamic_typing fields must match across calls. Note: rclcpp throws on undeclared params, so we catch and fabricate a default descriptor.",
-      "ops": [
-        {
-          "op": "describe_param",
-          "payload": {
-            "name": "param_does_not_exist"
-          }
-        },
-        {
-          "op": "describe_param",
-          "payload": {
-            "name": "param_does_not_exist"
-          }
-        }
-      ],
-      "expects": [
-        {
-          "check": "custom",
-          "params": {
-            "must_observe": [
-              {
-                "type": "op_end",
-                "detail": {
-                  "op": "describe_param",
-                  "name": "param_does_not_exist",
-                  "successful": false,
-                  "descriptor": {
-                    "type": 0,
-                    "read_only": false,
-                    "dynamic_typing": false
-                  }
+    "version": "0.1",
+    "group": "H",
+    "description": "Harness self-tests (deterministic; not tied to ROS semantics or traceability.md).",
+    "scenarios": {
+        "H00_smoke_trace_roundtrip": {
+            "spec_id": "H00",
+            "title": "Smoke: scenario load -> backend run -> JSONL trace -> core evaluation",
+            "layer": "Harness",
+            "notes": "Deterministic stub-only. Proves pipeline and schema enforcement. Not a semantic spec test.",
+            "ops": [
+                {
+                    "op": "send_goal",
+                    "goal_id": "g1",
+                    "payload": {
+                        "mode": "accept"
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
+                },
+                {
+                    "op": "send_goal",
+                    "goal_id": "g2",
+                    "payload": {
+                        "mode": "reject"
+                    }
+                },
+                {
+                    "op": "wait",
+                    "ms": 10
                 }
-              },
-              {
-                "type": "op_end",
-                "detail": {
-                  "op": "describe_param",
-                  "name": "param_does_not_exist",
-                  "successful": false,
-                  "descriptor": {
-                    "type": 0,
-                    "read_only": false,
-                    "dynamic_typing": false
-                  }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "goal_send_decision",
+                                "goal_id": "g1",
+                                "accepted": true
+                            },
+                            {
+                                "type": "goal_send_decision",
+                                "goal_id": "g2",
+                                "accepted": false
+                            }
+                        ]
+                    }
                 }
-              }
             ]
-          }
+        },
+        "H01_ros_clock_smoke": {
+            "spec_id": "H01",
+            "title": "Smoke: ROS clock API returns valid timestamp",
+            "layer": "Harness",
+            "requires": ["clock.ros_time"],
+            "notes": "Exercises real rclcpp node creation and clock API. Proves ROS integration works.",
+            "ops": [
+                {
+                    "op": "get_clock"
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_start",
+                                "detail": {
+                                    "op": "get_clock"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_clock"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         }
-      ]
     }
-  }
 }
