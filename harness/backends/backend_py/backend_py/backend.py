@@ -10,6 +10,7 @@ from .errors import BundleError
 from .ops.clock import exec_get_clock
 from .ops.generic import exec_wait
 from .ops.actions import exec_send_goal
+from .ops.params import exec_declare_param
 
 
 # Operation handler registry
@@ -17,6 +18,7 @@ OP_HANDLERS = {
     'get_clock': exec_get_clock,
     'wait': exec_wait,
     'send_goal': exec_send_goal,
+    'declare_param': exec_declare_param,
 }
 
 
@@ -97,7 +99,7 @@ def run_backend(bundle_path: str, trace_path: str) -> None:
             'scenario_id': '_run',
             'detail': {
                 'backend': 'py',
-                'caps': ['actions.basic', 'clock.ros_time'],
+                'caps': ['actions.basic', 'clock.ros_time', 'ros.params.declare'],
                 'limits': {}
             }
         })
@@ -116,7 +118,11 @@ def run_backend(bundle_path: str, trace_path: str) -> None:
             
             # Create BackendState for this scenario
             st = BackendState()
-            st.node = rclpy.create_node(f'oracle_backend_py_{scenario_id}')
+            st.node = rclpy.create_node(
+                f'oracle_backend_py_{scenario_id}',
+                allow_undeclared_parameters=False,
+                automatically_declare_parameters_from_overrides=False
+            )
             
             # Create ActionClient if scenario uses actions
             if any(op.get('op') == 'send_goal' for op in ops):

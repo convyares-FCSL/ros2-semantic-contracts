@@ -31,9 +31,10 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 
 ## Coverage Matrix
 
-| Spec ID | Scenario ID                        | stub | ros  | PROD | rclrs | Notes                              |
-| ------- | ---------------------------------- | ---- | ---- | ---- | ----- | ---------------------------------- |
-| H00     | H00_harness_smoke                  | PASS | N/A  | PASS | N/A   | Harness calibration                |
+| Spec ID | Scenario ID                        | stub | ros  | PROD | PY   | rclrs | Notes                                    |
+| ------- | ---------------------------------- | ---- | ---- | ---- | ---- | ----- | ---------------------------------------- |
+| **H00** | H00_harness_smoke                  | PASS | PASS | PASS | PASS | N/A   | Harness calibration (action smoke test)  |
+| **H01** | H01_ros_clock_smoke                | PASS | PASS | PASS | PASS | N/A   | ROS clock API smoke test                 |
 | **A01** | A01_no_ghosts_after_rejection      | PASS | N/A  | PASS | N/A   | Action goal identity               |
 | **A02** | A02_terminal_immutability          | PASS | N/A  | PASS | N/A   | Terminal immutability              |
 | **A03** | A03_unknown_not_persistent         | N/A  | SKIP | N/A  | N/A   | Not implemented yet                |
@@ -67,7 +68,7 @@ It is **not inferred** from backend self-reporting and is **not derived automati
 | **G01** | G01_inactive_suppresses_pubs       | N/A  | N/A  | N/A  | N/A   | Gate rule                          |
 | **P01** | P01_no_fabricated_params           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
 | **P02** | P02_dynamic_typing_rules           | N/A  | N/A  | N/A  | N/A   | Not yet validated                  |
-| **P03** | P03_redeclaration_fails            | N/A  | N/A  | PASS | N/A   | Redeclaration of parameter fails   |
+| **P03** | P03_redeclaration_fails            | N/A  | N/A  | PASS | PASS  | Redeclaration of parameter fails   |
 | **P04** | P04_no_partial_application         | N/A  | N/A  | PASS | N/A   | Atomic batch-set rejection         |
 | **P05** | P05_readonly_enforcement           | N/A  | N/A  | PASS | N/A   | Read-only enforcement              |
 | **P06** | P06_unknown_params_rejected        | N/A  | N/A  | PASS | N/A   | Set undeclared param rejected      |
