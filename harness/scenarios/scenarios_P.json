@@ -655,9 +655,117 @@
             "spec_id": "P09",
             "title": "Atomic updates (external)",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set_batch",
+                "ros.params.get"
+            ],
+            "notes": "Validates SPEC_P04 external atomicity: when a mixed batch fails (one target is read-only), no externally observable partial state is applied.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "batch_mutable",
+                        "value": "m0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "batch_readonly",
+                        "value": "r0",
+                        "descriptor": {
+                            "read_only": true
+                        }
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "batch_mutable",
+                                "type": "string",
+                                "value": "m1"
+                            },
+                            {
+                                "name": "batch_readonly",
+                                "type": "string",
+                                "value": "r1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "batch_mutable"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "batch_readonly"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "batch_mutable",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "batch_readonly",
+                                    "declared": true,
+                                    "descriptor": {
+                                        "read_only": true
+                                    }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "batch_mutable",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "m0"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "batch_readonly",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "r0"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P10_rejected_updates_silent": {
             "spec_id": "P10",
