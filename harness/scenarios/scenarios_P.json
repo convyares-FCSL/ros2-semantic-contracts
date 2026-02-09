@@ -1005,9 +1005,98 @@
             "spec_id": "P13",
             "title": "List complete and stable",
             "layer": "Tooling",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Tooling)."
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get"
+            ],
+            "notes": "Proxy validation for SPEC_P07: list_parameters operation is not yet implemented, so this scenario asserts stable repeated retrieval over a declared parameter set.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "stable_alpha",
+                        "value": "a"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "stable_beta",
+                        "value": "b"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "stable_alpha"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "stable_beta"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "stable_alpha"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "stable_beta"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "stable_alpha",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "stable_beta",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "stable_alpha",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "a"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "stable_beta",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "b"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P14_deletion_reported_events": {
             "spec_id": "P14",
