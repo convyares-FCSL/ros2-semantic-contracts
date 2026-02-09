@@ -58,7 +58,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 16 scenarios | PASS: 11 | N/A-only: 5</strong></summary>
+<summary><strong>Parameters (P): 16 scenarios | PASS: 12 | N/A-only: 4</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
@@ -77,7 +77,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P13** | P13_list_complete_stable         | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
 | **P14** | P14_deletion_reported_events     | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
 | **P15** | P15_parameter_interface_conformity | N/A | N/A | N/A  | N/A  | N/A   | **New**: Interface Conformity               |
-| **P16** | P16_explicit_declaration_mode    | N/A  | N/A | N/A  | N/A  | N/A   | **New**: Declaration modes                  |
+| **P16** | P16_explicit_declaration_mode    | N/A  | N/A | PASS | PASS | N/A   | Strict declaration mode enforced (undeclared set rejected) |
 </details>
 
 <details>

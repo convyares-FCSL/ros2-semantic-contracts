@@ -872,9 +872,103 @@
             "spec_id": "P16",
             "title": "Explicit Declaration Mode",
             "layer": "Global",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Global)."
+            "requires": [
+                "ros.params.set",
+                "ros.params.declare",
+                "ros.params.get"
+            ],
+            "notes": "Validates SPEC_P02 baseline mode (allow_undeclared_parameters=false): undeclared sets fail, declared sets succeed.",
+            "ops": [
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "undeclared_mode_param",
+                        "type": "integer",
+                        "value": 7
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "undeclared_mode_param"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "declared_mode_param",
+                        "value": "seed"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "declared_mode_param",
+                        "type": "string",
+                        "value": "updated"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "declared_mode_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "undeclared_mode_param",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "undeclared_mode_param",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "declared_mode_param",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "declared_mode_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "declared_mode_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "updated"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         }
     }
 }
