@@ -67,22 +67,16 @@ They must be validated against the baseline profile (**ROS 2 Jazzy + rclcpp + Na
 
 ## Parameters
 
-### ParameterEvent cardinality
-
-* Whether each accepted atomic update produces exactly one `ParameterEvent`.
-* Hypothesis: one event per accepted update batch.
-* Requires oracle validation under multi-parameter updates.
-
 ### ListParameters prefix/depth semantics
 
-* Behaviour of `prefixes` and `depth` filtering in Jazzy `rclcpp`.
-* Only stability and completeness are currently normative.
-* Detailed filtering semantics remain ⚠️ UNVALIDATED.
+* Basic filtering behavior is now validated by `P13_list_complete_stable`
+  (prefix filtering and depth behavior over repeated calls).
+* Remaining gap: exhaustive edge cases (deeply nested namespaces, empty-prefix combinations, and mixed depth transitions) are still unvalidated.
 
 ### Atomic visibility to observers
 
-* Confirmation that no external observer (service call or event stream) can observe a partially applied update.
-* Expected invariant but requires oracle stress testing.
+* `P25_concurrent_visibility_probe` validated one concrete probe path (bulk read snapshots during non-atomic batch updates) with no mixed partial state observed on Jazzy.
+* Remaining gap: high-contention stress with richer observer patterns is still unvalidated.
 
 ---
 

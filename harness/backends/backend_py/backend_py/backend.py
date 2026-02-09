@@ -22,6 +22,8 @@ from .ops.params import (
     exec_register_pre_set_callback,
     exec_observe_param_events,
     exec_list_params,
+    exec_get_parameter_types,
+    exec_concurrent_read_during_batch,
 )
 
 
@@ -41,6 +43,8 @@ OP_HANDLERS = {
     'register_pre_set_callback': exec_register_pre_set_callback,
     'observe_param_events': exec_observe_param_events,
     'list_params': exec_list_params,
+    'get_parameter_types': exec_get_parameter_types,
+    'concurrent_read_during_batch': exec_concurrent_read_during_batch,
 }
 
 
@@ -135,6 +139,8 @@ def run_backend(bundle_path: str, trace_path: str) -> None:
                     'ros.params.callback',
                     'ros.params.pre_set_callback',
                     'ros.params.observe_events',
+                    'ros.params.get_parameter_types',
+                    'ros.params.concurrent_read',
                 ],
                 'limits': {}
             }

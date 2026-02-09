@@ -1,5 +1,6 @@
 """Parameter operation handlers."""
 
+import threading
 import time
 from typing import Dict, Any, Optional, List
 import rclpy
@@ -86,6 +87,21 @@ def _parameter_to_json(param_msg: Any) -> Dict[str, Any]:
     return item
 
 
+def _parameter_to_string(param: Parameter) -> str:
+    """Stringify parameter value for concurrent snapshot comparisons."""
+    if param.type_ == Parameter.Type.BOOL:
+        return 'true' if param.value else 'false'
+    if param.type_ == Parameter.Type.INTEGER:
+        return str(int(param.value))
+    if param.type_ == Parameter.Type.DOUBLE:
+        return str(float(param.value))
+    if param.type_ == Parameter.Type.STRING:
+        return str(param.value)
+    if param.type_ == Parameter.Type.NOT_SET:
+        return 'NOT_SET'
+    return 'UNSUPPORTED'
+
+
 def exec_declare_param(
     w: TraceWriter,
     st: BackendState,
@@ -127,26 +143,38 @@ def exec_declare_param(
         'name': name
     }
 
-    # Extract optional default value (string type only)
-    default_value = payload.get('value', '')
-
     # Parse descriptor (optional)
     descriptor = ParameterDescriptor()
+    explicit_descriptor_type: Optional[int] = None
     if 'descriptor' in payload:
         desc_dict = payload['descriptor']
         if 'read_only' in desc_dict:
             descriptor.read_only = desc_dict['read_only']
         if 'dynamic_typing' in desc_dict:
             descriptor.dynamic_typing = desc_dict['dynamic_typing']
+        if 'type' in desc_dict:
+            explicit_descriptor_type = int(desc_dict['type'])
+            descriptor.type = explicit_descriptor_type
 
     try:
         # CRITICAL: Call real rclpy API with descriptor - NO SIMULATION
-        st.node.declare_parameter(name, default_value, descriptor)
+        if 'value' in payload:
+            st.node.declare_parameter(name, payload['value'], descriptor)
+        else:
+            if int(descriptor.type) != int(ParameterType.PARAMETER_NOT_SET):
+                st.node.declare_parameter(name, Parameter.Type(int(descriptor.type)), descriptor)
+            else:
+                # Preserve legacy harness behavior when no explicit type is provided.
+                st.node.declare_parameter(name, '', descriptor)
         result['declared'] = True
 
         # Echo descriptor for trace inspection (matching backend_prod)
-        if descriptor.read_only:
-            result['descriptor'] = {'read_only': True}
+        if descriptor.read_only or explicit_descriptor_type is not None:
+            result['descriptor'] = {}
+            if descriptor.read_only:
+                result['descriptor']['read_only'] = True
+            if explicit_descriptor_type is not None:
+                result['descriptor']['type'] = explicit_descriptor_type
 
     except rclpy.exceptions.ParameterAlreadyDeclaredException:
         # Specific exception for redeclaration - this is what P03 tests
@@ -306,7 +334,12 @@ def exec_get_param(
 
     # Parameter is declared - get it
     result['declared'] = True
-    param = st.node.get_parameter(name)
+    try:
+        param = st.node.get_parameter(name)
+    except rclpy.exceptions.ParameterUninitializedException:
+        result['set'] = False
+        result['type'] = 'NOT_SET'
+        return result
 
     # Check if parameter has a value
     if param.type_ == Parameter.Type.NOT_SET:
@@ -617,6 +650,119 @@ def exec_list_params(
         'names': list(listed.names),
         'prefixes': list(listed.prefixes),
         'count': len(listed.names),
+    }
+
+
+def exec_get_parameter_types(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Execute get_parameter_types operation."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"get_parameter_types: missing payload in scenario {scenario_id}")
+
+    names = payload.get('names')
+    if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
+        raise BundleError(f"get_parameter_types: payload.names must be a string list in scenario {scenario_id}")
+
+    result: Dict[str, Any] = {
+        'op': 'get_parameter_types',
+        'successful': True,
+        'count': 0,
+        'types': [],
+    }
+    try:
+        types = st.node.get_parameter_types(names)
+        result['count'] = len(types)
+        result['types'] = [int(t) for t in types]
+    except rclpy.exceptions.ParameterNotDeclaredException:
+        result['successful'] = False
+        result['reason'] = 'NotDeclared'
+    except Exception as e:
+        result['successful'] = False
+        result['reason'] = f'Exception: {str(e)}'
+    return result
+
+
+def exec_concurrent_read_during_batch(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Probe whether a concurrent reader can observe partial non-atomic batch state."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"concurrent_read_during_batch: missing payload in scenario {scenario_id}")
+
+    targets = payload.get('target_params')
+    if not isinstance(targets, list) or not all(isinstance(name, str) for name in targets):
+        raise BundleError(f"concurrent_read_during_batch: payload.target_params must be a string list in scenario {scenario_id}")
+
+    batch_payload = payload.get('batch')
+    if not isinstance(batch_payload, list):
+        raise BundleError(f"concurrent_read_during_batch: payload.batch must be a list in scenario {scenario_id}")
+
+    batch = _build_parameter_list(batch_payload, scenario_id, 'concurrent_read_during_batch')
+
+    old_values: Dict[str, str] = {
+        name: _parameter_to_string(st.node.get_parameter(name))
+        for name in targets
+    }
+    new_values = dict(old_values)
+    for param in batch:
+        new_values[param.name] = _parameter_to_string(param)
+
+    stop_reader = threading.Event()
+    first_snapshot = threading.Event()
+    snapshots: List[Dict[str, str]] = []
+    snapshot_lock = threading.Lock()
+
+    def _reader() -> None:
+        while not stop_reader.is_set():
+            params = st.node.get_parameters(targets)
+            snap = {}
+            for idx, param in enumerate(params):
+                if idx < len(targets):
+                    snap[targets[idx]] = _parameter_to_string(param)
+            with snapshot_lock:
+                snapshots.append(snap)
+            first_snapshot.set()
+            time.sleep(0.0002)
+
+    reader_thread = threading.Thread(target=_reader, daemon=True)
+    reader_thread.start()
+    first_snapshot.wait(timeout=0.02)
+    try:
+        set_results = st.node.set_parameters(batch)
+    finally:
+        stop_reader.set()
+        reader_thread.join()
+
+    partial_observed = False
+    for snap in snapshots:
+        old_count = 0
+        new_count = 0
+        for name in targets:
+            value = snap.get(name)
+            if value == old_values.get(name):
+                old_count += 1
+            if value == new_values.get(name):
+                new_count += 1
+        if old_count > 0 and new_count > 0:
+            partial_observed = True
+            break
+
+    successful = all(result.successful for result in set_results)
+    return {
+        'op': 'concurrent_read_during_batch',
+        'batch_count': len(batch),
+        'snapshot_count': len(snapshots),
+        'partial_state_observed': partial_observed,
+        'successful': successful,
     }
 
 

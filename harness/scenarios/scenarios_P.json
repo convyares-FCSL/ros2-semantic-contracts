@@ -2183,7 +2183,7 @@
                                     "op": "get_param",
                                     "name": "p23_no_default",
                                     "declared": true,
-                                    "type": "not_set"
+                                    "type": "NOT_SET"
                                 }
                             }
                         ]
@@ -2199,7 +2199,7 @@
                 "ros.params.declare",
                 "ros.params.get_parameter_types"
             ],
-            "notes": "Validates SPEC_PC12: get_parameter_types must return 1:1 response mapping. Requires new get_parameter_types op. Hypothesis: response length equals request length, undeclared params get type 0 (NOT_SET).",
+            "notes": "Validates SPEC_PC12 behavior on mixed declared/undeclared names. Jazzy observed baseline: get_parameter_types fails with NotDeclared when any queried name is undeclared.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -2236,12 +2236,77 @@
                                 "type": "op_end",
                                 "detail": {
                                     "op": "get_parameter_types",
-                                    "count": 3,
-                                    "types": [
-                                        4,
-                                        0,
-                                        0
-                                    ]
+                                    "successful": false,
+                                    "reason": "NotDeclared"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P25_concurrent_visibility_probe": {
+            "spec_id": "P25",
+            "title": "Concurrent reader visibility during non-atomic batch set",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.concurrent_read"
+            ],
+            "notes": "Validates concurrent visibility for non-atomic set_parameters() using bulk read snapshots. Jazzy observed baseline: mixed partial state was not observed in this probe.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p25_a",
+                        "value": "old_a",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p25_b",
+                        "value": "old_b",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "concurrent_read_during_batch",
+                    "payload": {
+                        "target_params": [
+                            "p25_a",
+                            "p25_b"
+                        ],
+                        "batch": [
+                            {
+                                "name": "p25_a",
+                                "type": "string",
+                                "value": "new_a"
+                            },
+                            {
+                                "name": "p25_b",
+                                "type": "string",
+                                "value": "new_b"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "concurrent_read_during_batch",
+                                    "partial_state_observed": false
                                 }
                             }
                         ]

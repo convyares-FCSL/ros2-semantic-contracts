@@ -4,6 +4,7 @@
 #include <rcl_interfaces/msg/parameter_type.hpp>
 #include <rcl_interfaces/msg/set_parameters_result.hpp>
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <set>
 #include <thread>
@@ -19,6 +20,41 @@ static rclcpp::Parameter make_parameter(const std::string& name, const json& pay
     if (type == "string")   return rclcpp::Parameter(name, payload["value"].get<std::string>());
     if (type == "bool")     return rclcpp::Parameter(name, payload["value"].get<bool>());
     throw BundleError("set_param: unsupported type '" + type + "'");
+}
+
+static rclcpp::Parameter make_parameter_from_value(
+    const std::string& name, const json& value
+) {
+    if (value.is_boolean()) {
+        return rclcpp::Parameter(name, value.get<bool>());
+    }
+    if (value.is_number_integer()) {
+        return rclcpp::Parameter(name, value.get<int64_t>());
+    }
+    if (value.is_number_float()) {
+        return rclcpp::Parameter(name, value.get<double>());
+    }
+    if (value.is_string()) {
+        return rclcpp::Parameter(name, value.get<std::string>());
+    }
+    throw BundleError("declare_param: unsupported value type for '" + name + "'");
+}
+
+static std::string parameter_to_string(const rclcpp::Parameter& param) {
+    switch (param.get_type()) {
+        case rclcpp::ParameterType::PARAMETER_BOOL:
+            return param.as_bool() ? "true" : "false";
+        case rclcpp::ParameterType::PARAMETER_INTEGER:
+            return std::to_string(param.as_int());
+        case rclcpp::ParameterType::PARAMETER_DOUBLE:
+            return std::to_string(param.as_double());
+        case rclcpp::ParameterType::PARAMETER_STRING:
+            return param.as_string();
+        case rclcpp::ParameterType::PARAMETER_NOT_SET:
+            return "NOT_SET";
+        default:
+            return "UNSUPPORTED";
+    }
 }
 
 static std::vector<rclcpp::Parameter> build_parameter_list(
@@ -146,24 +182,46 @@ json exec_declare_param(TraceWriter& /*w*/, BackendState& st, const std::string&
         const json& d = (*op.payload)["descriptor"];
         if (d.contains("read_only")) desc.read_only = d["read_only"].get<bool>();
         if (d.contains("dynamic_typing")) desc.dynamic_typing = d["dynamic_typing"].get<bool>();
+        if (d.contains("type")) desc.type = static_cast<uint8_t>(d["type"].get<int>());
     }
 
-    // Parse default value (string only)
-    std::string default_value = op.payload->contains("value") ?
-        (*op.payload)["value"].get<std::string>() : "";
-
     try {
-        st.node->declare_parameter<std::string>(name, default_value, desc);
+        if (op.payload->contains("value")) {
+            const json& value = (*op.payload)["value"];
+            if (op.payload->contains("type")) {
+                rclcpp::Parameter p = make_parameter(name, *op.payload);
+                st.node->declare_parameter(name, p.get_parameter_value(), desc);
+            } else {
+                rclcpp::Parameter p = make_parameter_from_value(name, value);
+                st.node->declare_parameter(name, p.get_parameter_value(), desc);
+            }
+        } else {
+            if (desc.type != rcl_interfaces::msg::ParameterType::PARAMETER_NOT_SET) {
+                auto requested_type = static_cast<rclcpp::ParameterType>(desc.type);
+                st.node->declare_parameter(name, requested_type, desc);
+            } else {
+                // Preserve legacy harness behavior when no explicit type is provided.
+                st.node->declare_parameter(name, std::string(""), desc);
+            }
+        }
         result["declared"] = true;
 
         // Echo descriptor for trace inspection
-        if (desc.read_only) {
+        if (desc.read_only || desc.type != rcl_interfaces::msg::ParameterType::PARAMETER_NOT_SET) {
             result["descriptor"] = json::object();
-            result["descriptor"]["read_only"] = true;
+            if (desc.read_only) {
+                result["descriptor"]["read_only"] = true;
+            }
+            if (desc.type != rcl_interfaces::msg::ParameterType::PARAMETER_NOT_SET) {
+                result["descriptor"]["type"] = static_cast<int>(desc.type);
+            }
         }
     } catch (const rclcpp::exceptions::ParameterAlreadyDeclaredException&) {
         result["declared"] = false;
         result["reason"] = "AlreadyDeclared";
+    } catch (const std::exception& e) {
+        result["declared"] = false;
+        result["reason"] = std::string("Exception: ") + e.what();
     }
 
     return result;
@@ -188,7 +246,14 @@ json exec_get_param(TraceWriter& /*w*/, BackendState& st, const std::string& /*s
 
     // It is declared
     result["declared"] = true;
-    rclcpp::Parameter param = st.node->get_parameter(name);
+    rclcpp::Parameter param;
+    try {
+        param = st.node->get_parameter(name);
+    } catch (const rclcpp::exceptions::ParameterUninitializedException&) {
+        result["set"] = false;
+        result["type"] = "NOT_SET";
+        return result;
+    }
 
     if (param.get_type() == rclcpp::ParameterType::PARAMETER_NOT_SET) {
         result["set"] = false;
@@ -451,7 +516,13 @@ json exec_observe_param_events(
         );
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(wait_ms);
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (st.executor) {
+            st.executor->spin_some(std::chrono::milliseconds(5));
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
     size_t count = drain_parameter_event_buffer(w, st);
 
     return {
@@ -493,6 +564,147 @@ json exec_list_params(TraceWriter& /*w*/, BackendState& st, const std::string& /
         {"names", listed.names},
         {"prefixes", listed.prefixes},
         {"count", listed.names.size()},
+    };
+}
+
+json exec_get_parameter_types(
+    TraceWriter& /*w*/, BackendState& st, const std::string& /*scenario_id*/, const Op& op
+) {
+    if (!op.payload || !op.payload->contains("names") || !(*op.payload)["names"].is_array()) {
+        throw BundleError("get_parameter_types: payload.names must be an array");
+    }
+
+    std::vector<std::string> names;
+    for (const auto& item : (*op.payload)["names"]) {
+        if (!item.is_string()) {
+            throw BundleError("get_parameter_types: payload.names[] must be strings");
+        }
+        names.push_back(item.get<std::string>());
+    }
+
+    json result = {
+        {"op", "get_parameter_types"},
+        {"successful", true},
+        {"count", 0},
+        {"types", json::array()},
+    };
+    try {
+        auto types = st.node->get_parameter_types(names);
+        result["count"] = types.size();
+        for (const auto& t : types) {
+            result["types"].push_back(static_cast<int>(t));
+        }
+    } catch (const rclcpp::exceptions::ParameterNotDeclaredException&) {
+        result["successful"] = false;
+        result["reason"] = "NotDeclared";
+    } catch (const std::exception& e) {
+        result["successful"] = false;
+        result["reason"] = std::string("Exception: ") + e.what();
+    }
+    return result;
+}
+
+json exec_concurrent_read_during_batch(
+    TraceWriter& /*w*/, BackendState& st, const std::string& /*scenario_id*/, const Op& op
+) {
+    if (!op.payload) {
+        throw BundleError("concurrent_read_during_batch: missing payload");
+    }
+    if (!op.payload->contains("target_params") || !(*op.payload)["target_params"].is_array()) {
+        throw BundleError("concurrent_read_during_batch: payload.target_params must be an array");
+    }
+    if (!op.payload->contains("batch") || !(*op.payload)["batch"].is_array()) {
+        throw BundleError("concurrent_read_during_batch: payload.batch must be an array");
+    }
+
+    std::vector<std::string> targets;
+    for (const auto& item : (*op.payload)["target_params"]) {
+        if (!item.is_string()) {
+            throw BundleError("concurrent_read_during_batch: payload.target_params[] must be strings");
+        }
+        targets.push_back(item.get<std::string>());
+    }
+
+    std::vector<rclcpp::Parameter> batch = build_parameter_list(
+        (*op.payload)["batch"], "concurrent_read_during_batch"
+    );
+
+    std::map<std::string, std::string> old_values;
+    for (const auto& name : targets) {
+        old_values[name] = parameter_to_string(st.node->get_parameter(name));
+    }
+
+    std::map<std::string, std::string> new_values = old_values;
+    for (const auto& p : batch) {
+        new_values[p.get_name()] = parameter_to_string(p);
+    }
+
+    std::atomic<bool> done{false};
+    std::atomic<bool> has_snapshot{false};
+    std::vector<std::map<std::string, std::string>> snapshots;
+    std::mutex snap_mutex;
+
+    std::thread reader([&]() {
+        while (!done.load(std::memory_order_relaxed)) {
+            std::map<std::string, std::string> snap;
+            auto params = st.node->get_parameters(targets);
+            for (size_t idx = 0; idx < targets.size() && idx < params.size(); ++idx) {
+                snap[targets[idx]] = parameter_to_string(params[idx]);
+            }
+            {
+                std::lock_guard<std::mutex> lock(snap_mutex);
+                snapshots.push_back(std::move(snap));
+            }
+            has_snapshot.store(true, std::memory_order_relaxed);
+            std::this_thread::sleep_for(std::chrono::microseconds(50));
+        }
+    });
+
+    // Ensure at least one pre-write snapshot to avoid nondeterministic empty samples.
+    for (int i = 0; i < 200 && !has_snapshot.load(std::memory_order_relaxed); ++i) {
+        std::this_thread::sleep_for(std::chrono::microseconds(50));
+    }
+
+    auto results = st.node->set_parameters(batch);
+    done.store(true, std::memory_order_relaxed);
+    reader.join();
+
+    bool partial_observed = false;
+    for (const auto& snap : snapshots) {
+        size_t old_count = 0;
+        size_t new_count = 0;
+        for (const auto& name : targets) {
+            auto it = snap.find(name);
+            if (it == snap.end()) {
+                continue;
+            }
+            if (it->second == old_values[name]) {
+                old_count++;
+            }
+            if (it->second == new_values[name]) {
+                new_count++;
+            }
+        }
+        if (old_count > 0 && new_count > 0) {
+            partial_observed = true;
+            break;
+        }
+    }
+
+    bool all_successful = true;
+    for (const auto& r : results) {
+        if (!r.successful) {
+            all_successful = false;
+            break;
+        }
+    }
+
+    return {
+        {"op", "concurrent_read_during_batch"},
+        {"batch_count", batch.size()},
+        {"snapshot_count", snapshots.size()},
+        {"partial_state_observed", partial_observed},
+        {"successful", all_successful},
     };
 }
 

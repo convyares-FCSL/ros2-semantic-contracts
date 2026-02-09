@@ -76,6 +76,8 @@
                                         "register_pre_set_callback",
                                         "observe_param_events",
                                         "list_params",
+                                        "get_parameter_types",
+                                        "concurrent_read_during_batch",
                                         "call_service",
                                         "describe_param"
                                     ]

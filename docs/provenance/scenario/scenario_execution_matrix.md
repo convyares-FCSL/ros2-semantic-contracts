@@ -58,7 +58,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 20 scenarios | PASS: 20 | N/A-only: 0</strong></summary>
+<summary><strong>Parameters (P): 25 scenarios | PASS: 25 | N/A-only: 0</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
@@ -82,6 +82,11 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P18** | P18_atomic_batch_callback_rejection | N/A | N/A | PASS | PASS | N/A | Direct discovery: atomic batch rejection preserves all-or-nothing state |
 | **P19** | P19_pre_set_removal_semantics    | N/A  | N/A | PASS | PASS | N/A   | Direct discovery: pre-set callback can remove parameters from atomic batch input |
 | **P20** | P20_parameter_event_cardinality_batch | N/A | N/A | PASS | PASS | N/A | Direct discovery: one `parameter_event` carries all changed parameters for accepted atomic batch |
+| **P21** | P21_descriptor_tracks_value_type | N/A  | N/A | PASS | PASS | N/A   | Direct discovery: for dynamic-typed params, descriptor `type` tracks current value type after successful set |
+| **P22** | P22_explicit_descriptor_type_enforcement | N/A | N/A | PASS | PASS | N/A | Direct discovery: explicit `ParameterDescriptor.type` is preserved on declare |
+| **P23** | P23_declare_without_default      | N/A  | N/A | PASS | PASS | N/A   | Direct discovery: static typed declare without default succeeds and reads as `NOT_SET` until initialized |
+| **P24** | P24_get_parameter_types_response_length | N/A | N/A | PASS | PASS | N/A | Direct discovery: mixed declared/undeclared request fails with `NotDeclared` rather than returning 1:1 type array |
+| **P25** | P25_concurrent_visibility_probe  | N/A  | N/A | PASS | PASS | N/A   | Probe result: no mixed partial state observed in this bulk-read non-atomic concurrency probe |
 </details>
 
 <details>

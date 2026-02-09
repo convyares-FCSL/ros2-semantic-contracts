@@ -159,10 +159,11 @@ The core emits logical **change records** describing modifications.
 
 ### SPEC_PC08 — Deletion Support [P14]
 
-⚠️ **UNVALIDATED (baseline hypothesis)**
+⚠️ **UNVALIDATED (baseline contradicts)**
 
 Deletion support is optional but must be deterministic if present.
-- If supported, deletion of a parameter MUST generate a change record indicating removal.
+- If supported, deletion of a parameter SHOULD generate a change record indicating removal.
+  Baseline observation: Jazzy+rclcpp does NOT generate a change record on `undeclare_parameter`.
 - Deletion of an `Unknown` parameter MUST fail or be a no-op (depending on implementation), but MUST NOT corrupt state.
 
 <details>
@@ -171,5 +172,89 @@ Deletion support is optional but must be deterministic if present.
 **Sources**
 - Official: None
 - Baseline: Jazzy+rclcpp
+
+**Notes**
+- Changed from MUST to SHOULD: rclcpp baseline does not emit ParameterEvent on undeclare.
+  Top-level docs are silent. Per authority ladder, rclcpp behavior defines truth.
+
+</details>
+
+---
+
+## Descriptor Metadata
+
+### SPEC_PC09 — Descriptor Reflects Current State [P21]
+
+Validated on Jazzy baseline (`P21_descriptor_tracks_value_type`).
+
+After a successful set operation on a dynamically typed parameter, `describe_parameters` MUST report a descriptor whose `type` field matches the current value's type.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (upstream silent on descriptor update semantics)
+- Baseline: Jazzy+rclcpp (`P21`)
+
+**Notes**
+- Measured baseline behavior: after dynamic type change, `describe_parameters` reports descriptor `type` matching current value type.
+
+</details>
+
+### SPEC_PC10 — Explicit Descriptor Type Enforcement [P22]
+
+Validated on Jazzy baseline (`P22_explicit_descriptor_type_enforcement`).
+
+When a parameter is declared with an explicit `ParameterDescriptor.type` field, the declared type MUST be enforced.
+If the initial value's type conflicts with the declared descriptor type, declaration MUST fail or the descriptor type MUST take precedence.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (upstream silent on descriptor.type enforcement on declare)
+- Baseline: Jazzy+rclcpp (`P22`)
+
+**Notes**
+- Measured baseline behavior: explicit descriptor `type` is preserved on declaration.
+
+</details>
+
+### SPEC_PC11 — Declaration Without Default Value [P23]
+
+Validated on Jazzy baseline (`P23_declare_without_default`).
+
+A parameter MAY be declared without a default value if a value is expected to be supplied at launch time.
+- If no value is available at declaration time, the parameter MUST be in state `NOT_SET` until set.
+- Declaration without a default MUST NOT unconditionally raise an exception.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (upstream silent on no-default declaration behavior)
+- Baseline: Jazzy+rclcpp (`P23`)
+
+**Notes**
+- Measured baseline behavior: declaration succeeds for explicitly typed parameter with no default, and read returns `NOT_SET` until initialized.
+
+</details>
+
+### SPEC_PC12 — GetParameterTypes Response Contract [P24]
+
+Validated on Jazzy baseline (`P24_get_parameter_types_response_length`).
+
+In declared-only mode, `get_parameter_types` fails with `NotDeclared` when any requested parameter is undeclared.
+- A mixed declared/undeclared request does not return a partial or 1:1 type array in this baseline profile.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: `rcl_interfaces/srv/GetParameterTypes` IDL contract
+- Baseline: Jazzy+rclcpp (`P24`)
+
+**Notes**
+- Measured baseline behavior in this profile diverges from strict 1:1 mapping assumptions for mixed requests containing undeclared names.
 
 </details>

@@ -74,11 +74,12 @@ Nodes MAY operate in **declared-only mode** or **undeclared-allowed mode**.
 
 ## GetParameters behaviour
 
-### SPEC_P03 — Unknown Parameters Return NOT_SET [P08]
+### SPEC_P03 — Unknown Parameters Introspection Behavior [P08, P24]
 
-For both `get_parameters` and `get_parameter_types`:
-- Unknown or undeclared parameter names MUST return a value of type `NOT_SET`.
-- This behaviour is normative and stable.
+In declared-only mode:
+- `get_parameters` on unknown or undeclared names returns `NOT_SET`-typed values.
+- `get_parameter_types` with any undeclared name fails with `NotDeclared` in the Jazzy baseline profile.
+- Callers MUST NOT assume `get_parameter_types` returns a 1:1 `NOT_SET` mapping for mixed declared/undeclared requests.
 
 <details>
 <summary>Sources and notes</summary>
@@ -89,7 +90,7 @@ For both `get_parameters` and `get_parameter_types`:
 - Community: None
 
 **Notes**
-- Allows tooling to reason about unknown parameters without ambiguous failures.
+- This clause captures observed Jazzy+rclcpp behavior and matching backend_py behavior in this repository.
 
 </details>
 
@@ -182,9 +183,13 @@ For `list_parameters`:
 
 ### SPEC_P08 — Optional Deletion Support [P14]
 
+⚠️ **UNVALIDATED (baseline contradicts)**
+
 Parameter deletion support is optional.
 - If supported, deletion MUST be documented.
-- Deleted parameters MUST be reported via parameter events.
+- Deleted parameters SHOULD be reported via parameter events.
+  Baseline observation (Jazzy+rclcpp): `undeclare_parameter` does NOT emit a `ParameterEvent`
+  to `/parameter_events`. Top-level docs are silent on deletion event requirements.
 
 <details>
 <summary>Sources and notes</summary>
@@ -193,5 +198,9 @@ Parameter deletion support is optional.
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
+
+**Notes**
+- Changed from MUST to SHOULD: rclcpp baseline does not emit ParameterEvent on undeclare.
+  Per authority ladder, rclcpp behavior defines truth when docs are silent.
 
 </details>

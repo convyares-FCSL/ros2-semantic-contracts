@@ -26,6 +26,8 @@ json exec_register_param_callback(TraceWriter& w, BackendState& st, const std::s
 json exec_register_pre_set_callback(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_observe_param_events(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_list_params(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_get_parameter_types(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_concurrent_read_during_batch(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_undeclare_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 }
 
@@ -80,6 +82,10 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         op_result = ops::exec_observe_param_events(w, st, scenario_id, op);
     } else if (op.op == "list_params") {
         op_result = ops::exec_list_params(w, st, scenario_id, op);
+    } else if (op.op == "get_parameter_types") {
+        op_result = ops::exec_get_parameter_types(w, st, scenario_id, op);
+    } else if (op.op == "concurrent_read_during_batch") {
+        op_result = ops::exec_concurrent_read_during_batch(w, st, scenario_id, op);
     } else if (op.op == "undeclare_param") {
         op_result = ops::exec_undeclare_param(w, st, scenario_id, op);
     } else {
@@ -131,7 +137,9 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
                 "ros.params.list",
                 "ros.params.callback",
                 "ros.params.pre_set_callback",
-                "ros.params.observe_events"
+                "ros.params.observe_events",
+                "ros.params.get_parameter_types",
+                "ros.params.concurrent_read"
             })},
             {"limits", json::object()}
         }}
@@ -150,6 +158,18 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
 
         // Create per-scenario state with ROS infrastructure (client-only)
         BackendState st;
+        bool needs_action_spinner = false;
+        for (const auto& scenario_op : scenario.ops) {
+            if (
+                scenario_op.op == "send_goal" ||
+                scenario_op.op == "cancel_goal" ||
+                scenario_op.op == "complete_terminal" ||
+                scenario_op.op == "attempt_terminal_override"
+            ) {
+                needs_action_spinner = true;
+                break;
+            }
+        }
 
         auto opts = rclcpp::NodeOptions()
             .allow_undeclared_parameters(false)
@@ -159,13 +179,14 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
         st.executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
         st.executor->add_node(st.node);
 
-        // Action Client (peer server must already be running)
-        st.client = rclcpp_action::create_client<FibAction>(st.node, "test_action");
-
-        // Start spinner
-        st.spinner_thread = std::thread([&st]() {
-            st.executor->spin();
-        });
+        if (needs_action_spinner) {
+            // Action Client (peer server must already be running)
+            st.client = rclcpp_action::create_client<FibAction>(st.node, "test_action");
+            // Action flows require background spinning for callbacks/futures.
+            st.spinner_thread = std::thread([&st]() {
+                st.executor->spin();
+            });
+        }
 
         int idx = 0;
         for (const auto& op : scenario.ops) {
