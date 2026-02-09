@@ -1173,11 +1173,157 @@
             "title": "Parameter Interface Conformity",
             "layer": "Global",
             "requires": [
-                "graph.observe"
+                "ros.params.declare",
+                "ros.params.describe",
+                "ros.params.set",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.delete"
             ],
-            "ops": [],
-            "expects": [],
-            "notes": "Interface introspection scenario. Validate parameter services exist."
+            "notes": "Proxy validation for SPEC_P01: direct graph introspection is not yet modeled, so this scenario verifies that standard parameter interface operations are executable and semantically coherent within one scenario.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "iface_probe_param",
+                        "value": "x",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "iface_probe_param"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "iface_probe_param",
+                        "type": "string",
+                        "value": "y"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "iface_probe_param"
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "iface_probe_param",
+                                "type": "string",
+                                "value": "z"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "iface_probe_param"
+                    }
+                },
+                {
+                    "op": "undeclare_param",
+                    "payload": {
+                        "name": "iface_probe_param"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "iface_probe_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "iface_probe_param",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "iface_probe_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "iface_probe_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "iface_probe_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "y"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 1,
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "iface_probe_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "z"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "undeclare_param",
+                                    "name": "iface_probe_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "iface_probe_param",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P16_explicit_declaration_mode": {
             "spec_id": "P16",
