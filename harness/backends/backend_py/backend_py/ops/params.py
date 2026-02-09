@@ -423,3 +423,54 @@ def exec_describe_param(
     }
 
     return result
+
+
+def exec_undeclare_param(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Execute undeclare_param operation.
+
+    Removes a previously declared parameter from the node.
+
+    Args:
+        w: TraceWriter instance (unused, signature consistency)
+        st: BackendState with initialized node
+        scenario_id: Scenario identifier (for error messages)
+        op: Operation dict with 'payload' containing:
+            - 'name' (required): parameter name
+
+    Returns:
+        Result dict:
+            Success: {"op": "undeclare_param", "name": <name>, "successful": true}
+            Failure: {"op": "undeclare_param", "name": <name>, "successful": false, "reason": <reason>}
+
+    Raises:
+        BundleError: Missing required payload fields
+    """
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"undeclare_param: missing payload in scenario {scenario_id}")
+
+    name = payload.get('name')
+    if not name:
+        raise BundleError(f"undeclare_param: payload missing 'name' in scenario {scenario_id}")
+
+    result = {
+        'op': 'undeclare_param',
+        'name': name
+    }
+
+    try:
+        st.node.undeclare_parameter(name)
+        result['successful'] = True
+    except rclpy.exceptions.ParameterNotDeclaredException:
+        result['successful'] = False
+        result['reason'] = 'NotDeclared'
+    except Exception as e:
+        result['successful'] = False
+        result['reason'] = f'Exception: {str(e)}'
+
+    return result

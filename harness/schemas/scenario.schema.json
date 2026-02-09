@@ -69,6 +69,7 @@
                                         "set_param",
                                         "get_param",
                                         "declare_param",
+                                        "undeclare_param",
                                         "set_params_batch",
                                         "call_service",
                                         "describe_param"

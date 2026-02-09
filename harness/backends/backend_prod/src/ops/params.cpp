@@ -204,4 +204,27 @@ json exec_describe_param(TraceWriter& /*w*/, BackendState& st, const std::string
     return result;
 }
 
+json exec_undeclare_param(TraceWriter& /*w*/, BackendState& st, const std::string& /*scenario_id*/, const Op& op) {
+    if (!op.payload || !op.payload->count("name"))
+        throw BundleError("undeclare_param: payload missing 'name'");
+
+    std::string name = (*op.payload)["name"];
+    json result;
+    result["op"] = "undeclare_param";
+    result["name"] = name;
+
+    try {
+        st.node->undeclare_parameter(name);
+        result["successful"] = true;
+    } catch (const rclcpp::exceptions::ParameterNotDeclaredException&) {
+        result["successful"] = false;
+        result["reason"] = "NotDeclared";
+    } catch (const std::exception& e) {
+        result["successful"] = false;
+        result["reason"] = std::string("Exception: ") + e.what();
+    }
+
+    return result;
+}
+
 } // namespace backend_prod::ops

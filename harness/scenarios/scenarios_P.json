@@ -1102,9 +1102,71 @@
             "spec_id": "P14",
             "title": "Deletion reported via events",
             "layer": "Policy",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Policy)."
+            "requires": [
+                "ros.params.declare",
+                "ros.params.delete",
+                "ros.params.get"
+            ],
+            "notes": "Proxy validation for SPEC_PC08/SPEC_P08: parameter-event deletion payloads are not traced yet, so this scenario asserts deterministic undeclare behavior and observable removal from parameter state.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "to_be_deleted",
+                        "value": "present",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "undeclare_param",
+                    "payload": {
+                        "name": "to_be_deleted"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "to_be_deleted"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "to_be_deleted",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "undeclare_param",
+                                    "name": "to_be_deleted",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "to_be_deleted",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P15_parameter_interface_conformity": {
             "spec_id": "P15",

@@ -75,7 +75,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P11** | P11_events_describe_changes      | N/A  | N/A | PASS | PASS | N/A   | Proxy: successful updates yield observable value/type transitions |
 | **P12** | P12_describe_unknown_consistent  | N/A  | N/A | PASS | PASS | N/A   | Undeclared param returns consistent default |
 | **P13** | P13_list_complete_stable         | N/A  | N/A | PASS | PASS | N/A   | Proxy: repeated reads over declared set remain complete/stable |
-| **P14** | P14_deletion_reported_events     | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
+| **P14** | P14_deletion_reported_events     | N/A  | N/A | PASS | PASS | N/A   | Proxy: dynamic-typed undeclare removes parameter from observable state |
 | **P15** | P15_parameter_interface_conformity | N/A | N/A | N/A  | N/A  | N/A   | **New**: Interface Conformity               |
 | **P16** | P16_explicit_declaration_mode    | N/A  | N/A | PASS | PASS | N/A   | Strict declaration mode enforced (undeclared set rejected) |
 </details>

@@ -16,6 +16,7 @@ from .ops.params import (
     exec_get_param,
     exec_set_params_batch,
     exec_describe_param,
+    exec_undeclare_param,
 )
 
 
@@ -29,6 +30,7 @@ OP_HANDLERS = {
     'get_param': exec_get_param,
     'set_params_batch': exec_set_params_batch,
     'describe_param': exec_describe_param,
+    'undeclare_param': exec_undeclare_param,
 }
 
 
@@ -117,6 +119,7 @@ def run_backend(bundle_path: str, trace_path: str) -> None:
                     'ros.params.get',
                     'ros.params.set_batch',
                     'ros.params.describe',
+                    'ros.params.delete',
                 ],
                 'limits': {}
             }
