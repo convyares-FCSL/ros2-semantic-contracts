@@ -58,7 +58,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 </details>
 
 <details>
-<summary><strong>Parameters (P): 16 scenarios | PASS: 13 | N/A-only: 3</strong></summary>
+<summary><strong>Parameters (P): 16 scenarios | PASS: 14 | N/A-only: 2</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
@@ -72,7 +72,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P08** | P08_unknown_types_not_set        | N/A  | N/A | PASS | PASS | N/A   | Undeclared param returns NOT_SET            |
 | **P09** | P09_atomic_updates               | N/A  | N/A | PASS | PASS | N/A   | Mixed batch failure shows no externally visible partial update |
 | **P10** | P10_rejected_updates_silent      | N/A  | N/A | PASS | PASS | N/A   | Proxy: rejected set leaves no observable state change |
-| **P11** | P11_events_describe_changes      | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
+| **P11** | P11_events_describe_changes      | N/A  | N/A | PASS | PASS | N/A   | Proxy: successful updates yield observable value/type transitions |
 | **P12** | P12_describe_unknown_consistent  | N/A  | N/A | PASS | PASS | N/A   | Undeclared param returns consistent default |
 | **P13** | P13_list_complete_stable         | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |
 | **P14** | P14_deletion_reported_events     | N/A  | N/A | N/A  | N/A  | N/A   | Not yet validated                           |

@@ -841,9 +841,107 @@
             "spec_id": "P11",
             "title": "Events describe changes",
             "layer": "Core",
-            "ops": [],
-            "expects": [],
-            "notes": "Populate ops/observations to validate this clause (Layer=Core)."
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get"
+            ],
+            "notes": "Proxy validation for SPEC_P05: parameter-event payloads are not yet traced, so this scenario asserts that successful updates produce externally observable value/type transitions.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "change_visible_param",
+                        "value": "alpha",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "change_visible_param",
+                        "type": "string",
+                        "value": "beta"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "change_visible_param"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "change_visible_param",
+                        "type": "integer",
+                        "value": 5
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "change_visible_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "change_visible_param",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "change_visible_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "change_visible_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "beta"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "change_visible_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "change_visible_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 5
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         "P12_describe_unknown_consistent": {
             "spec_id": "P12",
