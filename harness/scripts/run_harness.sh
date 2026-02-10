@@ -123,8 +123,8 @@ if [[ "${ORACLE_BACKEND}" == "prod" ]]; then
     # Ensure setup.bash is sourced by the caller or docker env
     ( cd "${ROOT}" && colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release )
 elif [[ "${ORACLE_BACKEND}" == "py" ]]; then
-    # Build using pip (--break-system-packages for local non-venv testing)
-    ( cd "${BACKEND_DIR}" && pip3 install -e . --break-system-packages )
+    # Build using pip. Older distros may not support --break-system-packages.
+    ( cd "${BACKEND_DIR}" && (pip3 install -e . --break-system-packages || pip3 install -e .) )
 else
     ( cd "${BACKEND_DIR}" && cargo build --release )
 fi
@@ -247,4 +247,3 @@ if [[ ${FAILED} -ne 0 ]]; then
 fi
 
 exit 0
-

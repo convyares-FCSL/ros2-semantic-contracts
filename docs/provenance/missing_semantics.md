@@ -75,7 +75,7 @@ They must be validated against the baseline profile (**ROS 2 Jazzy + rclcpp + Na
 
 ### Atomic visibility to observers
 
-* `P25_concurrent_visibility_probe` validated one concrete probe path (bulk read snapshots during non-atomic batch updates) with no mixed partial state observed on Jazzy.
+* `P25_concurrent_visibility_probe` validated one concrete repeated single-call probe path (concurrent snapshots during non-atomic batch updates) and observed mixed partial state on Jazzy.
 * Remaining gap: high-contention stress with richer observer patterns is still unvalidated.
 
 ---

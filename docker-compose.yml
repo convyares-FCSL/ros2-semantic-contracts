@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.harness
       args:
+        - ROS_BASE_IMAGE=${ROS_BASE_IMAGE:-ros:jazzy-ros-base-noble@sha256:af9454f13d342c58bb9f3364424e3e7026184e59a47de75f915d241cb7ec6666}
         - ROS_DISTRO=${ROS_DISTRO:-jazzy}
     # Backend selection via ORACLE_BACKEND env var:
     #   prod - C++ rclcpp backend (default for Track 1)

@@ -69,7 +69,7 @@ A parameter exists in exactly one of three semantic states:
 
 ## Values and Typing
 
-### SPEC_PC03 — Type Enforcement [P02, P08]
+### SPEC_PC03 — Type Enforcement [P02, P08, P26]
 
 The core MUST enforce type safety based on the parameter's descriptor.
 - **Static Typing (`dynamic_typing=false`):** The value type MUST NOT change after declaration. Setting an incompatible type MUST fail.
@@ -81,6 +81,30 @@ The core MUST enforce type safety based on the parameter's descriptor.
 
 **Sources**
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+
+</details>
+
+### SPEC_PC15 — Scalar Coercion Matrix for Static Typing [P26]
+
+Validated on measured Jazzy path (`P26_type_coercion_matrix`).
+
+For statically typed parameters on tested scalar paths, explicit cross-type set requests are rejected rather than implicitly coerced.
+- `DOUBLE -> INTEGER` set on static integer parameter: rejected.
+- `BOOL -> INTEGER` set on static integer parameter: rejected.
+- `INTEGER -> BOOL` set on static boolean parameter: rejected.
+- Rejected set attempts MUST preserve prior value and type.
+
+Dynamic-typed control path: explicit type transitions (`INTEGER -> DOUBLE -> INTEGER`) are accepted when `dynamic_typing=true`.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Baseline: Jazzy+rclcpp, Jazzy+rclpy (`P26`)
+
+**Notes**
+- Scope is intentionally bounded to measured scalar paths in `P26`; array coercion and language-version edge coercions remain separate coverage work.
 
 </details>
 
@@ -102,11 +126,11 @@ Declaration establishes the initial value and descriptor.
 
 </details>
 
-### SPEC_PC05 — Set Operation Atomicity [P04, P05]
+### SPEC_PC05 — Atomic Set API Semantics [P04, P05, P18]
 
-Set operations are atomic transactions.
+`set_parameters_atomically` is an all-or-nothing transaction.
 - A set attempt yields a deterministic outcome: `Successful` or `Failed` (with reason).
-- **Atomicity:** Failed operations MUST NOT partially apply. All changes in a request MUST be applied, or none.
+- **Atomicity:** Failed atomic-batch operations MUST NOT partially apply. All requested changes are applied, or none.
 - **Read-Only:** If `read_only=true` in the descriptor, any attempt to change the value MUST fail.
 
 <details>
@@ -129,6 +153,70 @@ Access to undeclared parameters depends on the node's configuration.
 **Sources**
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - Baseline: Jazzy+rclcpp default behavior
+
+</details>
+
+### SPEC_PC13 — Non-Atomic Batch Apply Semantics [P17]
+
+`set_parameters` (non-atomic batch API) applies updates per parameter and MAY partially apply.
+- If a later parameter in a batch is rejected (type/read-only/callback), earlier accepted parameters MAY remain applied.
+- Non-atomic batch outcomes MUST still be deterministic for each element in the submitted order.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Baseline: Jazzy+rclcpp (`P17`)
+
+**Notes**
+- This clause distinguishes `set_parameters` from `set_parameters_atomically`.
+
+</details>
+
+### SPEC_PC14 — Concurrent Read Visibility Profiles [P25, P35]
+
+Concurrent read visibility claims are probe-scoped and API-profile specific.
+- For repeated single-call probes on the measured Jazzy path, mixed old/new cross-key snapshots were observed for `set_parameters` (`P25`) and not observed for `set_parameters_atomically` (`P35`).
+- This clause governs externally observable interleavings under the declared probe shape, not universal scheduler behavior.
+- Any future evidence of mixed visibility under stronger probes is treated as divergence evidence, not silently ignored.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: None (thread-interleaving semantics not normatively specified at this granularity)
+- Baseline: Jazzy+rclcpp and Jazzy+rclpy (`P25`, `P35`)
+
+**Notes**
+- Measured in this repository: the previous alternating-cycle probe path was replaced by repeated single-call trials to avoid probe-induced false positives.
+- The measured outcome remains a bounded observation, not a universal guarantee.
+
+</details>
+
+### SPEC_PC16 — Atomicity & Transactional Updates [P27, P28, P29, P30, P33, P34]
+
+⚠️ **UNVALIDATED (baseline hypothesis)**
+
+The core MUST distinguish between two batch update profiles:
+- **Sequential/Standard (`set_parameters`)**: evaluate elements in submission order. If a later element fails validation, earlier successful elements MUST remain applied (partial application).
+- **Transactional/Atomic (`set_parameters_atomically`)**: validate/apply as all-or-nothing. If any element fails validation, no element is committed.
+
+Callback visibility contract during `on_set_parameters_callback` validation:
+- Proposed new values MUST be provided in callback arguments.
+- Storage reads (`get_parameter`) for a target key MUST still return the old committed value during callback execution.
+- New values MUST NOT be externally observable until callback success and commit complete.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Baseline: Jazzy+rclcpp and Jazzy+rclpy measured set-API behavior (`P17`, `P18`), with callback visibility tracked via scenario family (`P29`, `P30`, `P33`, `P34`)
+
+**Notes**
+- This clause consolidates split semantics currently represented across `SPEC_PC05` and `SPEC_PC13` into one explicit API-profile model.
+- Pinned Docker Jazzy+Humble evidence exists for `P27`-`P30`, `P33`, and `P34` across `prod` and `py`.
 
 </details>
 
@@ -220,9 +308,32 @@ If the initial value's type conflicts with the declared descriptor type, declara
 
 </details>
 
-### SPEC_PC11 — Declaration Without Default Value [P23]
+### SPEC_PC17 — Descriptor Range Enforcement [P36, P37]
 
-Validated on Jazzy baseline (`P23_declare_without_default`).
+Validated on pinned Docker Jazzy+Humble (`P36_integer_descriptor_range_enforcement`, `P37_floating_descriptor_range_enforcement`).
+
+If a parameter descriptor declares numeric ranges, set attempts outside those ranges MUST fail and MUST preserve the last accepted value.
+- For integer-typed parameters with `integer_range`, out-of-range integer writes MUST be rejected.
+- For floating-typed parameters with `floating_point_range`, out-of-range floating writes MUST be rejected.
+- `describe_parameters` MUST expose the configured range metadata for the declared parameter.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 docs — Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Upstream issue context: `ros2/rclcpp#728`
+- Baseline: pinned Docker Jazzy+Humble, `backend_prod` + `backend_py` (`P36`, `P37`)
+
+**Notes**
+- Scope is bounded to the measured integer/floating enforcement paths in `P36` and `P37`.
+- Edge cases around step granularity on non-divisible ranges are tracked separately.
+
+</details>
+
+### SPEC_PC11 — Declaration Without Default Value [P23, P31]
+
+Validated on Jazzy baseline for direct declaration path (`P23_declare_without_default`), with CLI-override divergence measured in `P31_no_default_with_startup_override`.
 
 A parameter MAY be declared without a default value if a value is expected to be supplied at launch time.
 - If no value is available at declaration time, the parameter MUST be in state `NOT_SET` until set.
@@ -233,19 +344,21 @@ A parameter MAY be declared without a default value if a value is expected to be
 
 **Sources**
 - Official: None (upstream silent on no-default declaration behavior)
-- Baseline: Jazzy+rclcpp (`P23`)
+- Baseline: Jazzy+rclcpp (`P23`, `P31`)
 
 **Notes**
 - Measured baseline behavior: declaration succeeds for explicitly typed parameter with no default, and read returns `NOT_SET` until initialized.
+- CLI override path measurement (`P31`): `backend_prod` passes on Jazzy/Humble, `backend_py` passes on Humble and fails on Jazzy (tracked against `rclpy#1460`).
 
 </details>
 
 ### SPEC_PC12 — GetParameterTypes Response Contract [P24]
 
-Validated on Jazzy baseline (`P24_get_parameter_types_response_length`).
+⚠️ **CONFORMANCE FAIL OBSERVED ON JAZZY BASELINE (`P24_get_parameter_types_response_length`)**
 
-In declared-only mode, `get_parameter_types` fails with `NotDeclared` when any requested parameter is undeclared.
-- A mixed declared/undeclared request does not return a partial or 1:1 type array in this baseline profile.
+`get_parameter_types` MUST preserve a 1:1 request-to-response mapping.
+- Response length MUST equal request length.
+- Undeclared names MUST be represented as `PARAMETER_NOT_SET` entries, not collapsed into an empty vector.
 
 <details>
 <summary>Sources and notes</summary>
@@ -255,6 +368,7 @@ In declared-only mode, `get_parameter_types` fails with `NotDeclared` when any r
 - Baseline: Jazzy+rclcpp (`P24`)
 
 **Notes**
-- Measured baseline behavior in this profile diverges from strict 1:1 mapping assumptions for mixed requests containing undeclared names.
+- Measured in this repository: both `backend_prod` and `backend_py` violate the mixed-request 1:1 expectation by returning `successful=false`, `reason=NotDeclared`, `count=0`, and `types=[]`.
+- This is tracked as issue-signature coverage for `rclcpp#2512` and equivalent client-library behavior.
 
 </details>

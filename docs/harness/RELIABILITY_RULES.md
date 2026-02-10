@@ -35,7 +35,12 @@ Never overwrite evidence from previous runs. The aggregation layer reads all run
 Build container images once per configuration, then execute multiple runs against the same image. Avoid rebuilding between iterations.
 
 ### Base Image Pinning
-The Dockerfile uses a pinned digest (e.g., `ros:jazzy-ros-base-noble@sha256:...`) rather than a floating tag like `ros:jazzy`. This prevents baseline drift when upstream images are updated, ensuring that reliability results remain comparable across time and machines.
+Reliability validation is docker-only and must use digest-pinned base images for every distro under comparison.
+
+- Jazzy validation image: `ros:jazzy-ros-base-noble@sha256:af9454f13d342c58bb9f3364424e3e7026184e59a47de75f915d241cb7ec6666`
+- Humble validation image: `ros:humble-ros-base@sha256:2fe6fec19fbac9c94794c7fa4afc83099f5372659dd1871f01b6d54f6701ddc8`
+
+Floating tags are allowed only for exploratory development and must not be used for closure evidence.
 
 ## Exit Code Semantics
 

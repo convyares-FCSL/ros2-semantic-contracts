@@ -1,6 +1,10 @@
-# Pinned base image for reproducible builds (see docs/harness/RELIABILITY_RULES.md)
-# To update: docker pull ros:jazzy-ros-base-noble && docker inspect --format='{{index .RepoDigests 0}}' ros:jazzy-ros-base-noble
-FROM ros:jazzy-ros-base-noble@sha256:af9454f13d342c58bb9f3364424e3e7026184e59a47de75f915d241cb7ec6666
+# Multi-distro base image:
+# - Default keeps Jazzy pinned for reproducibility.
+# - Override ROS_BASE_IMAGE (and ROS_DISTRO) for other distros, e.g. Humble.
+ARG ROS_BASE_IMAGE=ros:jazzy-ros-base-noble@sha256:af9454f13d342c58bb9f3364424e3e7026184e59a47de75f915d241cb7ec6666
+ARG ROS_DISTRO=jazzy
+FROM ${ROS_BASE_IMAGE}
+ARG ROS_DISTRO
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -15,16 +19,16 @@ RUN apt-get update && apt-get install -y \
 
 # Install ROS lifecycle packages (needed for backend_prod lifecycle ops)
 RUN apt-get update && apt-get install -y \
-    ros-jazzy-lifecycle \
-    ros-jazzy-lifecycle-msgs \
-    ros-jazzy-test-msgs \
+    ros-${ROS_DISTRO}-lifecycle \
+    ros-${ROS_DISTRO}-lifecycle-msgs \
+    ros-${ROS_DISTRO}-test-msgs \
     && rm -rf /var/lib/apt/lists/*
 
-# Python backend support (rclpy comes from ros-jazzy packages)
+# Python backend support (rclpy comes from ros-${ROS_DISTRO} packages)
 RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-setuptools \
-    ros-jazzy-rclpy \
+    ros-${ROS_DISTRO}-rclpy \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust
@@ -35,10 +39,11 @@ WORKDIR /work
 COPY . /work
 
 # Build backend_prod for peer binaries (sequence_actor needed by backend_py)
-RUN . /opt/ros/jazzy/setup.sh && \
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
     colcon build --packages-select backend_prod --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-# Install backend_py package (editable mode for development)
-RUN cd harness/backends/backend_py && pip3 install -e . --break-system-packages
+# Install backend_py package (editable mode for development).
+# Humble images may ship pip that does not support --break-system-packages.
+RUN cd harness/backends/backend_py && (pip3 install -e . --break-system-packages || pip3 install -e .)
 
 ENV ORACLE_BACKEND=prod

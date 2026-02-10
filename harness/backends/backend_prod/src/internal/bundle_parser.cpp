@@ -108,6 +108,13 @@ Bundle parse_bundle(const std::string& path) {
             }
             sc.required_caps = val["requires"].get<std::vector<std::string>>();
         }
+
+        if (val.contains("node_options")) {
+            if (!val["node_options"].is_object()) {
+                throw BundleError("scenario '" + key + "' field 'node_options' must be object");
+            }
+            sc.node_options = val["node_options"];
+        }
         
         if (!val.contains("ops")) {
             throw BundleError("scenario '" + key + "' missing required 'ops' field");

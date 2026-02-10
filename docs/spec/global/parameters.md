@@ -98,11 +98,11 @@ In declared-only mode:
 
 ## SetParameters behaviour
 
-### SPEC_P04 — Atomic Parameter Updates [P04, P09, P10]
+### SPEC_P04 — Atomic-Batch Parameter Updates [P04, P09, P10, P18]
 
-Parameter updates MUST be atomic per request.
-- Partial application MUST NOT be externally observable.
-- Rejected updates MUST NOT emit parameter change events.
+`set_parameters_atomically` requests MUST be atomic per request.
+- Partial application MUST NOT be externally observable for atomic-batch requests.
+- Rejected atomic-batch updates MUST NOT emit parameter change events.
 
 <details>
 <summary>Sources and notes</summary>
@@ -111,6 +111,53 @@ Parameter updates MUST be atomic per request.
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
+
+</details>
+
+### SPEC_P09 — Non-Atomic Batch and Observer Visibility [P17, P25]
+
+`set_parameters` (non-atomic batch) is a distinct API profile from `set_parameters_atomically`.
+- Partial application MAY be externally observable when elements in a batch have mixed accept/reject outcomes.
+- Under concurrent reads, mixed old/new key visibility is probe-dependent and must be established by issue-equivalent evidence.
+- Clients MUST NOT assume cross-key snapshot consistency for non-atomic batch operations.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- REP/RFC: None
+- Baseline: Jazzy+rclcpp and Jazzy+rclpy (`P17`, `P25`)
+
+**Notes**
+- This clause is intentionally scoped to observable wire/API behavior, not scheduler internals.
+- Current `P25` path is a repeated single-call probe and observed mixed snapshots on the measured Jazzy path.
+
+</details>
+
+### SPEC_P10 — Atomicity Profiles and Commit-Gated Visibility [P27, P28, P29, P30, P33, P34]
+
+⚠️ **UNVALIDATED (baseline hypothesis)**
+
+Clients and observers MUST treat standard and atomic set APIs as distinct observable profiles:
+- `set_parameters` (standard): sequential profile; mixed accept/reject outcomes may leave earlier successful keys committed.
+- `set_parameters_atomically` (atomic): transactional profile; any failing element rejects the whole request.
+
+Visibility contract:
+- Rejected updates MUST remain externally silent (no committed-value visibility).
+- Successful updates become externally visible only after validation success and commit.
+- Callback-time storage reads MUST reflect old committed values until commit.
+
+<details>
+<summary>Sources and notes</summary>
+
+**Sources**
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Baseline: Jazzy+rclcpp and Jazzy+rclpy measured behavior (`P17`, `P18`, `P27`-`P30`, `P33`, `P34`)
+
+**Notes**
+- This clause captures observer-facing timing semantics; it does not constrain internal locking implementation.
+- Pinned Docker Jazzy+Humble evidence exists for this scenario family across `prod` and `py`.
 
 </details>
 

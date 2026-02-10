@@ -4,9 +4,126 @@
 #include "backend.hpp"
 #include "internal/bundle_parser.hpp"
 #include "internal/fs_utils.hpp"
+#include <rcl_interfaces/msg/parameter_type.hpp>
 #include <cstdlib>
 
 namespace backend_prod {
+
+namespace {
+
+rclcpp::Parameter make_override_parameter(const json& spec, const std::string& scenario_id) {
+    if (!spec.is_object()) {
+        throw BundleError("scenario '" + scenario_id + "': node_options.parameter_overrides[] must be objects");
+    }
+    if (!spec.contains("name") || !spec["name"].is_string()) {
+        throw BundleError("scenario '" + scenario_id + "': node_options.parameter_overrides[].name must be string");
+    }
+    if (!spec.contains("value")) {
+        throw BundleError("scenario '" + scenario_id + "': node_options.parameter_overrides[] missing value");
+    }
+
+    const std::string name = spec["name"].get<std::string>();
+    const json& value = spec["value"];
+
+    if (spec.contains("type")) {
+        if (!spec["type"].is_string()) {
+            throw BundleError("scenario '" + scenario_id + "': node_options.parameter_overrides[].type must be string");
+        }
+        const std::string type = spec["type"].get<std::string>();
+        if (type == "string") {
+            return rclcpp::Parameter(name, value.get<std::string>());
+        }
+        if (type == "integer") {
+            return rclcpp::Parameter(name, value.get<int64_t>());
+        }
+        if (type == "double") {
+            return rclcpp::Parameter(name, value.get<double>());
+        }
+        if (type == "bool") {
+            return rclcpp::Parameter(name, value.get<bool>());
+        }
+        if (type == "byte_array") {
+            return rclcpp::Parameter(name, value.get<std::vector<uint8_t>>());
+        }
+        if (type == "bool_array") {
+            return rclcpp::Parameter(name, value.get<std::vector<bool>>());
+        }
+        if (type == "integer_array") {
+            return rclcpp::Parameter(name, value.get<std::vector<int64_t>>());
+        }
+        if (type == "double_array") {
+            return rclcpp::Parameter(name, value.get<std::vector<double>>());
+        }
+        if (type == "string_array") {
+            return rclcpp::Parameter(name, value.get<std::vector<std::string>>());
+        }
+        throw BundleError("scenario '" + scenario_id + "': unsupported override type '" + type + "'");
+    }
+
+    if (value.is_boolean()) {
+        return rclcpp::Parameter(name, value.get<bool>());
+    }
+    if (value.is_number_integer()) {
+        return rclcpp::Parameter(name, value.get<int64_t>());
+    }
+    if (value.is_number_float()) {
+        return rclcpp::Parameter(name, value.get<double>());
+    }
+    if (value.is_string()) {
+        return rclcpp::Parameter(name, value.get<std::string>());
+    }
+    throw BundleError("scenario '" + scenario_id + "': cannot infer override type for '" + name + "'");
+}
+
+rclcpp::NodeOptions build_node_options(const std::string& scenario_id, const std::optional<json>& maybe_node_options) {
+    bool allow_undeclared = false;
+    bool auto_declare_from_overrides = false;
+    std::vector<rclcpp::Parameter> overrides;
+
+    if (maybe_node_options.has_value()) {
+        const json& node_options = *maybe_node_options;
+        if (!node_options.is_object()) {
+            throw BundleError("scenario '" + scenario_id + "': node_options must be object");
+        }
+
+        if (node_options.contains("allow_undeclared_parameters")) {
+            if (!node_options["allow_undeclared_parameters"].is_boolean()) {
+                throw BundleError(
+                    "scenario '" + scenario_id + "': node_options.allow_undeclared_parameters must be boolean"
+                );
+            }
+            allow_undeclared = node_options["allow_undeclared_parameters"].get<bool>();
+        }
+        if (node_options.contains("automatically_declare_parameters_from_overrides")) {
+            if (!node_options["automatically_declare_parameters_from_overrides"].is_boolean()) {
+                throw BundleError(
+                    "scenario '" + scenario_id +
+                    "': node_options.automatically_declare_parameters_from_overrides must be boolean"
+                );
+            }
+            auto_declare_from_overrides =
+                node_options["automatically_declare_parameters_from_overrides"].get<bool>();
+        }
+        if (node_options.contains("parameter_overrides")) {
+            if (!node_options["parameter_overrides"].is_array()) {
+                throw BundleError("scenario '" + scenario_id + "': node_options.parameter_overrides must be array");
+            }
+            for (const auto& spec : node_options["parameter_overrides"]) {
+                overrides.push_back(make_override_parameter(spec, scenario_id));
+            }
+        }
+    }
+
+    rclcpp::NodeOptions opts;
+    opts.allow_undeclared_parameters(allow_undeclared);
+    opts.automatically_declare_parameters_from_overrides(auto_declare_from_overrides);
+    if (!overrides.empty()) {
+        opts.parameter_overrides(overrides);
+    }
+    return opts;
+}
+
+} // namespace
 
 // Forward declarations from ops/
 namespace ops {
@@ -18,6 +135,7 @@ void exec_complete_terminal(TraceWriter& w, BackendState& st, const std::string&
 void exec_attempt_terminal_override(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_declare_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_set_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_set_param_atomic(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_get_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_describe_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_set_params_batch(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
@@ -29,6 +147,9 @@ json exec_list_params(TraceWriter& w, BackendState& st, const std::string& scena
 json exec_get_parameter_types(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_concurrent_read_during_batch(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 json exec_undeclare_param(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_probe_startup_declare_events(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_probe_startup_manual_declare_events(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
+json exec_probe_cli_typed_no_default_declare(TraceWriter& w, BackendState& st, const std::string& scenario_id, const Op& op);
 }
 
 namespace runtime {
@@ -66,6 +187,8 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         op_result = ops::exec_declare_param(w, st, scenario_id, op);
     } else if (op.op == "set_param") {
         op_result = ops::exec_set_param(w, st, scenario_id, op);
+    } else if (op.op == "set_param_atomic") {
+        op_result = ops::exec_set_param_atomic(w, st, scenario_id, op);
     } else if (op.op == "get_param") {
         op_result = ops::exec_get_param(w, st, scenario_id, op);
     } else if (op.op == "describe_param") {
@@ -88,6 +211,12 @@ void exec_op(TraceWriter& w, BackendState& st, const std::string& scenario_id, c
         op_result = ops::exec_concurrent_read_during_batch(w, st, scenario_id, op);
     } else if (op.op == "undeclare_param") {
         op_result = ops::exec_undeclare_param(w, st, scenario_id, op);
+    } else if (op.op == "probe_startup_declare_events") {
+        op_result = ops::exec_probe_startup_declare_events(w, st, scenario_id, op);
+    } else if (op.op == "probe_startup_manual_declare_events") {
+        op_result = ops::exec_probe_startup_manual_declare_events(w, st, scenario_id, op);
+    } else if (op.op == "probe_cli_typed_no_default_declare") {
+        op_result = ops::exec_probe_cli_typed_no_default_declare(w, st, scenario_id, op);
     } else {
         throw BundleError("unsupported op: '" + op.op + "'");
     }
@@ -118,29 +247,36 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
     w.emit({{"type", "run_start"}, {"scenario_id", "_run"}, {"detail", {{"backend", "prod"}}}});
 
     // backend_capabilities
+    json caps = json::array({
+        "actions.basic",
+        "actions.terminal",
+        "clock.ros_time",
+        "ros.params.declare",
+        "ros.params.set",
+        "ros.params.set_atomic_single",
+        "ros.params.get",
+        "ros.params.set_batch",
+        "ros.params.set_non_atomic",
+        "ros.params.describe",
+        "ros.params.delete",
+        "ros.params.list",
+        "ros.params.callback",
+        "ros.params.observe_events",
+        "ros.params.get_parameter_types",
+        "ros.params.concurrent_read",
+        "ros.params.startup_probe",
+        "ros.params.cli_override_probe"
+    });
+#if BACKEND_PROD_HAS_PRE_SET_CALLBACK
+    caps.push_back("ros.params.pre_set_callback");
+#endif
+
     w.emit({
         {"type", "backend_capabilities"},
         {"scenario_id", "_run"},
         {"detail", {
             {"backend", "prod"},
-            {"caps", json::array({
-                "actions.basic",
-                "actions.terminal",
-                "clock.ros_time",
-                "ros.params.declare",
-                "ros.params.set",
-                "ros.params.get",
-                "ros.params.set_batch",
-                "ros.params.set_non_atomic",
-                "ros.params.describe",
-                "ros.params.delete",
-                "ros.params.list",
-                "ros.params.callback",
-                "ros.params.pre_set_callback",
-                "ros.params.observe_events",
-                "ros.params.get_parameter_types",
-                "ros.params.concurrent_read"
-            })},
+            {"caps", caps},
             {"limits", json::object()}
         }}
     });
@@ -171,9 +307,7 @@ void run_backend(const std::string& bundle_path, const std::string& trace_path) 
             }
         }
 
-        auto opts = rclcpp::NodeOptions()
-            .allow_undeclared_parameters(false)
-            .automatically_declare_parameters_from_overrides(false);
+        auto opts = build_node_options(id, scenario.node_options);
         st.node = std::make_shared<rclcpp::Node>("backend_prod_client_" + id, opts);
 
         st.executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();

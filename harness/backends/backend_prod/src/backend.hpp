@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <string>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/version.h>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rcl_interfaces/msg/parameter_event.hpp>
 #include <test_msgs/action/fibonacci.hpp>
@@ -21,6 +22,12 @@
 namespace backend_prod {
 
 using FibAction = test_msgs::action::Fibonacci;
+
+#if RCLCPP_VERSION_GTE(17, 0, 0)
+#define BACKEND_PROD_HAS_PRE_SET_CALLBACK 1
+#else
+#define BACKEND_PROD_HAS_PRE_SET_CALLBACK 0
+#endif
 
 /// Backend state tracking (goal terminal status, etc.)
 struct BackendState {
@@ -38,7 +45,9 @@ struct BackendState {
 
     // Parameter callback handles kept alive for scenario lifetime.
     rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr on_set_params_cb_handle;
+#if BACKEND_PROD_HAS_PRE_SET_CALLBACK
     rclcpp::Node::PreSetParametersCallbackHandle::SharedPtr pre_set_params_cb_handle;
+#endif
 
     // Mapping from ROS 2 UUID (16 bytes) to Scenario Goal ID (string)
     // We use vector<uint8_t> or just string for key? rclcpp_action::GoalUUID is std::array<uint8_t, 16>.

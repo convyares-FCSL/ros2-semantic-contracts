@@ -8,7 +8,8 @@
 | `P22_explicit_descriptor_type_enforcement` | PASS | PASS | Explicit descriptor type was preserved on declare in both backends. |
 | `P23_declare_without_default` | PASS | PASS | Explicitly typed declaration without default succeeded; later read was `NOT_SET`. |
 | `P24_get_parameter_types_response_length` | PASS | PASS | Mixed declared/undeclared request failed with `NotDeclared` in both backends. |
-| `P25_concurrent_visibility_probe` | PASS | PASS | Probe observed `partial_state_observed=false` in both backends (bulk-read probe). |
+| `P25_concurrent_visibility_probe` | PASS | FAIL | Updated single-call probe: `prod` observed mixed snapshots (`partial_state_observed=true`), `py` observed none (`false`) and fails against baseline expectation. |
+| `P35_concurrent_visibility_atomic_control` | PASS | PASS | Atomic control probe observed no mixed snapshots in either backend (`partial_state_observed=false`). |
 
 ## 2) Divergence Records Created
 

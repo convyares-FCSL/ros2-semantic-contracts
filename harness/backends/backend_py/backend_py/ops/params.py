@@ -10,6 +10,8 @@ from rclpy.qos import qos_profile_parameter_events
 from rcl_interfaces.msg import (
     ParameterDescriptor,
     ParameterType,
+    IntegerRange,
+    FloatingPointRange,
     SetParametersResult,
     ParameterEvent,
 )
@@ -28,6 +30,11 @@ def _build_parameter_list(params_list: Any, scenario_id: str, op_name: str) -> L
         'integer': Parameter.Type.INTEGER,
         'double': Parameter.Type.DOUBLE,
         'bool': Parameter.Type.BOOL,
+        'byte_array': Parameter.Type.BYTE_ARRAY,
+        'bool_array': Parameter.Type.BOOL_ARRAY,
+        'integer_array': Parameter.Type.INTEGER_ARRAY,
+        'double_array': Parameter.Type.DOUBLE_ARRAY,
+        'string_array': Parameter.Type.STRING_ARRAY,
     }
 
     parameters = []
@@ -102,6 +109,50 @@ def _parameter_to_string(param: Parameter) -> str:
     return 'UNSUPPORTED'
 
 
+def _descriptor_to_json(descriptor: ParameterDescriptor) -> Dict[str, Any]:
+    """Convert ParameterDescriptor message to trace JSON."""
+    return {
+        'type': int(descriptor.type),
+        'read_only': bool(descriptor.read_only),
+        'dynamic_typing': bool(descriptor.dynamic_typing),
+        'description': descriptor.description,
+        'additional_constraints': descriptor.additional_constraints,
+        'integer_range': [
+            {
+                'from_value': int(r.from_value),
+                'to_value': int(r.to_value),
+                'step': int(r.step),
+            }
+            for r in descriptor.integer_range
+        ],
+        'floating_point_range': [
+            {
+                'from_value': float(r.from_value),
+                'to_value': float(r.to_value),
+                'step': float(r.step),
+            }
+            for r in descriptor.floating_point_range
+        ],
+    }
+
+
+def _cli_assignment_from_json_value(name: str, value: Any, scenario_id: str) -> str:
+    if isinstance(value, bool):
+        rendered = 'true' if value else 'false'
+    elif isinstance(value, int):
+        rendered = str(value)
+    elif isinstance(value, float):
+        rendered = str(value)
+    elif isinstance(value, str):
+        rendered = value
+    else:
+        raise BundleError(
+            "probe_cli_typed_no_default_declare: payload.cli_value must be bool/int/float/string "
+            f"in scenario {scenario_id}"
+        )
+    return f'{name}:={rendered}'
+
+
 def exec_declare_param(
     w: TraceWriter,
     st: BackendState,
@@ -148,13 +199,110 @@ def exec_declare_param(
     explicit_descriptor_type: Optional[int] = None
     if 'descriptor' in payload:
         desc_dict = payload['descriptor']
+        if not isinstance(desc_dict, dict):
+            raise BundleError(f"declare_param: payload.descriptor must be object in scenario {scenario_id}")
         if 'read_only' in desc_dict:
+            if not isinstance(desc_dict['read_only'], bool):
+                raise BundleError(
+                    f"declare_param: payload.descriptor.read_only must be bool in scenario {scenario_id}"
+                )
             descriptor.read_only = desc_dict['read_only']
         if 'dynamic_typing' in desc_dict:
+            if not isinstance(desc_dict['dynamic_typing'], bool):
+                raise BundleError(
+                    f"declare_param: payload.descriptor.dynamic_typing must be bool in scenario {scenario_id}"
+                )
             descriptor.dynamic_typing = desc_dict['dynamic_typing']
         if 'type' in desc_dict:
+            if not isinstance(desc_dict['type'], int):
+                raise BundleError(
+                    f"declare_param: payload.descriptor.type must be int in scenario {scenario_id}"
+                )
             explicit_descriptor_type = int(desc_dict['type'])
             descriptor.type = explicit_descriptor_type
+        if 'description' in desc_dict:
+            if not isinstance(desc_dict['description'], str):
+                raise BundleError(
+                    f"declare_param: payload.descriptor.description must be string in scenario {scenario_id}"
+                )
+            descriptor.description = desc_dict['description']
+        if 'additional_constraints' in desc_dict:
+            if not isinstance(desc_dict['additional_constraints'], str):
+                raise BundleError(
+                    "declare_param: payload.descriptor.additional_constraints must be string "
+                    f"in scenario {scenario_id}"
+                )
+            descriptor.additional_constraints = desc_dict['additional_constraints']
+        if 'integer_range' in desc_dict:
+            integer_ranges = desc_dict['integer_range']
+            if not isinstance(integer_ranges, list):
+                raise BundleError(
+                    f"declare_param: payload.descriptor.integer_range must be list in scenario {scenario_id}"
+                )
+            descriptor.integer_range = []
+            for idx, item in enumerate(integer_ranges):
+                if not isinstance(item, dict):
+                    raise BundleError(
+                        "declare_param: payload.descriptor.integer_range[] must be object "
+                        f"in scenario {scenario_id}"
+                    )
+                if 'from_value' not in item or 'to_value' not in item or 'step' not in item:
+                    raise BundleError(
+                        "declare_param: payload.descriptor.integer_range[] requires from_value,to_value,step "
+                        f"in scenario {scenario_id}"
+                    )
+                if not isinstance(item['from_value'], int) or not isinstance(item['to_value'], int):
+                    raise BundleError(
+                        "declare_param: payload.descriptor.integer_range[].from_value/to_value must be int "
+                        f"in scenario {scenario_id}"
+                    )
+                if not isinstance(item['step'], int) or item['step'] < 0:
+                    raise BundleError(
+                        "declare_param: payload.descriptor.integer_range[].step must be non-negative int "
+                        f"in scenario {scenario_id}"
+                    )
+                descriptor.integer_range.append(
+                    IntegerRange(
+                        from_value=int(item['from_value']),
+                        to_value=int(item['to_value']),
+                        step=int(item['step']),
+                    )
+                )
+        if 'floating_point_range' in desc_dict:
+            float_ranges = desc_dict['floating_point_range']
+            if not isinstance(float_ranges, list):
+                raise BundleError(
+                    "declare_param: payload.descriptor.floating_point_range must be list "
+                    f"in scenario {scenario_id}"
+                )
+            descriptor.floating_point_range = []
+            for item in float_ranges:
+                if not isinstance(item, dict):
+                    raise BundleError(
+                        "declare_param: payload.descriptor.floating_point_range[] must be object "
+                        f"in scenario {scenario_id}"
+                    )
+                if 'from_value' not in item or 'to_value' not in item or 'step' not in item:
+                    raise BundleError(
+                        "declare_param: payload.descriptor.floating_point_range[] requires from_value,to_value,step "
+                        f"in scenario {scenario_id}"
+                    )
+                if (
+                    not isinstance(item['from_value'], (int, float))
+                    or not isinstance(item['to_value'], (int, float))
+                    or not isinstance(item['step'], (int, float))
+                ):
+                    raise BundleError(
+                        "declare_param: payload.descriptor.floating_point_range[].from_value/to_value/step "
+                        f"must be numeric in scenario {scenario_id}"
+                    )
+                descriptor.floating_point_range.append(
+                    FloatingPointRange(
+                        from_value=float(item['from_value']),
+                        to_value=float(item['to_value']),
+                        step=float(item['step']),
+                    )
+                )
 
     try:
         # CRITICAL: Call real rclpy API with descriptor - NO SIMULATION
@@ -169,12 +317,7 @@ def exec_declare_param(
         result['declared'] = True
 
         # Echo descriptor for trace inspection (matching backend_prod)
-        if descriptor.read_only or explicit_descriptor_type is not None:
-            result['descriptor'] = {}
-            if descriptor.read_only:
-                result['descriptor']['read_only'] = True
-            if explicit_descriptor_type is not None:
-                result['descriptor']['type'] = explicit_descriptor_type
+        result['descriptor'] = _descriptor_to_json(descriptor)
 
     except rclpy.exceptions.ParameterAlreadyDeclaredException:
         # Specific exception for redeclaration - this is what P03 tests
@@ -245,6 +388,11 @@ def exec_set_param(
         'integer': Parameter.Type.INTEGER,
         'double': Parameter.Type.DOUBLE,
         'bool': Parameter.Type.BOOL,
+        'byte_array': Parameter.Type.BYTE_ARRAY,
+        'bool_array': Parameter.Type.BOOL_ARRAY,
+        'integer_array': Parameter.Type.INTEGER_ARRAY,
+        'double_array': Parameter.Type.DOUBLE_ARRAY,
+        'string_array': Parameter.Type.STRING_ARRAY,
     }
 
     if param_type not in type_map:
@@ -277,6 +425,60 @@ def exec_set_param(
         result['successful'] = False
         result['reason'] = f'Exception: {str(e)}'
 
+    return result
+
+
+def exec_set_param_atomic(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Execute set_param_atomic operation using set_parameters_atomically()."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"set_param_atomic: missing payload in scenario {scenario_id}")
+
+    name = payload.get('name')
+    param_type = payload.get('type')
+    value = payload.get('value')
+    if not name:
+        raise BundleError(f"set_param_atomic: payload missing 'name' in scenario {scenario_id}")
+    if param_type is None:
+        raise BundleError(f"set_param_atomic: payload missing 'type' in scenario {scenario_id}")
+    if value is None:
+        raise BundleError(f"set_param_atomic: payload missing 'value' in scenario {scenario_id}")
+
+    type_map = {
+        'string': Parameter.Type.STRING,
+        'integer': Parameter.Type.INTEGER,
+        'double': Parameter.Type.DOUBLE,
+        'bool': Parameter.Type.BOOL,
+        'byte_array': Parameter.Type.BYTE_ARRAY,
+        'bool_array': Parameter.Type.BOOL_ARRAY,
+        'integer_array': Parameter.Type.INTEGER_ARRAY,
+        'double_array': Parameter.Type.DOUBLE_ARRAY,
+        'string_array': Parameter.Type.STRING_ARRAY,
+    }
+    if param_type not in type_map:
+        raise BundleError(f"set_param_atomic: unsupported type '{param_type}' in scenario {scenario_id}")
+
+    result = {
+        'op': 'set_param_atomic',
+        'name': name,
+    }
+    try:
+        param = Parameter(name, type_map[param_type], value)
+        set_result = st.node.set_parameters_atomically([param])
+        result['successful'] = bool(set_result.successful)
+        if not set_result.successful and set_result.reason:
+            result['reason'] = set_result.reason
+    except rclpy.exceptions.ParameterNotDeclaredException:
+        result['successful'] = False
+        result['reason'] = 'NotDeclared'
+    except Exception as e:
+        result['successful'] = False
+        result['reason'] = f'Exception: {str(e)}'
     return result
 
 
@@ -494,20 +696,38 @@ def exec_register_param_callback(
     scenario_id: str,
     op: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
-    """Register add_on_set_parameters_callback with reject-name mode."""
+    """Register add_on_set_parameters_callback modes for callback semantics tests."""
     payload = op.get('payload')
     if not payload:
         raise BundleError(f"register_param_callback: missing payload in scenario {scenario_id}")
 
     mode = payload.get('mode')
-    if mode != 'reject_names':
+    if mode not in ('reject_names', 'assert_storage_old_value'):
         raise BundleError(f"register_param_callback: unsupported mode '{mode}' in scenario {scenario_id}")
 
-    reject = payload.get('reject')
-    if not isinstance(reject, list) or not all(isinstance(name, str) for name in reject):
-        raise BundleError(f"register_param_callback: payload.reject must be a string list in scenario {scenario_id}")
+    reject: List[str] = []
+    reject_names = set()
+    target_name: Optional[str] = None
+    expected_old_value: Optional[str] = None
 
-    reject_names = set(reject)
+    if mode == 'reject_names':
+        reject = payload.get('reject')
+        if not isinstance(reject, list) or not all(isinstance(name, str) for name in reject):
+            raise BundleError(
+                f"register_param_callback: payload.reject must be a string list in scenario {scenario_id}"
+            )
+        reject_names = set(reject)
+    else:
+        target_name = payload.get('target')
+        expected_old_value = payload.get('expected_old_value')
+        if not isinstance(target_name, str):
+            raise BundleError(
+                f"register_param_callback: payload.target must be a string in scenario {scenario_id}"
+            )
+        if not isinstance(expected_old_value, str):
+            raise BundleError(
+                f"register_param_callback: payload.expected_old_value must be a string in scenario {scenario_id}"
+            )
 
     if st.on_set_param_callback is not None:
         st.node.remove_on_set_parameters_callback(st.on_set_param_callback)
@@ -516,22 +736,47 @@ def exec_register_param_callback(
     def _callback(params: List[Parameter]) -> SetParametersResult:
         out = SetParametersResult()
         out.successful = True
-        for param in params:
-            if param.name in reject_names:
-                out.successful = False
-                out.reason = f"RejectedByCallback:{param.name}"
-                return out
+        if mode == 'reject_names':
+            for param in params:
+                if param.name in reject_names:
+                    out.successful = False
+                    out.reason = f"RejectedByCallback:{param.name}"
+                    return out
+            return out
+
+        assert target_name is not None
+        assert expected_old_value is not None
+        target_in_request = any(param.name == target_name for param in params)
+        if not target_in_request:
+            return out
+
+        try:
+            current = st.node.get_parameter(target_name)
+            observed = _parameter_to_string(current)
+        except rclpy.exceptions.ParameterUninitializedException:
+            observed = 'NOT_SET'
+        except rclpy.exceptions.ParameterNotDeclaredException:
+            observed = 'NOT_SET'
+
+        if observed != expected_old_value:
+            out.successful = False
+            out.reason = f"StorageNotOld:{target_name}"
         return out
 
     st.node.add_on_set_parameters_callback(_callback)
     st.on_set_param_callback = _callback
 
-    return {
+    result: Dict[str, Any] = {
         'op': 'register_param_callback',
         'mode': mode,
-        'reject': reject,
         'registered': True,
     }
+    if mode == 'reject_names':
+        result['reject'] = reject
+    else:
+        result['target'] = target_name
+        result['expected_old_value'] = expected_old_value
+    return result
 
 
 def exec_register_pre_set_callback(
@@ -541,6 +786,13 @@ def exec_register_pre_set_callback(
     op: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
     """Register add_pre_set_parameters_callback with remove-name mode."""
+    if not hasattr(st.node, 'add_pre_set_parameters_callback'):
+        return {
+            'op': 'register_pre_set_callback',
+            'registered': False,
+            'reason': 'UnsupportedOnThisDistro',
+        }
+
     payload = op.get('payload')
     if not payload:
         raise BundleError(f"register_pre_set_callback: missing payload in scenario {scenario_id}")
@@ -670,6 +922,8 @@ def exec_get_parameter_types(
 
     result: Dict[str, Any] = {
         'op': 'get_parameter_types',
+        'names': names,
+        'request_count': len(names),
         'successful': True,
         'count': 0,
         'types': [],
@@ -678,12 +932,14 @@ def exec_get_parameter_types(
         types = st.node.get_parameter_types(names)
         result['count'] = len(types)
         result['types'] = [int(t) for t in types]
-    except rclpy.exceptions.ParameterNotDeclaredException:
+    except rclpy.exceptions.ParameterNotDeclaredException as e:
         result['successful'] = False
         result['reason'] = 'NotDeclared'
+        result['reason_raw'] = str(e)
     except Exception as e:
         result['successful'] = False
         result['reason'] = f'Exception: {str(e)}'
+        result['reason_raw'] = str(e)
     return result
 
 
@@ -706,64 +962,440 @@ def exec_concurrent_read_during_batch(
     if not isinstance(batch_payload, list):
         raise BundleError(f"concurrent_read_during_batch: payload.batch must be a list in scenario {scenario_id}")
 
+    api = payload.get('api', 'non_atomic')
+    if api not in ('non_atomic', 'atomic'):
+        raise BundleError(
+            f"concurrent_read_during_batch: payload.api must be 'non_atomic' or 'atomic' in scenario {scenario_id}"
+        )
+
+    trial_count = payload.get('trials', 1)
+    if not isinstance(trial_count, int) or trial_count < 1:
+        raise BundleError(f"concurrent_read_during_batch: payload.trials must be an integer >= 1 in scenario {scenario_id}")
+
+    min_snapshots = payload.get('min_snapshots', 1)
+    if not isinstance(min_snapshots, int) or min_snapshots < 1:
+        raise BundleError(f"concurrent_read_during_batch: payload.min_snapshots must be an integer >= 1 in scenario {scenario_id}")
+
+    reader_sleep_us = payload.get('reader_sleep_us', 50)
+    if not isinstance(reader_sleep_us, int) or reader_sleep_us < 0:
+        raise BundleError(
+            f"concurrent_read_during_batch: payload.reader_sleep_us must be an integer >= 0 in scenario {scenario_id}"
+        )
+
     batch = _build_parameter_list(batch_payload, scenario_id, 'concurrent_read_during_batch')
 
+    old_params: Dict[str, Parameter] = {
+        name: st.node.get_parameter(name)
+        for name in targets
+    }
     old_values: Dict[str, str] = {
-        name: _parameter_to_string(st.node.get_parameter(name))
+        name: _parameter_to_string(old_params[name])
         for name in targets
     }
     new_values = dict(old_values)
     for param in batch:
         new_values[param.name] = _parameter_to_string(param)
 
-    stop_reader = threading.Event()
-    first_snapshot = threading.Event()
-    snapshots: List[Dict[str, str]] = []
-    snapshot_lock = threading.Lock()
+    revert_batch = [old_params[name] for name in targets]
 
-    def _reader() -> None:
-        while not stop_reader.is_set():
-            params = st.node.get_parameters(targets)
-            snap = {}
-            for idx, param in enumerate(params):
-                if idx < len(targets):
-                    snap[targets[idx]] = _parameter_to_string(param)
-            with snapshot_lock:
-                snapshots.append(snap)
-            first_snapshot.set()
-            time.sleep(0.0002)
-
-    reader_thread = threading.Thread(target=_reader, daemon=True)
-    reader_thread.start()
-    first_snapshot.wait(timeout=0.02)
-    try:
-        set_results = st.node.set_parameters(batch)
-    finally:
-        stop_reader.set()
-        reader_thread.join()
-
+    successful = True
     partial_observed = False
-    for snap in snapshots:
-        old_count = 0
-        new_count = 0
-        for name in targets:
-            value = snap.get(name)
-            if value == old_values.get(name):
-                old_count += 1
-            if value == new_values.get(name):
-                new_count += 1
-        if old_count > 0 and new_count > 0:
-            partial_observed = True
+    mixed_snapshot_count = 0
+    mixed_trial_count = 0
+    snapshot_count = 0
+
+    for _ in range(trial_count):
+        reset = st.node.set_parameters_atomically(revert_batch)
+        if not reset.successful:
+            successful = False
             break
 
-    successful = all(result.successful for result in set_results)
+        stop_reader = threading.Event()
+        first_snapshot = threading.Event()
+        snapshots: List[Dict[str, str]] = []
+        snapshot_lock = threading.Lock()
+
+        def _reader() -> None:
+            while not stop_reader.is_set():
+                params = st.node.get_parameters(targets)
+                snap = {}
+                for idx, param in enumerate(params):
+                    if idx < len(targets):
+                        snap[targets[idx]] = _parameter_to_string(param)
+                with snapshot_lock:
+                    snapshots.append(snap)
+                first_snapshot.set()
+                if reader_sleep_us > 0:
+                    time.sleep(reader_sleep_us / 1_000_000.0)
+                else:
+                    time.sleep(0)
+
+        reader_thread = threading.Thread(target=_reader, daemon=True)
+        reader_thread.start()
+        first_snapshot.wait(timeout=0.02)
+        try:
+            if api == 'atomic':
+                result = st.node.set_parameters_atomically(batch)
+                if not result.successful:
+                    successful = False
+            else:
+                trial_results = st.node.set_parameters(batch)
+                if not all(result.successful for result in trial_results):
+                    successful = False
+        finally:
+            stop_reader.set()
+            reader_thread.join()
+
+        mixed_in_trial = False
+        for snap in snapshots:
+            old_count = 0
+            new_count = 0
+            for name in targets:
+                value = snap.get(name)
+                if value == old_values.get(name):
+                    old_count += 1
+                if value == new_values.get(name):
+                    new_count += 1
+            if old_count > 0 and new_count > 0:
+                partial_observed = True
+                mixed_in_trial = True
+                mixed_snapshot_count += 1
+
+        if mixed_in_trial:
+            mixed_trial_count += 1
+
+        snapshot_count += len(snapshots)
+
+    sample_sufficient = snapshot_count >= min_snapshots
     return {
         'op': 'concurrent_read_during_batch',
         'batch_count': len(batch),
-        'snapshot_count': len(snapshots),
+        'api': api,
+        'trial_count': trial_count,
+        'min_snapshots': min_snapshots,
+        'reader_sleep_us': reader_sleep_us,
+        'snapshot_count': snapshot_count,
+        'sample_sufficient': sample_sufficient,
+        'mixed_snapshot_count': mixed_snapshot_count,
+        'mixed_trial_count': mixed_trial_count,
         'partial_state_observed': partial_observed,
         'successful': successful,
     }
+
+
+def exec_probe_startup_declare_events(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Probe startup declaration event cardinality/signature from parameter overrides."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(f"probe_startup_declare_events: missing payload in scenario {scenario_id}")
+
+    node_name = payload.get('node_name')
+    if not isinstance(node_name, str):
+        raise BundleError(
+            f"probe_startup_declare_events: payload.node_name must be a string in scenario {scenario_id}"
+        )
+
+    override_specs = payload.get('parameter_overrides')
+    if not isinstance(override_specs, list):
+        raise BundleError(
+            f"probe_startup_declare_events: payload.parameter_overrides must be a list in scenario {scenario_id}"
+        )
+    overrides = _build_parameter_list(override_specs, scenario_id, 'probe_startup_declare_events')
+    override_names = {param.name for param in overrides}
+
+    auto_declare = payload.get('automatically_declare_parameters_from_overrides', True)
+    if not isinstance(auto_declare, bool):
+        raise BundleError(
+            "probe_startup_declare_events: payload.automatically_declare_parameters_from_overrides "
+            f"must be bool in scenario {scenario_id}"
+        )
+    allow_undeclared = payload.get('allow_undeclared_parameters', False)
+    if not isinstance(allow_undeclared, bool):
+        raise BundleError(
+            f"probe_startup_declare_events: payload.allow_undeclared_parameters must be bool in scenario {scenario_id}"
+        )
+
+    window_ms = payload.get('window_ms', 400)
+    if not isinstance(window_ms, int) or window_ms < 0:
+        raise BundleError(
+            f"probe_startup_declare_events: payload.window_ms must be non-negative int in scenario {scenario_id}"
+        )
+
+    counts_by_event: List[int] = []
+    changed_total = 0
+    new_total = 0
+    deleted_total = 0
+    lock = threading.Lock()
+
+    expected_1 = node_name
+    expected_2 = f'/{node_name}'
+
+    def _cb(msg: ParameterEvent) -> None:
+        nonlocal changed_total, new_total, deleted_total
+        src = msg.node
+        if not (src == expected_1 or src == expected_2 or src.endswith(expected_2)):
+            return
+        new_in_scope = sum(1 for p in msg.new_parameters if p.name in override_names)
+        changed_in_scope = sum(1 for p in msg.changed_parameters if p.name in override_names)
+        deleted_in_scope = sum(1 for p in msg.deleted_parameters if p.name in override_names)
+        keys = new_in_scope + changed_in_scope + deleted_in_scope
+        if keys == 0:
+            return
+        with lock:
+            counts_by_event.append(keys)
+            changed_total += changed_in_scope
+            new_total += new_in_scope
+            deleted_total += deleted_in_scope
+
+    sub = st.node.create_subscription(
+        ParameterEvent,
+        '/parameter_events',
+        _cb,
+        qos_profile_parameter_events,
+    )
+
+    probe_node = rclpy.create_node(
+        node_name,
+        allow_undeclared_parameters=allow_undeclared,
+        automatically_declare_parameters_from_overrides=auto_declare,
+        parameter_overrides=overrides,
+    )
+    try:
+        deadline = time.monotonic() + (window_ms / 1000.0)
+        while time.monotonic() < deadline:
+            rclpy.spin_once(st.node, timeout_sec=0.01)
+            rclpy.spin_once(probe_node, timeout_sec=0.0)
+    finally:
+        try:
+            st.node.destroy_subscription(sub)
+        except Exception:
+            pass
+        probe_node.destroy_node()
+
+    max_keys_in_single_event = max(counts_by_event) if counts_by_event else 0
+    return {
+        'op': 'probe_startup_declare_events',
+        'node_name': node_name,
+        'override_count': len(overrides),
+        'window_ms': window_ms,
+        'event_count': len(counts_by_event),
+        'max_keys_in_single_event': max_keys_in_single_event,
+        'batched_single_event_observed': max_keys_in_single_event >= len(overrides),
+        'new_total': new_total,
+        'changed_total': changed_total,
+        'deleted_total': deleted_total,
+    }
+
+
+def exec_probe_startup_manual_declare_events(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Probe startup event batching for explicit declare_parameter() calls."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(
+            f"probe_startup_manual_declare_events: missing payload in scenario {scenario_id}"
+        )
+
+    node_name = payload.get('node_name')
+    if not isinstance(node_name, str):
+        raise BundleError(
+            f"probe_startup_manual_declare_events: payload.node_name must be a string in scenario {scenario_id}"
+        )
+
+    parameter_specs = payload.get('parameters')
+    if not isinstance(parameter_specs, list):
+        raise BundleError(
+            f"probe_startup_manual_declare_events: payload.parameters must be a list in scenario {scenario_id}"
+        )
+    parameters = _build_parameter_list(
+        parameter_specs, scenario_id, 'probe_startup_manual_declare_events'
+    )
+    parameter_names = {param.name for param in parameters}
+
+    window_ms = payload.get('window_ms', 500)
+    if not isinstance(window_ms, int) or window_ms < 0:
+        raise BundleError(
+            f"probe_startup_manual_declare_events: payload.window_ms must be non-negative int in scenario {scenario_id}"
+        )
+
+    counts_by_event: List[int] = []
+    changed_total = 0
+    new_total = 0
+    deleted_total = 0
+    lock = threading.Lock()
+
+    expected_1 = node_name
+    expected_2 = f'/{node_name}'
+
+    def _cb(msg: ParameterEvent) -> None:
+        nonlocal changed_total, new_total, deleted_total
+        src = msg.node
+        if not (src == expected_1 or src == expected_2 or src.endswith(expected_2)):
+            return
+        new_in_scope = sum(1 for p in msg.new_parameters if p.name in parameter_names)
+        changed_in_scope = sum(1 for p in msg.changed_parameters if p.name in parameter_names)
+        deleted_in_scope = sum(1 for p in msg.deleted_parameters if p.name in parameter_names)
+        keys = new_in_scope + changed_in_scope + deleted_in_scope
+        if keys == 0:
+            return
+        with lock:
+            counts_by_event.append(keys)
+            changed_total += changed_in_scope
+            new_total += new_in_scope
+            deleted_total += deleted_in_scope
+
+    sub = st.node.create_subscription(
+        ParameterEvent,
+        '/parameter_events',
+        _cb,
+        qos_profile_parameter_events,
+    )
+
+    probe_node = rclpy.create_node(
+        node_name,
+        allow_undeclared_parameters=False,
+        automatically_declare_parameters_from_overrides=False,
+    )
+    declare_errors: List[Dict[str, str]] = []
+    successful = True
+    try:
+        for param in parameters:
+            try:
+                probe_node.declare_parameter(param.name, param.value)
+            except Exception as e:
+                successful = False
+                declare_errors.append({'name': param.name, 'reason': str(e)})
+
+        deadline = time.monotonic() + (window_ms / 1000.0)
+        while time.monotonic() < deadline:
+            rclpy.spin_once(st.node, timeout_sec=0.01)
+            rclpy.spin_once(probe_node, timeout_sec=0.0)
+    finally:
+        try:
+            st.node.destroy_subscription(sub)
+        except Exception:
+            pass
+        probe_node.destroy_node()
+
+    max_keys_in_single_event = max(counts_by_event) if counts_by_event else 0
+    return {
+        'op': 'probe_startup_manual_declare_events',
+        'node_name': node_name,
+        'declare_count': len(parameters),
+        'window_ms': window_ms,
+        'event_count': len(counts_by_event),
+        'max_keys_in_single_event': max_keys_in_single_event,
+        'batched_single_event_observed': max_keys_in_single_event >= len(parameters),
+        'new_total': new_total,
+        'changed_total': changed_total,
+        'deleted_total': deleted_total,
+        'successful': successful,
+        'declare_errors': declare_errors,
+    }
+
+
+def exec_probe_cli_typed_no_default_declare(
+    w: TraceWriter,
+    st: BackendState,
+    scenario_id: str,
+    op: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Probe typed no-default declaration using CLI override arguments."""
+    payload = op.get('payload')
+    if not payload:
+        raise BundleError(
+            f"probe_cli_typed_no_default_declare: missing payload in scenario {scenario_id}"
+        )
+
+    param_name = payload.get('param_name')
+    if not isinstance(param_name, str):
+        raise BundleError(
+            "probe_cli_typed_no_default_declare: payload.param_name must be string "
+            f"in scenario {scenario_id}"
+        )
+
+    descriptor_type = payload.get('descriptor_type')
+    if not isinstance(descriptor_type, int):
+        raise BundleError(
+            "probe_cli_typed_no_default_declare: payload.descriptor_type must be int "
+            f"in scenario {scenario_id}"
+        )
+
+    if 'cli_value' not in payload:
+        raise BundleError(
+            "probe_cli_typed_no_default_declare: payload.cli_value is required "
+            f"in scenario {scenario_id}"
+        )
+    assignment = _cli_assignment_from_json_value(param_name, payload['cli_value'], scenario_id)
+    node_name = payload.get('node_name', 'probe_cli_typed_no_default')
+    if not isinstance(node_name, str):
+        raise BundleError(
+            f"probe_cli_typed_no_default_declare: payload.node_name must be string in scenario {scenario_id}"
+        )
+
+    result: Dict[str, Any] = {
+        'op': 'probe_cli_typed_no_default_declare',
+        'node_name': node_name,
+        'param_name': param_name,
+        'descriptor_type': descriptor_type,
+        'cli_assignment': assignment,
+        'successful': False,
+        'declared': False,
+        'set': False,
+        'type': 'NOT_SET',
+    }
+
+    descriptor = ParameterDescriptor(type=int(descriptor_type))
+    probe_node = rclpy.create_node(
+        node_name,
+        cli_args=['--ros-args', '-p', assignment],
+        use_global_arguments=False,
+        allow_undeclared_parameters=False,
+        automatically_declare_parameters_from_overrides=False,
+    )
+    try:
+        probe_node.declare_parameter(param_name, descriptor=descriptor)
+        result['declared'] = bool(probe_node.has_parameter(param_name))
+
+        param = probe_node.get_parameter(param_name)
+        if param.type_ == Parameter.Type.NOT_SET:
+            result['set'] = False
+            result['type'] = 'NOT_SET'
+        else:
+            result['set'] = True
+            if param.type_ == Parameter.Type.BOOL:
+                result['type'] = 'bool'
+                result['value'] = bool(param.value)
+            elif param.type_ == Parameter.Type.INTEGER:
+                result['type'] = 'integer'
+                result['value'] = int(param.value)
+            elif param.type_ == Parameter.Type.DOUBLE:
+                result['type'] = 'double'
+                result['value'] = float(param.value)
+            elif param.type_ == Parameter.Type.STRING:
+                result['type'] = 'string'
+                result['value'] = str(param.value)
+            else:
+                result['type'] = 'unsupported'
+                result['value'] = str(param.value)
+
+        result['successful'] = True
+    except Exception as e:
+        result['successful'] = False
+        result['reason'] = str(e)
+    finally:
+        probe_node.destroy_node()
+
+    return result
 
 
 def exec_describe_param(
@@ -826,11 +1458,7 @@ def exec_describe_param(
         result['reason'] = str(e)
         # Keep default-constructed descriptor (type=0/NOT_SET)
 
-    result['descriptor'] = {
-        'type': int(descriptor.type),
-        'read_only': bool(descriptor.read_only),
-        'dynamic_typing': bool(descriptor.dynamic_typing),
-    }
+    result['descriptor'] = _descriptor_to_json(descriptor)
 
     return result
 

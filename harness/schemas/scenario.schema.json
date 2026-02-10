@@ -47,6 +47,10 @@
                     "notes": {
                         "type": "string"
                     },
+                    "node_options": {
+                        "type": "object",
+                        "description": "Optional backend node construction options (e.g. parameter overrides for startup-path probes)."
+                    },
                     "ops": {
                         "type": "array",
                         "items": {
@@ -67,6 +71,7 @@
                                         "emit_result",
                                         "request_cancel",
                                         "set_param",
+                                        "set_param_atomic",
                                         "get_param",
                                         "declare_param",
                                         "undeclare_param",
@@ -78,6 +83,9 @@
                                         "list_params",
                                         "get_parameter_types",
                                         "concurrent_read_during_batch",
+                                        "probe_startup_declare_events",
+                                        "probe_startup_manual_declare_events",
+                                        "probe_cli_typed_no_default_declare",
                                         "call_service",
                                         "describe_param"
                                     ]
@@ -120,13 +128,10 @@
                                 "check": {
                                     "type": "string",
                                     "enum": [
-                                        "no_ghost_goal",
-                                        "terminal_immutable",
+                                        "custom",
+                                        "absent",
                                         "status_monotonic",
-                                        "valid_transitions_only",
-                                        "cancel_intent_observable",
-                                        "result_after_terminal",
-                                        "custom"
+                                        "describe_unknown_consistent"
                                     ]
                                 },
                                 "within_ms": {

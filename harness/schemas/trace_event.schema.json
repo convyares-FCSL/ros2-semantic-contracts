@@ -32,12 +32,23 @@
                 "parameter_event",
                 "op_start",
                 "op_end",
+                "goal_send",
+                "goal_response",
                 "goal_send_decision",
                 "status",
-                "feedback",
                 "result",
                 "cancel_request",
-                "cancel_response"
+                "cancel_response",
+                "terminal_set_attempt",
+                "backend_capabilities",
+                "param_set_request",
+                "param_set_response",
+                "param_set_batch_request",
+                "param_set_batch_response",
+                "param_describe_request",
+                "param_describe_response",
+                "param_declare_request",
+                "param_declare_response"
             ]
         },
         "scenario_id": {

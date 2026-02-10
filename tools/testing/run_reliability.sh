@@ -23,6 +23,7 @@ cd "${ROOT}"
 # Defaults
 ITERATIONS="5"
 ROS_DISTRO="${ROS_DISTRO:-jazzy}"
+ROS_BASE_IMAGE="${ROS_BASE_IMAGE:-}"
 ORACLE_BACKEND="${ORACLE_BACKEND:-prod}"
 MODE="summary"  # summary (default), quick, verbose
 STRICT=0
@@ -46,6 +47,29 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -n "${N:-}" ]]; then ITERATIONS="${N}"; fi
+
+# Resolve base image default for selected distro unless caller provided one.
+if [[ -z "${ROS_BASE_IMAGE}" ]]; then
+    case "${ROS_DISTRO}" in
+        jazzy)
+            ROS_BASE_IMAGE="ros:jazzy-ros-base-noble@sha256:af9454f13d342c58bb9f3364424e3e7026184e59a47de75f915d241cb7ec6666"
+            ;;
+        humble)
+            ROS_BASE_IMAGE="ros:humble-ros-base@sha256:2fe6fec19fbac9c94794c7fa4afc83099f5372659dd1871f01b6d54f6701ddc8"
+            ;;
+        *)
+            ROS_BASE_IMAGE="ros:${ROS_DISTRO}-ros-base"
+            ;;
+    esac
+fi
+
+# Validation runs must use digest-pinned base images for reproducibility.
+# Set ALLOW_UNPINNED_BASE_IMAGE=1 only for exploratory development.
+if [[ "${ALLOW_UNPINNED_BASE_IMAGE:-0}" != "1" ]] && [[ "${ROS_BASE_IMAGE}" != *"@sha256:"* ]]; then
+    echo "ERROR: ROS_BASE_IMAGE must be digest-pinned for reliability validation." >&2
+    echo "Set ALLOW_UNPINNED_BASE_IMAGE=1 only for exploratory runs." >&2
+    exit 2
+fi
 
 # ------------------------------------------------------------------------------
 # Bundle Construction / selection
@@ -146,6 +170,7 @@ echo "Reliability Runner"
 echo "=========================================="
 echo "Iterations: ${ITERATIONS}"
 echo "Distro:     ${ROS_DISTRO}"
+echo "Base Image: ${ROS_BASE_IMAGE}"
 echo "Backend:    ${ORACLE_BACKEND}"
 echo "Mode:       ${MODE}"
 echo "=========================================="
@@ -159,6 +184,7 @@ mkdir -p "${EVIDENCE_BASE}"
 
 echo -n "[Build] Building docker image for ${ROS_DISTRO}..."
 export ROS_DISTRO
+export ROS_BASE_IMAGE
 
 if [[ ${VERBOSE} -eq 1 ]]; then
     echo ""

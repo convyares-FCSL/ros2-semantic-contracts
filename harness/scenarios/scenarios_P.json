@@ -1579,7 +1579,7 @@
                 "ros.params.set_non_atomic",
                 "ros.params.callback"
             ],
-            "notes": "Discovery scenario: measures externally visible state after non-atomic set_parameters() when one parameter is rejected by callback.",
+            "notes": "Validates non-atomic batch semantics: callback rejection can partially apply accepted earlier keys while rejected keys remain unchanged.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1661,7 +1661,8 @@
                                     "name": "p17_param_a",
                                     "declared": true,
                                     "set": true,
-                                    "type": "string"
+                                    "type": "string",
+                                    "value": "a1"
                                 }
                             },
                             {
@@ -1671,7 +1672,8 @@
                                     "name": "p17_param_b",
                                     "declared": true,
                                     "set": true,
-                                    "type": "string"
+                                    "type": "string",
+                                    "value": "b0"
                                 }
                             }
                         ]
@@ -1689,7 +1691,7 @@
                 "ros.params.set_batch",
                 "ros.params.callback"
             ],
-            "notes": "Discovery scenario: measures externally visible state after set_parameters_atomically() with callback-based rejection.",
+            "notes": "Validates atomic batch semantics: callback rejection yields failed operation and preserves pre-existing values for all requested keys.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1772,7 +1774,8 @@
                                     "name": "p18_param_a",
                                     "declared": true,
                                     "set": true,
-                                    "type": "string"
+                                    "type": "string",
+                                    "value": "a0"
                                 }
                             },
                             {
@@ -1782,7 +1785,8 @@
                                     "name": "p18_param_b",
                                     "declared": true,
                                     "set": true,
-                                    "type": "string"
+                                    "type": "string",
+                                    "value": "b0"
                                 }
                             }
                         ]
@@ -1907,9 +1911,10 @@
             "requires": [
                 "ros.params.declare",
                 "ros.params.set_batch",
+                "ros.params.set_non_atomic",
                 "ros.params.observe_events"
             ],
-            "notes": "Discovery scenario: captures parameter_event stream after atomic batch update.",
+            "notes": "Detects #1970 signature directly: atomic batch emits one grouped event, non-atomic batch emits per-parameter events.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1961,6 +1966,36 @@
                 {
                     "op": "observe_param_events",
                     "ms": 200
+                },
+                {
+                    "op": "set_params_non_atomic",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p20_param_a",
+                                "type": "string",
+                                "value": "a2"
+                            },
+                            {
+                                "name": "p20_param_b",
+                                "type": "string",
+                                "value": "b2"
+                            },
+                            {
+                                "name": "p20_param_c",
+                                "type": "string",
+                                "value": "c2"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
                 }
             ],
             "expects": [
@@ -1984,10 +2019,85 @@
                                 }
                             },
                             {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "p20_param_a",
+                                        "type": 4,
+                                        "value": "a1"
+                                    },
+                                    {
+                                        "name": "p20_param_b",
+                                        "type": 4,
+                                        "value": "b1"
+                                    },
+                                    {
+                                        "name": "p20_param_c",
+                                        "type": 4,
+                                        "value": "c1"
+                                    }
+                                ]
+                            },
+                            {
                                 "type": "op_end",
                                 "detail": {
                                     "op": "observe_param_events",
-                                    "window_ms": 200
+                                    "window_ms": 200,
+                                    "count": 1
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_non_atomic",
+                                    "count": 3,
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "p20_param_a",
+                                        "type": 4,
+                                        "value": "a2"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "p20_param_b",
+                                        "type": 4,
+                                        "value": "b2"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "p20_param_c",
+                                        "type": 4,
+                                        "value": "c2"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 3
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
                                 }
                             }
                         ]
@@ -2199,13 +2309,21 @@
                 "ros.params.declare",
                 "ros.params.get_parameter_types"
             ],
-            "notes": "Validates SPEC_PC12 behavior on mixed declared/undeclared names. Jazzy observed baseline: get_parameter_types fails with NotDeclared when any queried name is undeclared.",
+            "notes": "Spec-conformance test against official GetParameterTypes contract: response must preserve 1:1 request mapping, including undeclared names (NOT_SET entries) instead of collapsing to error/empty array.",
             "ops": [
                 {
                     "op": "declare_param",
                     "payload": {
                         "name": "p24_known_param",
                         "value": "hello"
+                    }
+                },
+                {
+                    "op": "get_parameter_types",
+                    "payload": {
+                        "names": [
+                            "p24_known_param"
+                        ]
                     }
                 },
                 {
@@ -2236,8 +2354,26 @@
                                 "type": "op_end",
                                 "detail": {
                                     "op": "get_parameter_types",
-                                    "successful": false,
-                                    "reason": "NotDeclared"
+                                    "successful": true,
+                                    "request_count": 1,
+                                    "count": 1,
+                                    "types": [
+                                        4
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_parameter_types",
+                                    "successful": true,
+                                    "request_count": 3,
+                                    "count": 3,
+                                    "types": [
+                                        4,
+                                        0,
+                                        0
+                                    ]
                                 }
                             }
                         ]
@@ -2247,13 +2383,13 @@
         },
         "P25_concurrent_visibility_probe": {
             "spec_id": "P25",
-            "title": "Concurrent reader visibility during non-atomic batch set",
+            "title": "Concurrent visibility during non-atomic single-call batch set",
             "layer": "Core",
             "requires": [
                 "ros.params.declare",
                 "ros.params.concurrent_read"
             ],
-            "notes": "Validates concurrent visibility for non-atomic set_parameters() using bulk read snapshots. Jazzy observed baseline: mixed partial state was not observed in this probe.",
+            "notes": "Issue-equivalent probe for lock/visibility claim: repeated single non-atomic set_parameters calls under concurrent reads. Baseline expectation is mixed old/new cross-key snapshots on the measured path.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -2278,10 +2414,14 @@
                 {
                     "op": "concurrent_read_during_batch",
                     "payload": {
+                        "api": "non_atomic",
                         "target_params": [
                             "p25_a",
                             "p25_b"
                         ],
+                        "trials": 200,
+                        "min_snapshots": 200,
+                        "reader_sleep_us": 0,
                         "batch": [
                             {
                                 "name": "p25_a",
@@ -2306,7 +2446,1280 @@
                                 "type": "op_end",
                                 "detail": {
                                     "op": "concurrent_read_during_batch",
-                                    "partial_state_observed": false
+                                    "api": "non_atomic",
+                                    "trial_count": 200,
+                                    "min_snapshots": 200,
+                                    "sample_sufficient": true,
+                                    "partial_state_observed": true,
+                                    "successful": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P26_type_coercion_matrix": {
+            "spec_id": "P26",
+            "title": "Type coercion matrix for static and dynamic parameters",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get"
+            ],
+            "notes": "Non-happy-path coercion matrix: static typed parameters must reject cross-type sets (double->int, bool->int, int->bool) and preserve prior value. Dynamic-typed control path confirms explicit type transitions succeed without implicit coercion.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p26_static_int",
+                        "value": 7
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p26_static_bool",
+                        "value": true
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p26_static_int",
+                        "type": "double",
+                        "value": 7.0
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p26_static_int",
+                        "type": "bool",
+                        "value": true
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p26_static_bool",
+                        "type": "integer",
+                        "value": 1
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p26_static_int"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p26_static_bool"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p26_dynamic_num",
+                        "value": 1,
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p26_dynamic_num",
+                        "type": "double",
+                        "value": 1.5
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p26_dynamic_num"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p26_dynamic_num",
+                        "type": "integer",
+                        "value": 2
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p26_dynamic_num"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p26_static_int",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p26_static_bool",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p26_static_int",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 7
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p26_static_bool",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "bool",
+                                    "value": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p26_dynamic_num",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p26_dynamic_num",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "double",
+                                    "value": 1.5
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p26_dynamic_num",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 2
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P27_standard_batch_partial_application_check": {
+            "spec_id": "P27",
+            "title": "Standard Batch Partial Application Check",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_non_atomic",
+                "ros.params.callback"
+            ],
+            "notes": "Validates sequential non-atomic batch semantics: when a later key is rejected by validation callback, earlier accepted keys remain applied.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p27_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p27_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "reject_names",
+                        "reject": [
+                            "p27_param_b"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_params_non_atomic",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p27_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p27_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p27_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p27_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "reject_names",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_non_atomic",
+                                    "count": 2,
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p27_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "a1"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p27_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "b0"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P28_atomic_batch_transaction_check": {
+            "spec_id": "P28",
+            "title": "Atomic Batch Transaction Check",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.callback"
+            ],
+            "notes": "Validates transactional all-or-nothing semantics: callback rejection fails the atomic request and preserves all prior values.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p28_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p28_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "reject_names",
+                        "reject": [
+                            "p28_param_b"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p28_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p28_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p28_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p28_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "reject_names",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 2,
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p28_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "a0"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p28_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "b0"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P29_callback_storage_old_value_visibility": {
+            "spec_id": "P29",
+            "title": "Callback Storage Old-Value Visibility",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get",
+                "ros.params.callback"
+            ],
+            "notes": "Validates callback-time visibility: callback receives proposed value while storage still exposes old committed value during validation.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p29_probe",
+                        "value": "old_value"
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "assert_storage_old_value",
+                        "target": "p29_probe",
+                        "expected_old_value": "old_value"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p29_probe",
+                        "type": "string",
+                        "value": "new_value"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p29_probe"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "assert_storage_old_value",
+                                    "target": "p29_probe",
+                                    "expected_old_value": "old_value",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p29_probe",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p29_probe",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "new_value"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P30_external_visibility_after_success_only": {
+            "spec_id": "P30",
+            "title": "External Visibility After Success Only",
+            "layer": "Global",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.callback",
+                "ros.params.observe_events"
+            ],
+            "notes": "Validates observer-facing timing: rejected updates remain externally silent, and visibility occurs only after a successful commit.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p30_param_a",
+                        "value": "a0"
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p30_param_b",
+                        "value": "b0"
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "reject_names",
+                        "reject": [
+                            "p30_param_b"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p30_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            },
+                            {
+                                "name": "p30_param_b",
+                                "type": "string",
+                                "value": "b1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p30_param_a"
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p30_param_a",
+                                "type": "string",
+                                "value": "a1"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "reject_names",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 2,
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p30_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "a0"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 1,
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "parameter_event",
+                                "changed_parameters": [
+                                    {
+                                        "name": "p30_param_a",
+                                        "type": 4,
+                                        "value": "a1"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 1
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P33_standard_batch_partial_application_type_failure": {
+            "spec_id": "P33",
+            "title": "Standard Batch Partial Application (Type Failure)",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_non_atomic",
+                "ros.params.callback"
+            ],
+            "notes": "Result-first standard profile check: non-atomic batch applies earlier valid update and does not roll it back when a later element fails type validation; callback-time storage for the first key must still read old committed value.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p33_param_a",
+                        "value": 10
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p33_param_b",
+                        "value": 20
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "assert_storage_old_value",
+                        "target": "p33_param_a",
+                        "expected_old_value": "10"
+                    }
+                },
+                {
+                    "op": "set_params_non_atomic",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p33_param_a",
+                                "type": "integer",
+                                "value": 11
+                            },
+                            {
+                                "name": "p33_param_b",
+                                "type": "string",
+                                "value": "wrong_type"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p33_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p33_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "assert_storage_old_value",
+                                    "target": "p33_param_a",
+                                    "expected_old_value": "10",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_non_atomic",
+                                    "count": 2,
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p33_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 11
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p33_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 20
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P34_atomic_batch_transaction_integrity_type_failure": {
+            "spec_id": "P34",
+            "title": "Atomic Batch Transaction Integrity (Type Failure)",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.get",
+                "ros.params.set_batch",
+                "ros.params.callback"
+            ],
+            "notes": "Result-first atomic profile check: atomic batch with mixed valid/invalid elements must reject as a unit and preserve all prior values.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p34_param_a",
+                        "value": 10
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p34_param_b",
+                        "value": 20
+                    }
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "assert_storage_old_value",
+                        "target": "p34_param_a",
+                        "expected_old_value": "10"
+                    }
+                },
+                {
+                    "op": "set_params_batch",
+                    "payload": {
+                        "params": [
+                            {
+                                "name": "p34_param_a",
+                                "type": "integer",
+                                "value": 11
+                            },
+                            {
+                                "name": "p34_param_b",
+                                "type": "string",
+                                "value": "wrong_type"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p34_param_a"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p34_param_b"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "assert_storage_old_value",
+                                    "target": "p34_param_a",
+                                    "expected_old_value": "10",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_params_batch",
+                                    "count": 2,
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p34_param_a",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 10
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p34_param_b",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 20
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P35_concurrent_visibility_atomic_control": {
+            "spec_id": "P35",
+            "title": "Concurrent visibility control for atomic single-call batch set",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.concurrent_read"
+            ],
+            "notes": "Control probe for lock/visibility axis: repeated single atomic set_parameters_atomically calls under concurrent reads. Mixed old/new snapshot across target keys is forbidden.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p35_a",
+                        "value": "old_a",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p35_b",
+                        "value": "old_b",
+                        "descriptor": {
+                            "dynamic_typing": true
+                        }
+                    }
+                },
+                {
+                    "op": "concurrent_read_during_batch",
+                    "payload": {
+                        "api": "atomic",
+                        "target_params": [
+                            "p35_a",
+                            "p35_b"
+                        ],
+                        "trials": 200,
+                        "min_snapshots": 200,
+                        "reader_sleep_us": 0,
+                        "batch": [
+                            {
+                                "name": "p35_a",
+                                "type": "string",
+                                "value": "new_a"
+                            },
+                            {
+                                "name": "p35_b",
+                                "type": "string",
+                                "value": "new_b"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "concurrent_read_during_batch",
+                                    "api": "atomic",
+                                    "trial_count": 200,
+                                    "min_snapshots": 200,
+                                    "sample_sufficient": true,
+                                    "partial_state_observed": false,
+                                    "successful": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P31_no_default_with_startup_override": {
+            "spec_id": "P31",
+            "title": "No-default declaration resolves CLI startup override",
+            "layer": "Core",
+            "requires": [
+                "ros.params.cli_override_probe"
+            ],
+            "notes": "Issue-equivalent path for rclpy#1460 using CLI args (`--ros-args -p key:=value`): typed declaration without default must bind CLI override value.",
+            "ops": [
+                {
+                    "op": "probe_cli_typed_no_default_declare",
+                    "payload": {
+                        "node_name": "p31_cli_probe",
+                        "param_name": "p31_static_no_default",
+                        "descriptor_type": 4,
+                        "cli_value": "test_value"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "probe_cli_typed_no_default_declare",
+                                    "param_name": "p31_static_no_default",
+                                    "successful": true,
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "test_value"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P32_startup_declare_event_batching": {
+            "spec_id": "P32",
+            "title": "Startup declaration event batching signature",
+            "layer": "Global",
+            "requires": [
+                "ros.params.startup_probe"
+            ],
+            "notes": "Issue-equivalent path for rclcpp#1970: node startup performs multiple declare_parameter calls; expected batching is a single startup event containing all declared keys.",
+            "ops": [
+                {
+                    "op": "probe_startup_manual_declare_events",
+                    "payload": {
+                        "node_name": "p32_startup_probe",
+                        "window_ms": 500,
+                        "parameters": [
+                            {
+                                "name": "p32_a",
+                                "type": "string",
+                                "value": "a"
+                            },
+                            {
+                                "name": "p32_b",
+                                "type": "string",
+                                "value": "b"
+                            },
+                            {
+                                "name": "p32_c",
+                                "type": "string",
+                                "value": "c"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "probe_startup_manual_declare_events",
+                                    "declare_count": 3,
+                                    "event_count": 1,
+                                    "max_keys_in_single_event": 3,
+                                    "batched_single_event_observed": true,
+                                    "successful": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P36_integer_descriptor_range_enforcement": {
+            "spec_id": "P36",
+            "title": "Integer descriptor range is enforced on set",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.describe",
+                "ros.params.set",
+                "ros.params.get"
+            ],
+            "notes": "Issue-equivalent closure probe for rclcpp#728: integer range constraints from ParameterDescriptor are enforced and out-of-range writes are rejected.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p36_int",
+                        "value": 5,
+                        "descriptor": {
+                            "type": 2,
+                            "integer_range": [
+                                {
+                                    "from_value": 0,
+                                    "to_value": 10,
+                                    "step": 1
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "p36_int"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p36_int",
+                        "type": "integer",
+                        "value": 8
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p36_int",
+                        "type": "integer",
+                        "value": 11
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p36_int"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "p36_int",
+                                    "successful": true,
+                                    "descriptor": {
+                                        "type": 2,
+                                        "integer_range": [
+                                            {
+                                                "from_value": 0,
+                                                "to_value": 10,
+                                                "step": 1
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p36_int",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p36_int",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p36_int",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 8
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P37_floating_descriptor_range_enforcement": {
+            "spec_id": "P37",
+            "title": "Floating-point descriptor range is enforced on set",
+            "layer": "Core",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.describe",
+                "ros.params.set",
+                "ros.params.get"
+            ],
+            "notes": "Issue-equivalent closure probe for rclcpp#728: floating-point range constraints from ParameterDescriptor are enforced and out-of-range writes are rejected.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p37_double",
+                        "value": 0.5,
+                        "descriptor": {
+                            "type": 3,
+                            "floating_point_range": [
+                                {
+                                    "from_value": 0.0,
+                                    "to_value": 1.0,
+                                    "step": 0.1
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "op": "describe_param",
+                    "payload": {
+                        "name": "p37_double"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p37_double",
+                        "type": "double",
+                        "value": 0.9
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p37_double",
+                        "type": "double",
+                        "value": 1.5
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p37_double"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "describe_param",
+                                    "name": "p37_double",
+                                    "successful": true,
+                                    "descriptor": {
+                                        "type": 3,
+                                        "floating_point_range": [
+                                            {
+                                                "from_value": 0.0,
+                                                "to_value": 1.0,
+                                                "step": 0.1
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p37_double",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p37_double",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p37_double",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "double",
+                                    "value": 0.9
                                 }
                             }
                         ]

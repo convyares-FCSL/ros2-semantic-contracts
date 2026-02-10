@@ -15,6 +15,12 @@ SCENARIOS_DIR = HARNESS_DIR / "scenarios"
 
 REQUIRED_FIELDS = ["spec_id", "title", "layer", "ops", "expects"]
 OPTIONAL_FIELDS = ["notes", "requires"]
+SUPPORTED_EXPECT_CHECKS = {
+    "custom",
+    "absent",
+    "status_monotonic",
+    "describe_unknown_consistent",
+}
 
 def validate_bundle(path: Path) -> list[str]:
     """Validate a scenario bundle file. Returns list of errors."""
@@ -32,6 +38,27 @@ def validate_bundle(path: Path) -> list[str]:
                 errors.append(
                     f"{path.name}: {scenario_key} missing required field '{field}'"
                 )
+
+        expects = scenario.get("expects")
+        if isinstance(expects, list):
+            for idx, expect in enumerate(expects):
+                if not isinstance(expect, dict):
+                    errors.append(
+                        f"{path.name}: {scenario_key} expects[{idx}] must be an object"
+                    )
+                    continue
+                check = expect.get("check")
+                if not isinstance(check, str):
+                    errors.append(
+                        f"{path.name}: {scenario_key} expects[{idx}].check must be string"
+                    )
+                    continue
+                if check not in SUPPORTED_EXPECT_CHECKS:
+                    allowed = ", ".join(sorted(SUPPORTED_EXPECT_CHECKS))
+                    errors.append(
+                        f"{path.name}: {scenario_key} expects[{idx}].check='{check}' unsupported "
+                        f"(allowed: {allowed})"
+                    )
         
         # Check for legacy fields that should not exist
         if "spec_ref" in scenario:

@@ -1,89 +1,339 @@
 {
-    "version": "0.1",
-    "group": "H",
-    "description": "Harness self-tests (deterministic; not tied to ROS semantics or traceability.md).",
-    "scenarios": {
-        "H00_smoke_trace_roundtrip": {
-            "spec_id": "H00",
-            "title": "Smoke: scenario load -> backend run -> JSONL trace -> core evaluation",
-            "layer": "Harness",
-            "notes": "Deterministic stub-only. Proves pipeline and schema enforcement. Not a semantic spec test.",
-            "ops": [
-                {
-                    "op": "send_goal",
-                    "goal_id": "g1",
-                    "payload": {
-                        "mode": "accept"
-                    }
-                },
-                {
-                    "op": "wait",
-                    "ms": 10
-                },
-                {
-                    "op": "send_goal",
-                    "goal_id": "g2",
-                    "payload": {
-                        "mode": "reject"
-                    }
-                },
-                {
-                    "op": "wait",
-                    "ms": 10
-                }
-            ],
-            "expects": [
-                {
-                    "check": "custom",
-                    "params": {
-                        "must_observe": [
-                            {
-                                "type": "goal_send_decision",
-                                "goal_id": "g1",
-                                "accepted": true
-                            },
-                            {
-                                "type": "goal_send_decision",
-                                "goal_id": "g2",
-                                "accepted": false
-                            }
-                        ]
-                    }
-                }
-            ]
+  "version": "0.1",
+  "group": "Reliability",
+  "description": "Issue-equivalent + set_visibility closure evidence (P24,P25,P31,P32,P35)",
+  "scenarios": {
+    "P24_get_parameter_types_response_length": {
+      "spec_id": "P24",
+      "title": "GetParameterTypes response length matches request",
+      "layer": "Core",
+      "requires": [
+        "ros.params.declare",
+        "ros.params.get_parameter_types"
+      ],
+      "notes": "Spec-conformance test against official GetParameterTypes contract: response must preserve 1:1 request mapping, including undeclared names (NOT_SET entries) instead of collapsing to error/empty array.",
+      "ops": [
+        {
+          "op": "declare_param",
+          "payload": {
+            "name": "p24_known_param",
+            "value": "hello"
+          }
         },
-        "H01_ros_clock_smoke": {
-            "spec_id": "H01",
-            "title": "Smoke: ROS clock API returns valid timestamp",
-            "layer": "Harness",
-            "requires": ["clock.ros_time"],
-            "notes": "Exercises real rclcpp node creation and clock API. Proves ROS integration works.",
-            "ops": [
-                {
-                    "op": "get_clock"
-                }
-            ],
-            "expects": [
-                {
-                    "check": "custom",
-                    "params": {
-                        "must_observe": [
-                            {
-                                "type": "op_start",
-                                "detail": {
-                                    "op": "get_clock"
-                                }
-                            },
-                            {
-                                "type": "op_end",
-                                "detail": {
-                                    "op": "get_clock"
-                                }
-                            }
-                        ]
-                    }
-                }
+        {
+          "op": "get_parameter_types",
+          "payload": {
+            "names": [
+              "p24_known_param"
             ]
+          }
+        },
+        {
+          "op": "get_parameter_types",
+          "payload": {
+            "names": [
+              "p24_known_param",
+              "p24_unknown_a",
+              "p24_unknown_b"
+            ]
+          }
         }
+      ],
+      "expects": [
+        {
+          "check": "custom",
+          "params": {
+            "must_observe": [
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "declare_param",
+                  "name": "p24_known_param",
+                  "declared": true
+                }
+              },
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "get_parameter_types",
+                  "successful": true,
+                  "request_count": 1,
+                  "count": 1,
+                  "types": [
+                    4
+                  ]
+                }
+              },
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "get_parameter_types",
+                  "successful": true,
+                  "request_count": 3,
+                  "count": 3,
+                  "types": [
+                    4,
+                    0,
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "P31_no_default_with_startup_override": {
+      "spec_id": "P31",
+      "title": "No-default declaration resolves CLI startup override",
+      "layer": "Core",
+      "requires": [
+        "ros.params.cli_override_probe"
+      ],
+      "notes": "Issue-equivalent path for rclpy#1460 using CLI args (`--ros-args -p key:=value`): typed declaration without default must bind CLI override value.",
+      "ops": [
+        {
+          "op": "probe_cli_typed_no_default_declare",
+          "payload": {
+            "node_name": "p31_cli_probe",
+            "param_name": "p31_static_no_default",
+            "descriptor_type": 4,
+            "cli_value": "test_value"
+          }
+        }
+      ],
+      "expects": [
+        {
+          "check": "custom",
+          "params": {
+            "must_observe": [
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "probe_cli_typed_no_default_declare",
+                  "param_name": "p31_static_no_default",
+                  "successful": true,
+                  "declared": true,
+                  "set": true,
+                  "type": "string",
+                  "value": "test_value"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "P32_startup_declare_event_batching": {
+      "spec_id": "P32",
+      "title": "Startup declaration event batching signature",
+      "layer": "Global",
+      "requires": [
+        "ros.params.startup_probe"
+      ],
+      "notes": "Issue-equivalent path for rclcpp#1970: node startup performs multiple declare_parameter calls; expected batching is a single startup event containing all declared keys.",
+      "ops": [
+        {
+          "op": "probe_startup_manual_declare_events",
+          "payload": {
+            "node_name": "p32_startup_probe",
+            "window_ms": 500,
+            "parameters": [
+              {
+                "name": "p32_a",
+                "type": "string",
+                "value": "a"
+              },
+              {
+                "name": "p32_b",
+                "type": "string",
+                "value": "b"
+              },
+              {
+                "name": "p32_c",
+                "type": "string",
+                "value": "c"
+              }
+            ]
+          }
+        }
+      ],
+      "expects": [
+        {
+          "check": "custom",
+          "params": {
+            "must_observe": [
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "probe_startup_manual_declare_events",
+                  "declare_count": 3,
+                  "event_count": 1,
+                  "max_keys_in_single_event": 3,
+                  "batched_single_event_observed": true,
+                  "successful": true
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "P25_concurrent_visibility_probe": {
+      "spec_id": "P25",
+      "title": "Concurrent visibility during non-atomic single-call batch set",
+      "layer": "Core",
+      "requires": [
+        "ros.params.declare",
+        "ros.params.concurrent_read"
+      ],
+      "notes": "Issue-equivalent probe for lock/visibility claim: repeated single non-atomic set_parameters calls under concurrent reads. Baseline expectation is mixed old/new cross-key snapshots on the measured path.",
+      "ops": [
+        {
+          "op": "declare_param",
+          "payload": {
+            "name": "p25_a",
+            "value": "old_a",
+            "descriptor": {
+              "dynamic_typing": true
+            }
+          }
+        },
+        {
+          "op": "declare_param",
+          "payload": {
+            "name": "p25_b",
+            "value": "old_b",
+            "descriptor": {
+              "dynamic_typing": true
+            }
+          }
+        },
+        {
+          "op": "concurrent_read_during_batch",
+          "payload": {
+            "api": "non_atomic",
+            "target_params": [
+              "p25_a",
+              "p25_b"
+            ],
+            "trials": 200,
+            "min_snapshots": 200,
+            "reader_sleep_us": 0,
+            "batch": [
+              {
+                "name": "p25_a",
+                "type": "string",
+                "value": "new_a"
+              },
+              {
+                "name": "p25_b",
+                "type": "string",
+                "value": "new_b"
+              }
+            ]
+          }
+        }
+      ],
+      "expects": [
+        {
+          "check": "custom",
+          "params": {
+            "must_observe": [
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "concurrent_read_during_batch",
+                  "api": "non_atomic",
+                  "trial_count": 200,
+                  "min_snapshots": 200,
+                  "sample_sufficient": true,
+                  "partial_state_observed": true,
+                  "successful": true
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "P35_concurrent_visibility_atomic_control": {
+      "spec_id": "P35",
+      "title": "Concurrent visibility control for atomic single-call batch set",
+      "layer": "Core",
+      "requires": [
+        "ros.params.declare",
+        "ros.params.concurrent_read"
+      ],
+      "notes": "Control probe for lock/visibility axis: repeated single atomic set_parameters_atomically calls under concurrent reads. Mixed old/new snapshot across target keys is forbidden.",
+      "ops": [
+        {
+          "op": "declare_param",
+          "payload": {
+            "name": "p35_a",
+            "value": "old_a",
+            "descriptor": {
+              "dynamic_typing": true
+            }
+          }
+        },
+        {
+          "op": "declare_param",
+          "payload": {
+            "name": "p35_b",
+            "value": "old_b",
+            "descriptor": {
+              "dynamic_typing": true
+            }
+          }
+        },
+        {
+          "op": "concurrent_read_during_batch",
+          "payload": {
+            "api": "atomic",
+            "target_params": [
+              "p35_a",
+              "p35_b"
+            ],
+            "trials": 200,
+            "min_snapshots": 200,
+            "reader_sleep_us": 0,
+            "batch": [
+              {
+                "name": "p35_a",
+                "type": "string",
+                "value": "new_a"
+              },
+              {
+                "name": "p35_b",
+                "type": "string",
+                "value": "new_b"
+              }
+            ]
+          }
+        }
+      ],
+      "expects": [
+        {
+          "check": "custom",
+          "params": {
+            "must_observe": [
+              {
+                "type": "op_end",
+                "detail": {
+                  "op": "concurrent_read_during_batch",
+                  "api": "atomic",
+                  "trial_count": 200,
+                  "min_snapshots": 200,
+                  "sample_sufficient": true,
+                  "partial_state_observed": false,
+                  "successful": true
+                }
+              }
+            ]
+          }
+        }
+      ]
     }
+  }
 }

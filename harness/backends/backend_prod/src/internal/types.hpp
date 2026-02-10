@@ -28,6 +28,7 @@ struct Op {
 /// Scenario from bundle.
 struct Scenario {
     std::vector<std::string> required_caps;
+    std::optional<json> node_options;
     std::vector<Op> ops;
 };
 
