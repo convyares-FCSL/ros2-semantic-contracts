@@ -74,12 +74,12 @@ Nodes MAY operate in **declared-only mode** or **undeclared-allowed mode**.
 
 ## GetParameters behaviour
 
-### SPEC_P03 — Unknown Parameters Introspection Behavior [P08, P24]
+### SPEC_P03 — Unknown Parameters Introspection Behavior [P08]
 
 In declared-only mode:
-- `get_parameters` on unknown or undeclared names returns `NOT_SET`-typed values.
-- `get_parameter_types` with any undeclared name fails with `NotDeclared` in the Jazzy baseline profile.
-- Callers MUST NOT assume `get_parameter_types` returns a 1:1 `NOT_SET` mapping for mixed declared/undeclared requests.
+- `get_parameters` on unknown or undeclared names MUST return `NOT_SET`-typed values for requested keys.
+- Implementations MUST document their `get_parameter_types` behavior for undeclared names.
+- `get_parameter_types` 1:1 response conformance (including undeclared-name mapping) is governed by `SPEC_PC12`, not redefined here.
 
 <details>
 <summary>Sources and notes</summary>
@@ -90,7 +90,8 @@ In declared-only mode:
 - Community: None
 
 **Notes**
-- This clause captures observed Jazzy+rclcpp behavior and matching backend_py behavior in this repository.
+- Baseline profile observed in this repository for mixed declared/undeclared `get_parameter_types` requests is `successful=false`, `reason=NotDeclared`, `count=0`, `types=[]` (`P24` evidence path).
+- That observed profile is tracked as divergence evidence and MUST NOT replace the `SPEC_PC12` conformance requirement.
 
 </details>
 
@@ -135,7 +136,7 @@ In declared-only mode:
 
 </details>
 
-### SPEC_P10 — Atomicity Profiles and Commit-Gated Visibility [P27, P28, P29, P30, P33, P34]
+### SPEC_P10 — Atomicity Profiles and Commit-Gated Visibility [P27, P28, P29, P30, P33, P34, P41]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -153,11 +154,12 @@ Visibility contract:
 
 **Sources**
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
-- Baseline: Jazzy+rclcpp and Jazzy+rclpy measured behavior (`P17`, `P18`, `P27`-`P30`, `P33`, `P34`)
+- Baseline: Jazzy+rclcpp and Jazzy+rclpy measured behavior (`P17`, `P18`, `P27`-`P30`, `P33`, `P34`, `P41`)
 
 **Notes**
 - This clause captures observer-facing timing semantics; it does not constrain internal locking implementation.
 - Pinned Docker Jazzy+Humble evidence exists for this scenario family across `prod` and `py`.
+- `P41` adds a counterfactual control that rejects pre-commit visibility assumptions and passed on current `prod`/`py` Jazzy runs.
 
 </details>
 
@@ -165,22 +167,24 @@ Visibility contract:
 
 ## Parameter events
 
-### SPEC_P05 — Deterministic Event Emission [P07, P11]
+### SPEC_P05 — Commit-Only Event Semantics [P10, P11]
 
-⚠️ **UNVALIDATED (baseline hypothesis)**
+Parameter events describe committed state changes, not rejected attempts.
+- Successful committed updates MUST be observable via change payloads that match committed value/type state.
+- Rejected updates MUST NOT appear as committed change events.
 
-Parameter change events MUST describe **state changes**, not attempts.
-- Observers MUST NOT rely on event count as a proxy for operation count.
-- Ordering and content MUST remain deterministic.
+Retired in `D-P2-01`:
+- Startup/non-atomic event cardinality and full deterministic envelope claims were removed from closure (`P20`, `P32` remain probe-only signature scenarios).
 
 <details>
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: None
-- REP/RFC: None
-- Community: None
-- Baseline: Jazzy+rclcpp observed behavior
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Baseline: Jazzy+rclcpp, Jazzy+rclpy (`P10`, `P11`)
+
+**Notes**
+- This clause is intentionally bounded to commit-vs-reject observables.
 
 </details>
 
@@ -188,11 +192,13 @@ Parameter change events MUST describe **state changes**, not attempts.
 
 ## Introspection
 
-### SPEC_P06 — Consistent Description [P12]
+### SPEC_P06 — Unknown Describe Profile Stability [P12]
 
-Behaviour for `describe_parameters` on unknown parameters MUST be consistent.
-- If descriptors are returned for unknown parameters, their semantics MUST be documented.
-- No default descriptor behaviour is assumed.
+For repeated `describe_parameters` calls on the same unknown key, observable outcome shape MUST be stable within the tested process profile.
+- The returned descriptor default fields MUST remain stable across repeated calls.
+- The success/failure shape for unknown keys MUST be consistent for the implementation profile.
+- Unknown-key describe operations MUST NOT mutate unrelated declared parameter state.
+- Error reason text is implementation-defined and not normative.
 
 <details>
 <summary>Sources and notes</summary>
@@ -228,15 +234,12 @@ For `list_parameters`:
 
 ## Deletion semantics
 
-### SPEC_P08 — Optional Deletion Support [P14]
-
-⚠️ **UNVALIDATED (baseline contradicts)**
+### SPEC_P08 — Optional Deletion Profile [P14, P42]
 
 Parameter deletion support is optional.
-- If supported, deletion MUST be documented.
-- Deleted parameters SHOULD be reported via parameter events.
-  Baseline observation (Jazzy+rclcpp): `undeclare_parameter` does NOT emit a `ParameterEvent`
-  to `/parameter_events`. Top-level docs are silent on deletion event requirements.
+- If supported, deleting a declared key MUST remove it from parameter read/list surfaces.
+- Deleting an unknown key MUST fail or no-op without mutating unrelated declared keys.
+- Emission of a delete `parameter_event` is implementation-profile behavior and MUST be explicitly documented.
 
 <details>
 <summary>Sources and notes</summary>
@@ -245,9 +248,10 @@ Parameter deletion support is optional.
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
 - REP/RFC: None
 - Community: None
+- Baseline: Jazzy+rclcpp, Jazzy+rclpy (`P14`, `P42`)
 
 **Notes**
-- Changed from MUST to SHOULD: rclcpp baseline does not emit ParameterEvent on undeclare.
-  Per authority ladder, rclcpp behavior defines truth when docs are silent.
+- Current measured Jazzy profile in this repository: successful undeclare removes state and emits no delete event (`P14`).
+- Unknown undeclare returns `NotDeclared` and preserves unrelated state (`P42`).
 
 </details>

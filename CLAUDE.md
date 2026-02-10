@@ -25,7 +25,7 @@
 - If you don’t know a constraint, stop and ask rather than guessing.
 
 ## Read first
-- docs/CONTEXT.md
+- docs/README.md
 - README.md
 - docs/spec/*
 - docs/provenance/scenario/*

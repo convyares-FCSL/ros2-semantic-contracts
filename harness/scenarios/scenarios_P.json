@@ -489,7 +489,7 @@
                 "ros.params.set",
                 "ros.params.get"
             ],
-            "notes": "Validates SPEC_PC07 baseline hypothesis at operation level: sequential writes must be externally observable in the same order via immediate reads. This scenario does not assert /parameter_events payloads directly.",
+            "notes": "Probe-only ordering signature after SPEC_PC07 retirement: sequential writes should be immediately observable in order via readback on the same key. No closure-critical /parameter_events assertions are made here.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1032,10 +1032,19 @@
             "title": "Describe Unknown Consistent",
             "layer": "Core",
             "requires": [
-                "ros.params.describe"
+                "ros.params.declare",
+                "ros.params.describe",
+                "ros.params.get"
             ],
-            "notes": "Validates SPEC_P06: calling describe_param twice on the same unknown parameter must return identical descriptor fields. Consistency defined as: type, read_only, dynamic_typing fields must match across calls. Note: rclcpp throws on undeclared params, so we catch and fabricate a default descriptor.",
+            "notes": "Validates bounded SPEC_P06 profile: repeated describe_param calls on the same unknown key return a stable default descriptor shape, and the query path does not mutate unrelated declared state.",
             "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p12_guard",
+                        "value": "guard_value"
+                    }
+                },
                 {
                     "op": "describe_param",
                     "payload": {
@@ -1047,6 +1056,12 @@
                     "payload": {
                         "name": "param_does_not_exist"
                     }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p12_guard"
+                    }
                 }
             ],
             "expects": [
@@ -1054,6 +1069,14 @@
                     "check": "custom",
                     "params": {
                         "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p12_guard",
+                                    "declared": true
+                                }
+                            },
                             {
                                 "type": "op_end",
                                 "detail": {
@@ -1078,6 +1101,17 @@
                                         "read_only": false,
                                         "dynamic_typing": false
                                     }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p12_guard",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "guard_value"
                                 }
                             }
                         ]
@@ -1225,7 +1259,7 @@
                 "ros.params.get",
                 "ros.params.observe_events"
             ],
-            "notes": "Direct observation on Jazzy: undeclare removes parameter from observable state; no parameter_event is emitted. Consistent with corrected SPEC_P08/SPEC_PC08 (SHOULD, not MUST).",
+            "notes": "Declared-key deletion profile for rewritten SPEC_PC08/SPEC_P08: undeclare removes parameter state; measured Jazzy profile emits no delete event.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1320,9 +1354,11 @@
                 "ros.params.set",
                 "ros.params.get",
                 "ros.params.set_batch",
-                "ros.params.delete"
+                "ros.params.delete",
+                "ros.params.list",
+                "ros.params.get_parameter_types"
             ],
-            "notes": "Proxy validation for SPEC_P01: direct graph introspection is not yet modeled, so this scenario verifies that standard parameter interface operations are executable and semantically coherent within one scenario.",
+            "notes": "Proxy validation for SPEC_P01 with bounded negative checks: confirms executable behavior across declare/describe/get/set/set_batch/list/get_parameter_types/undeclare surfaces, then verifies post-undeclare strict-mode rejection paths remain coherent.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -1338,6 +1374,23 @@
                     "op": "describe_param",
                     "payload": {
                         "name": "iface_probe_param"
+                    }
+                },
+                {
+                    "op": "get_parameter_types",
+                    "payload": {
+                        "names": [
+                            "iface_probe_param"
+                        ]
+                    }
+                },
+                {
+                    "op": "list_params",
+                    "payload": {
+                        "prefixes": [
+                            "iface_probe_param"
+                        ],
+                        "depth": 1
                     }
                 },
                 {
@@ -1379,6 +1432,31 @@
                     }
                 },
                 {
+                    "op": "list_params",
+                    "payload": {
+                        "prefixes": [
+                            "iface_probe_param"
+                        ],
+                        "depth": 1
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "iface_probe_param",
+                        "type": "string",
+                        "value": "after_undeclare"
+                    }
+                },
+                {
+                    "op": "get_parameter_types",
+                    "payload": {
+                        "names": [
+                            "iface_probe_param"
+                        ]
+                    }
+                },
+                {
                     "op": "get_param",
                     "payload": {
                         "name": "iface_probe_param"
@@ -1404,6 +1482,32 @@
                                     "op": "describe_param",
                                     "name": "iface_probe_param",
                                     "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_parameter_types",
+                                    "successful": true,
+                                    "request_count": 1,
+                                    "count": 1,
+                                    "types": [
+                                        4
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "list_params",
+                                    "prefixes_in": [
+                                        "iface_probe_param"
+                                    ],
+                                    "depth": 1,
+                                    "count": 1,
+                                    "names": [
+                                        "iface_probe_param"
+                                    ]
                                 }
                             },
                             {
@@ -1450,6 +1554,37 @@
                                     "op": "undeclare_param",
                                     "name": "iface_probe_param",
                                     "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "list_params",
+                                    "prefixes_in": [
+                                        "iface_probe_param"
+                                    ],
+                                    "depth": 1,
+                                    "count": 0,
+                                    "names": []
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "iface_probe_param",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_parameter_types",
+                                    "successful": false,
+                                    "request_count": 1,
+                                    "count": 0,
+                                    "types": [],
+                                    "reason": "NotDeclared"
                                 }
                             },
                             {
@@ -1914,7 +2049,7 @@
                 "ros.params.set_non_atomic",
                 "ros.params.observe_events"
             ],
-            "notes": "Detects #1970 signature directly: atomic batch emits one grouped event, non-atomic batch emits per-parameter events.",
+            "notes": "Probe-only signature for #1970 tracking after SPEC_P05.P2 retirement: atomic batch grouped event vs non-atomic per-parameter events on a tested 3-key path.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -2199,9 +2334,11 @@
             "layer": "Core",
             "requires": [
                 "ros.params.declare",
-                "ros.params.describe"
+                "ros.params.describe",
+                "ros.params.set",
+                "ros.params.get"
             ],
-            "notes": "Validates SPEC_PC10: when declaring with explicit ParameterDescriptor.type, the declared type must be enforced. Requires declare_param to accept descriptor.type field. Hypothesis: rclcpp enforces descriptor.type over value-deduced type.",
+            "notes": "Validates SPEC_PC10 using a positive+negative pair: explicit descriptor.type is preserved on declaration and a mismatched set attempt is rejected with the original typed value preserved.",
             "ops": [
                 {
                     "op": "declare_param",
@@ -2215,6 +2352,20 @@
                 },
                 {
                     "op": "describe_param",
+                    "payload": {
+                        "name": "p22_typed_param"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p22_typed_param",
+                        "type": "string",
+                        "value": "mismatch"
+                    }
+                },
+                {
+                    "op": "get_param",
                     "payload": {
                         "name": "p22_typed_param"
                     }
@@ -2241,6 +2392,25 @@
                                     "descriptor": {
                                         "type": 2
                                     }
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p22_typed_param",
+                                    "successful": false
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p22_typed_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 42
                                 }
                             }
                         ]
@@ -3448,12 +3618,12 @@
         },
         "P32_startup_declare_event_batching": {
             "spec_id": "P32",
-            "title": "Startup declaration event batching signature",
+            "title": "Startup declaration event signature probe",
             "layer": "Global",
             "requires": [
                 "ros.params.startup_probe"
             ],
-            "notes": "Issue-equivalent path for rclcpp#1970: node startup performs multiple declare_parameter calls; expected batching is a single startup event containing all declared keys.",
+            "notes": "Issue-signature probe for startup declaration event shape. This scenario records event signature fields without enforcing a normative batching contract.",
             "ops": [
                 {
                     "op": "probe_startup_manual_declare_events",
@@ -3490,9 +3660,6 @@
                                 "detail": {
                                     "op": "probe_startup_manual_declare_events",
                                     "declare_count": 3,
-                                    "event_count": 1,
-                                    "max_keys_in_single_event": 3,
-                                    "batched_single_event_observed": true,
                                     "successful": true
                                 }
                             }
@@ -3720,6 +3887,367 @@
                                     "set": true,
                                     "type": "double",
                                     "value": 0.9
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P38_undeclared_allowed_implicit_declaration_mode": {
+            "spec_id": "P38",
+            "title": "Undeclared-allowed mode implicitly declares on set",
+            "layer": "Global",
+            "node_options": {
+                "allow_undeclared_parameters": true,
+                "automatically_declare_parameters_from_overrides": false
+            },
+            "requires": [
+                "ros.params.set",
+                "ros.params.get",
+                "ros.params.list",
+                "ros.params.get_parameter_types"
+            ],
+            "notes": "Validates undeclared-allowed branch for SPEC_PC06/SPEC_P02: setting an unknown key succeeds, implicitly declares the key, and makes it visible via get/list/get_parameter_types.",
+            "ops": [
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p38_implicit_param",
+                        "type": "integer",
+                        "value": 7
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p38_implicit_param"
+                    }
+                },
+                {
+                    "op": "list_params",
+                    "payload": {
+                        "prefixes": [
+                            "p38_implicit_param"
+                        ],
+                        "depth": 1
+                    }
+                },
+                {
+                    "op": "get_parameter_types",
+                    "payload": {
+                        "names": [
+                            "p38_implicit_param"
+                        ]
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p38_implicit_param",
+                        "type": "integer",
+                        "value": 9
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p38_implicit_param"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p38_implicit_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p38_implicit_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 7
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "list_params",
+                                    "prefixes_in": [
+                                        "p38_implicit_param"
+                                    ],
+                                    "depth": 1,
+                                    "count": 1,
+                                    "names": [
+                                        "p38_implicit_param"
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_parameter_types",
+                                    "successful": true,
+                                    "request_count": 1,
+                                    "count": 1,
+                                    "types": [
+                                        2
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p38_implicit_param",
+                                    "successful": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p38_implicit_param",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "integer",
+                                    "value": 9
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P41_no_premature_visibility_before_commit_control": {
+            "spec_id": "P41",
+            "title": "No premature visibility before commit (control)",
+            "layer": "Global",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.set",
+                "ros.params.get",
+                "ros.params.callback",
+                "ros.params.observe_events"
+            ],
+            "notes": "Control pair for P29: callback is intentionally configured with a counterfactual expected_old_value to prove commit has not happened yet. Set must be rejected by callback and no external change event should be emitted.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p41_probe",
+                        "value": "old_value"
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "register_param_callback",
+                    "payload": {
+                        "mode": "assert_storage_old_value",
+                        "target": "p41_probe",
+                        "expected_old_value": "new_value"
+                    }
+                },
+                {
+                    "op": "set_param",
+                    "payload": {
+                        "name": "p41_probe",
+                        "type": "string",
+                        "value": "new_value"
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p41_probe"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p41_probe",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "register_param_callback",
+                                    "mode": "assert_storage_old_value",
+                                    "target": "p41_probe",
+                                    "expected_old_value": "new_value",
+                                    "registered": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "set_param",
+                                    "name": "p41_probe",
+                                    "successful": false,
+                                    "reason": "StorageNotOld:p41_probe"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p41_probe",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "old_value"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "P42_unknown_delete_safe_no_corruption": {
+            "spec_id": "P42",
+            "title": "Unknown delete is safe and non-corrupting",
+            "layer": "Policy",
+            "requires": [
+                "ros.params.declare",
+                "ros.params.delete",
+                "ros.params.get",
+                "ros.params.observe_events"
+            ],
+            "notes": "Validates bounded deletion safety profile for SPEC_PC08/SPEC_P08: undeclare on unknown key fails safely, emits no event, and does not mutate existing declared keys.",
+            "ops": [
+                {
+                    "op": "declare_param",
+                    "payload": {
+                        "name": "p42_guard",
+                        "value": "ok"
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "undeclare_param",
+                    "payload": {
+                        "name": "p42_missing"
+                    }
+                },
+                {
+                    "op": "observe_param_events",
+                    "ms": 200
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p42_guard"
+                    }
+                },
+                {
+                    "op": "get_param",
+                    "payload": {
+                        "name": "p42_missing"
+                    }
+                }
+            ],
+            "expects": [
+                {
+                    "check": "custom",
+                    "params": {
+                        "must_observe": [
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "declare_param",
+                                    "name": "p42_guard",
+                                    "declared": true
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "undeclare_param",
+                                    "name": "p42_missing",
+                                    "successful": false,
+                                    "reason": "NotDeclared"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "observe_param_events",
+                                    "window_ms": 200,
+                                    "count": 0
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p42_guard",
+                                    "declared": true,
+                                    "set": true,
+                                    "type": "string",
+                                    "value": "ok"
+                                }
+                            },
+                            {
+                                "type": "op_end",
+                                "detail": {
+                                    "op": "get_param",
+                                    "name": "p42_missing",
+                                    "declared": false,
+                                    "set": false,
+                                    "type": "NOT_SET"
                                 }
                             }
                         ]

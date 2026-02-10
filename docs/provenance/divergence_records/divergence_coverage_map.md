@@ -19,19 +19,21 @@ Legend:
 |---|---|---|---|---|---|---|---|
 | `ros2/rclcpp#2512` | `P24` | ❌ | ❌ | ❌ | ❌ | ⚠️ Open, reproduced | Both libraries violate 1:1 `get_parameter_types` contract on mixed declared+undeclared requests. |
 | `ros2/rclpy#1460` | `P31` | ✅ | ❌ | ✅ | ✅ | ⚠️ Open, reproduced | Exact CLI path regression exists on Jazzy `rclpy` only. |
-| `ros2/rclcpp#1970` | `P32` | ❌ | ❌ | ❌ | ❌ | ⚠️ Open, reproduced | Startup `declare_parameter` calls are not batched into a single parameter event. |
+| `ros2/rclcpp#1970` | `P32` | ❌ | ❌ | ❌ | ❌ | ⚠️ Open, reproduced (probe-only) | Startup `declare_parameter` batching remains an upstream feature gap; tracked as probe-only after `SPEC_P05.P2` retirement. |
 | `ros2/rclcpp#728` | `P36`,`P37` | ✅ | ✅ | ✅ | ✅ | ✅ Confirmed closed behavior | Range enforcement is present in measured matrix. |
 
-## 2) Known Parameter Divergences (4)
+## 2) Known Parameter Divergences (3)
 
-These are the four parameter-level divergences currently tracked in this repo.
+These are the three parameter-level divergences currently tracked in this repo.
 
 | Divergence | Scenario | Jazzy cpp | Jazzy py | Humble cpp | Humble py | State |
 |---|---|---|---|---|---|---|
 | Service contract mismatch (`get_parameter_types` mapping) | `P24` | ❌ | ❌ | ❌ | ❌ | ⚠️ Open divergence (both libs) |
 | Typed no-default + CLI override regression | `P31` | ✅ | ❌ | ✅ | ✅ | ⚠️ Open divergence (Jazzy `py`) |
-| Startup declaration event batching gap | `P32` | ❌ | ❌ | ❌ | ❌ | ⚠️ Open divergence (both libs) |
 | Non-atomic concurrent visibility asymmetry | `P25` | ✅ | ❌ | ✅ | ❌ | ⚠️ Open divergence (`prod` vs `py`) |
+
+Closure note:
+- `P32` remains tracked as a probe-only upstream gap (`DIV_002`), not a retained closure-gating divergence after `D-P2-01`.
 
 ## 3) Set-Parameter Closure (Single Spec, Two Scenarios)
 

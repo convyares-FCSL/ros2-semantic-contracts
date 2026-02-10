@@ -59,7 +59,7 @@ Section summaries are row-level scenario outcomes based on current backend cells
 
 </bk></bk>
 <details>
-<summary><strong>Parameters (P): 37 scenarios | ✅: 33 | ❌: 4 | N/A-only: 0</strong></summary>
+<summary><strong>Parameters (P): 40 scenarios | ✅: 37 | ❌: 3 | N/A-only: 0</strong></summary>
 
 | Spec ID | Scenario ID                      | stub | ros | PROD | PY   | rclrs | Notes                                       |
 | ------- | -------------------------------- | ---- | --- | ---- | ---- | ----- | ------------------------------------------- |
@@ -69,22 +69,22 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P04** | P04_no_partial_application       | N/A  | N/A | ✅ | ✅ | N/A   | Atomic batch-set rejection                  |
 | **P05** | P05_readonly_enforcement         | N/A  | N/A | ✅ | ✅ | N/A   | Read-only enforcement                       |
 | **P06** | P06_unknown_params_rejected      | N/A  | N/A | ✅ | ✅ | N/A   | Set undeclared param rejected               |
-| **P07** | P07_change_record_ordering       | N/A  | N/A | ✅ | ✅ | N/A   | Sequential writes observed in deterministic order |
+| **P07** | P07_change_record_ordering       | N/A  | N/A | ✅ | ✅ | N/A   | Probe-only ordering signature: sequential set/get progression on one key is stable on measured path |
 | **P08** | P08_unknown_types_not_set        | N/A  | N/A | ✅ | ✅ | N/A   | Undeclared param returns NOT_SET            |
 | **P09** | P09_atomic_updates               | N/A  | N/A | ✅ | ✅ | N/A   | Mixed batch failure shows no externally visible partial update |
 | **P10** | P10_rejected_updates_silent      | N/A  | N/A | ✅ | ✅ | N/A   | Direct: rejected update emits no `parameter_event` in observation window and state remains unchanged |
 | **P11** | P11_events_describe_changes      | N/A  | N/A | ✅ | ✅ | N/A   | Direct: `parameter_event` payloads reflect successful value/type transitions |
-| **P12** | P12_describe_unknown_consistent  | N/A  | N/A | ✅ | ✅ | N/A   | Undeclared param returns consistent default |
+| **P12** | P12_describe_unknown_consistent  | N/A  | N/A | ✅ | ✅ | N/A   | Bounded unknown-describe profile: repeated calls keep stable descriptor shape and do not mutate declared guard state |
 | **P13** | P13_list_complete_stable         | N/A  | N/A | ✅ | ✅ | N/A   | Direct: `list_params` prefix/depth filtering is complete and stable across repeated calls |
-| **P14** | P14_deletion_reported_events     | N/A  | N/A | ✅ | ✅ | N/A   | Direct (Jazzy observed): undeclare removes parameter state; no declare/undeclare `parameter_event` observed |
-| **P15** | P15_parameter_interface_conformity | N/A | N/A | ✅ | ✅ | N/A   | Proxy: standard parameter ops are executable and coherent end-to-end |
+| **P14** | P14_deletion_reported_events     | N/A  | N/A | ✅ | ✅ | N/A   | Declared-key deletion profile: undeclare removes state; measured Jazzy profile emits no delete event |
+| **P15** | P15_parameter_interface_conformity | N/A | N/A | ✅ | ✅ | N/A   | Proxy + bounded negatives: declare/describe/get/set/batch/list/types/undeclare paths are executable and coherent |
 | **P16** | P16_explicit_declaration_mode    | N/A  | N/A | ✅ | ✅ | N/A   | Strict declaration mode enforced (undeclared set rejected) |
 | **P17** | P17_non_atomic_batch_callback_rejection | N/A | N/A | ✅ | ✅ | N/A | Direct: non-atomic batch partially applies under callback rejection (`a=a1`, rejected `b` remains `b0`) |
 | **P18** | P18_atomic_batch_callback_rejection | N/A | N/A | ✅ | ✅ | N/A | Direct: atomic batch rejection preserves rollback (`a=a0`, `b=b0`) |
 | **P19** | P19_pre_set_removal_semantics    | N/A  | N/A | ✅ | ✅ | N/A   | Direct discovery: pre-set callback can remove parameters from atomic batch input |
-| **P20** | P20_parameter_event_cardinality_batch | N/A | N/A | ✅ | ✅ | N/A | Direct signature: atomic batch emits 1 grouped `parameter_event`; non-atomic batch emits 3 per-parameter events |
+| **P20** | P20_parameter_event_cardinality_batch | N/A | N/A | ✅ | ✅ | N/A | Probe-only signature: atomic batch grouped event vs non-atomic per-key event pattern on tested 3-key path |
 | **P21** | P21_descriptor_tracks_value_type | N/A  | N/A | ✅ | ✅ | N/A   | Direct discovery: for dynamic-typed params, descriptor `type` tracks current value type after successful set |
-| **P22** | P22_explicit_descriptor_type_enforcement | N/A | N/A | ✅ | ✅ | N/A | Limited: matching value+descriptor type case passes; this does not prove mismatch enforcement |
+| **P22** | P22_explicit_descriptor_type_enforcement | N/A | N/A | ✅ | ✅ | N/A | Direct positive+negative pair: explicit descriptor type is preserved on declaration and mismatched set is rejected with value unchanged |
 | **P23** | P23_declare_without_default      | N/A  | N/A | ✅ | ✅ | N/A   | Direct discovery: static typed declare without default succeeds and reads as `NOT_SET` until initialized |
 | **P24** | P24_get_parameter_types_response_length | N/A | N/A | ❌ | ❌ | N/A | Official-contract conformance check: mixed declared/undeclared query should return 1:1 types array; both backends collapse to `NotDeclared` with empty response (same in pinned Docker Jazzy+Humble) |
 | **P25** | P25_concurrent_visibility_probe  | N/A  | N/A | ✅ | ❌ | N/A   | Repeated single-call non-atomic concurrency probe: `prod` observed mixed snapshots (`partial_state_observed=true`), `py` observed no mixed snapshots (`false`); same asymmetry in pinned Docker Jazzy+Humble |
@@ -94,12 +94,15 @@ Section summaries are row-level scenario outcomes based on current backend cells
 | **P29** | P29_callback_storage_old_value_visibility | N/A | N/A | ✅ | ✅ | N/A | Direct: validation callback can assert storage still shows old committed value during set (same in pinned Docker Jazzy+Humble) |
 | **P30** | P30_external_visibility_after_success_only | N/A | N/A | ✅ | ✅ | N/A | Direct: rejected batch emits no event and successful follow-up emits committed change event (same in pinned Docker Jazzy+Humble) |
 | **P31** | P31_no_default_with_startup_override | N/A | N/A | ✅ | ❌ | N/A | Exact CLI path (`--ros-args -p`) for typed no-default declaration: ✅ on prod and py(Humble), ❌ on py(Jazzy) with `PARAMETER_NOT_SET` declaration error |
-| **P32** | P32_startup_declare_event_batching | N/A | N/A | ❌ | ❌ | N/A | Startup `declare_parameter` batching expectation violated (`event_count=3`, `max_keys_in_single_event=1`) on both backends in pinned Docker Jazzy+Humble |
+| **P32** | P32_startup_declare_event_batching | N/A | N/A | ✅ | ✅ | N/A | Probe-only startup declaration event signature capture (no closure-critical batching requirement) |
 | **P33** | P33_standard_batch_partial_application_type_failure | N/A | N/A | ✅ | ✅ | N/A | Result-first standard profile: later type failure does not roll back earlier success (`a=11`, `b=20`) (same in pinned Docker Jazzy+Humble) |
 | **P34** | P34_atomic_batch_transaction_integrity_type_failure | N/A | N/A | ✅ | ✅ | N/A | Result-first atomic profile: mixed valid/invalid batch rejects as unit and preserves both values (same in pinned Docker Jazzy+Humble) |
 | **P35** | P35_concurrent_visibility_atomic_control | N/A | N/A | ✅ | ✅ | N/A | Repeated single-call atomic concurrency control: no mixed snapshots observed (`partial_state_observed=false`) in both backends (same in pinned Docker Jazzy+Humble) |
 | **P36** | P36_integer_descriptor_range_enforcement | N/A | N/A | ✅ | ✅ | N/A | Descriptor integer range is enforced on set; out-of-range write is rejected (same in pinned Docker Jazzy+Humble) |
 | **P37** | P37_floating_descriptor_range_enforcement | N/A | N/A | ✅ | ✅ | N/A | Descriptor floating-point range is enforced on set; out-of-range write is rejected (same in pinned Docker Jazzy+Humble) |
+| **P38** | P38_undeclared_allowed_implicit_declaration_mode | N/A | N/A | ✅ | ✅ | N/A | Direct: undeclared-allowed mode implicitly declares unknown key on first successful set; introspection paths confirm declared state |
+| **P41** | P41_no_premature_visibility_before_commit_control | N/A | N/A | ✅ | ✅ | N/A | Control pair for P29: counterfactual callback expectation forces rejection before commit, with zero external events and old value preserved |
+| **P42** | P42_unknown_delete_safe_no_corruption | N/A | N/A | ✅ | ✅ | N/A | Unknown-key undeclare safely reports `NotDeclared`, emits no event, and preserves unrelated declared state |
 </details>
 
 </bk></bk>

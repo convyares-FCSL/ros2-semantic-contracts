@@ -2,7 +2,7 @@
 
 - Date: 2026-02-10
 - Type: `GAP`
-- Spec/Scenario: `SPEC_P05`, `P32_startup_declare_event_batching`
+- Spec/Scenario: `SPEC_P05.P2` (historical, retired from closure in `D-P2-01`), `P32_startup_declare_event_batching`
 - Related upstream:
   - `ros2/rclcpp#1970` (open, created 2022-07-12): https://github.com/ros2/rclcpp/issues/1970
 
@@ -56,4 +56,5 @@ Evidence files:
 ## 5) Disposition
 
 - Repository disposition: issue-equivalent cross-library gap reproduced and tracked.
+- Closure disposition: retained as probe-only signature evidence after `SPEC_P05.P2` retirement; not closure-gating.
 - Upstream disposition: open feature gap.

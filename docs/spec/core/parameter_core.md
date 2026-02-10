@@ -194,7 +194,7 @@ Concurrent read visibility claims are probe-scoped and API-profile specific.
 
 </details>
 
-### SPEC_PC16 — Atomicity & Transactional Updates [P27, P28, P29, P30, P33, P34]
+### SPEC_PC16 — Atomicity & Transactional Updates [P27, P28, P29, P30, P33, P34, P41]
 
 ⚠️ **UNVALIDATED (baseline hypothesis)**
 
@@ -212,11 +212,12 @@ Callback visibility contract during `on_set_parameters_callback` validation:
 
 **Sources**
 - Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
-- Baseline: Jazzy+rclcpp and Jazzy+rclpy measured set-API behavior (`P17`, `P18`), with callback visibility tracked via scenario family (`P29`, `P30`, `P33`, `P34`)
+- Baseline: Jazzy+rclcpp and Jazzy+rclpy measured set-API behavior (`P17`, `P18`), with callback visibility tracked via scenario family (`P29`, `P30`, `P33`, `P34`, `P41`)
 
 **Notes**
 - This clause consolidates split semantics currently represented across `SPEC_PC05` and `SPEC_PC13` into one explicit API-profile model.
 - Pinned Docker Jazzy+Humble evidence exists for `P27`-`P30`, `P33`, and `P34` across `prod` and `py`.
+- `P41` adds an explicit control for callback-time old-value visibility and passes on current `prod`/`py` Jazzy runs in this repository.
 
 </details>
 
@@ -224,46 +225,43 @@ Callback visibility contract during `on_set_parameters_callback` validation:
 
 ## Change Record Model
 
-### SPEC_PC07 — Deterministic Change Records [P07]
+### SPEC_PC07 — Deterministic Change Records [Retired]
 
-⚠️ **UNVALIDATED (baseline hypothesis)**
+**Retired in `D-P2-01`.**
 
-The core emits logical **change records** describing modifications.
-- Each operation MUST produce exactly one change record (containing one or more parameter changes).
-- Ordering within a record MUST reflect the application order.
-- **Determinism:** Identical operation sequences MUST produce identical records, independent of wall-clock time.
+This clause was removed from closure because it overreached beyond available authority and conflated core semantics with scheduler/middleware-sensitive event signatures.
+- `P07`, `P20`, and `P32` remain useful probes for implementation signatures.
+- They are not used as formal closure evidence for a retained core spec point.
 
 <details>
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: None (upstream silent on event cardinality)
-- Baseline: Jazzy+rclcpp implementation
+- Official: None (upstream silent on deterministic change-record cardinality/ordering at this granularity)
+- Baseline: Jazzy+rclcpp, Jazzy+rclpy probe paths
 
 **Notes**
-- "Change Record" maps to the `ParameterEvent` message in the global scope, but at the core level, it is a logical struct.
+- Retirement is deliberate bloat removal, not a downgrade to another requirement tier.
 
 </details>
 
-### SPEC_PC08 — Deletion Support [P14]
+### SPEC_PC08 — Optional Deletion Safety Profile [P14, P42]
 
-⚠️ **UNVALIDATED (baseline contradicts)**
-
-Deletion support is optional but must be deterministic if present.
-- If supported, deletion of a parameter SHOULD generate a change record indicating removal.
-  Baseline observation: Jazzy+rclcpp does NOT generate a change record on `undeclare_parameter`.
-- Deletion of an `Unknown` parameter MUST fail or be a no-op (depending on implementation), but MUST NOT corrupt state.
+Deletion support is optional, but if the delete API is exposed, deletion behavior MUST be state-safe and deterministic on the tested profile.
+- Deleting a declared key MUST remove it from subsequent parameter reads.
+- Deleting an unknown key MUST fail or no-op without mutating unrelated declared keys.
+- Core contract does not require a change-record emission on delete; wire-level event behavior is treated as a global profile concern.
 
 <details>
 <summary>Sources and notes</summary>
 
 **Sources**
-- Official: None
-- Baseline: Jazzy+rclcpp
+- Official: [ROS 2 Docs: Parameters](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html)
+- Baseline: Jazzy+rclcpp, Jazzy+rclpy (`P14`, `P42`)
 
 **Notes**
-- Changed from MUST to SHOULD: rclcpp baseline does not emit ParameterEvent on undeclare.
-  Top-level docs are silent. Per authority ladder, rclcpp behavior defines truth.
+- `P14` covers declared-key deletion state transition.
+- `P42` covers unknown-key deletion safety (`NotDeclared` and no unrelated-state corruption).
 
 </details>
 
@@ -294,7 +292,7 @@ After a successful set operation on a dynamically typed parameter, `describe_par
 Validated on Jazzy baseline (`P22_explicit_descriptor_type_enforcement`).
 
 When a parameter is declared with an explicit `ParameterDescriptor.type` field, the declared type MUST be enforced.
-If the initial value's type conflicts with the declared descriptor type, declaration MUST fail or the descriptor type MUST take precedence.
+Subsequent set requests whose type conflicts with that descriptor-constrained declaration MUST be rejected, and the prior committed value/type MUST be preserved.
 
 <details>
 <summary>Sources and notes</summary>
@@ -305,6 +303,8 @@ If the initial value's type conflicts with the declared descriptor type, declara
 
 **Notes**
 - Measured baseline behavior: explicit descriptor `type` is preserved on declaration.
+- Measured mismatch path in `P22`: attempting a string set against a descriptor-typed integer parameter is rejected and value remains unchanged.
+- Declare-time type-conflict precedence on initial value remains an optional follow-up probe, not closure-blocking.
 
 </details>
 

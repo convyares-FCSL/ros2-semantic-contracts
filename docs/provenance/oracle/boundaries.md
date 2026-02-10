@@ -2,7 +2,7 @@
 
 **Authority:** Normative. Single source of truth for component roles and provenance rules.
 **Scope:** All scenario families. Machine-enforced scope: Actions (Axx) initially.
-**Referenced from:** `docs/CONTEXT.md`, `CLAUDE.md`
+**Referenced from:** `docs/README.md`, `CLAUDE.md`
 
 ---
 

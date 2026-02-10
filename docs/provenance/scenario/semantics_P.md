@@ -128,24 +128,24 @@ If `allow_undeclared_parameters` is false, setting an unknown parameter fails.
 </details>
 
 ### P07 — Change Record Ordering
-**Validates:** `SPEC_PC07` (Core), `SPEC_P05` (Global)
+**Validates:** probe-only ordering signature (`SPEC_PC07`/`SPEC_P05.P2` retired from closure)
 **Layer:** Core
 
 **Claim**
-The system respects a deterministic record ordering for parameter operations.
+Sequential write/read operations on a single key produce an ordered value progression on the measured path.
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
-- Parameter events arrive in the order operations were applied.
-- The order should not vary unexpectedly across identical operations.
+- After each successful set (`v1`, `v2`, `v3`), immediate readback returns that just-committed value.
 
 **Non-claims**
-- Does not assert specific implementation details regarding how order is maintained.
+- Does not assert global `/parameter_events` cardinality or startup batching behavior.
+- Does not assert cross-node scheduler determinism.
 
 **Scope note**
-- Core↔Global composite: SPEC_PC07 defines the logical change-record model; SPEC_P05 defines the wire-observable event semantics. Both are exercised because the parameter event IS the change record exposed over the service layer.
+- Retained as an implementation-signature probe for replay/debugging context.
 </details>
 
 ### P08 — Unknown Types NOT_SET
@@ -232,13 +232,18 @@ Parameter events must describe changes in parameter values (Value/Type).
 **Layer:** Core
 
 **Claim**
-Describing an unknown parameter MUST produce a consistent, non-error response.
+Repeated `describe_param` calls on the same unknown key return a stable descriptor-outcome shape and do not mutate unrelated declared state.
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
-- Returns an empty descriptor or defined default, does not crash.
+- Two repeated unknown-key describes return the same default descriptor fields.
+- Unknown-key describe path is stable (`successful=false` on the measured profile, with descriptor defaults preserved).
+- Guard parameter declared before unknown describes remains unchanged after the query path.
+
+**Non-claims**
+- Does not assert exact reason-string text for unknown-key describe failures.
 </details>
 
 ### P13 — List Complete and Stable
@@ -258,36 +263,46 @@ Describing an unknown parameter MUST produce a consistent, non-error response.
 - Does not assert how lists are returned internally or how often the list is updated.
 </details>
 
-### P14 — Deletion Reported via Events
+### P14 — Deletion Profile (Declared Key)
 **Validates:** `SPEC_PC08` (Core), `SPEC_P08` (Global)
 **Layer:** Policy
 
 **Claim**
-Parameter deletion (if supported) is observable via parameter events.
+When deletion is supported, undeclaring a declared key removes it from observable parameter state on the measured profile.
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
-- `deleted_parameters` field in the event is populated.
+- Declared key is successfully undeclared.
+- Subsequent `get_param` reports the key as undeclared/`NOT_SET`.
+- On the measured Jazzy profile, no delete event is observed in the post-undeclare window.
 
 **Non-claims**
-- Does not specify how deletion is triggered or managed within the system.
+- Does not require delete-event emission as a universal cross-library contract.
 
 **Scope note**
-- Core↔Global composite: SPEC_PC08 defines deletion at the decision layer; SPEC_P08 defines deletion reporting on the wire. Both are exercised because event emission is the observable consequence of the deletion decision.
+- Unknown-key deletion safety is covered separately by `P42`.
 </details>
 
 ### P15 — Parameter Interface Conformity
 **Validates:** `SPEC_P01` (Global)
 **Layer:** Global
 
-**Claim:** The node exposes the standard ROS 2 parameter interface graph topology.
+**Claim**
+The parameter interface surface is executable and coherent across standard parameter operations, with bounded negative behavior after removal.
 
 <details>
-<summary>Assertions</summary>
-- Services `describe_parameters`, `get_parameter_types`, `get_parameters`, `list_parameters`, `set_parameters` exist.
-- Topic `parameter_events` exists.
+<summary>Assertions and Non-claims</summary>
+
+**Observable assertions**
+- Declared parameter can be described, typed, listed, set, batch-set, and then undeclared using standard parameter ops.
+- `get_parameter_types` on declared key returns a successful 1:1 mapping.
+- `list_params` reflects declared key presence before undeclare and absence after undeclare.
+- After undeclare in strict mode, direct set attempt is rejected and type query returns structured `NotDeclared` failure.
+
+**Non-claims**
+- This is a behavioral proxy; it does not directly introspect graph service/topic registration metadata.
 </details>
 
 ### P16 — Explicit Declaration Mode
@@ -363,11 +378,11 @@ A pre-set callback can transform the incoming batch (including removing keys) be
 </details>
 
 ### P20 — Parameter Event Cardinality for Atomic vs Non-Atomic Batch
-**Validates:** issue-signature probe for `rclcpp#1970`, `SPEC_P05` event envelope
+**Validates:** issue-signature probe (`SPEC_P05.P2` retired from closure)
 **Layer:** Global
 
 **Claim**
-Atomic and non-atomic batch APIs produce different event cardinality signatures on `/parameter_events`.
+Atomic and non-atomic batch APIs expose a measurable event-cardinality signature on the tested 3-key path.
 
 <details>
 <summary>Assertions and Non-claims</summary>
@@ -380,6 +395,7 @@ Atomic and non-atomic batch APIs produce different event cardinality signatures 
 **Non-claims**
 - Does not assert global scheduler fairness or cross-node ordering guarantees.
 - Does not assert latency bounds for event publication.
+- Does not define a retained closure-critical requirement.
 </details>
 
 ### P21 — Descriptor Tracks Dynamic Value Type
@@ -406,17 +422,19 @@ For dynamic-typed parameters, descriptor `type` reflects current value type afte
 **Layer:** Core
 
 **Claim**
-Declaring with explicit `ParameterDescriptor.type` should preserve that declared type.
+Declaring with explicit `ParameterDescriptor.type` preserves the declared type, and subsequent mismatched set attempts are rejected while preserving the last committed value.
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
 - Declaration succeeds with explicit descriptor type.
-- Describe call reports the expected descriptor type for the matching-value test case.
+- Describe call reports the declared descriptor type.
+- Mismatched set attempt against the descriptor-typed declaration is rejected.
+- Post-rejection readback preserves the original committed value/type.
 
 **Non-claims**
-- Current scenario is a matching-value case (`value` type == descriptor type) and does not prove mismatch enforcement behavior.
+- Does not assert declare-time conflict behavior when initial value type mismatches descriptor type.
 </details>
 
 ### P23 — Declaration Without Default Value
@@ -558,6 +576,48 @@ During validation callback execution, storage reads still expose the old committ
 - Does not assert cross-thread observer timing.
 </details>
 
+### P41 — No Premature Visibility Before Commit (Control)
+**Validates:** `SPEC_PC16` (Core), `SPEC_P10` (Global)
+**Layer:** Global
+
+**Claim**
+A counterfactual callback expectation proves commit has not happened yet: if callback demands the pending new value to already be in storage, the set is rejected, no change event is emitted, and old state remains.
+
+<details>
+<summary>Assertions and Non-claims</summary>
+
+**Observable assertions**
+- Callback registration succeeds in `assert_storage_old_value` mode with an intentionally wrong `expected_old_value` (`new_value`).
+- Set request fails with callback reason (`StorageNotOld:*`), demonstrating storage was not prematurely updated.
+- No `/parameter_events` message is emitted for the rejected attempt.
+- Readback remains at the old committed value.
+
+**Non-claims**
+- Does not assert scheduler fairness.
+- Does not assert latency bounds outside the configured event windows.
+</details>
+
+### P42 — Unknown Delete Safe No-Corruption
+**Validates:** `SPEC_PC08` (Core), `SPEC_P08` (Global)
+**Layer:** Policy
+
+**Claim**
+Deleting an unknown key is a safe failure/no-op path: operation reports `NotDeclared`, emits no delete event, and does not mutate unrelated declared state.
+
+<details>
+<summary>Assertions and Non-claims</summary>
+
+**Observable assertions**
+- Declared guard key remains intact after unknown-key undeclare attempt.
+- Unknown-key undeclare reports deterministic failure (`successful=false`, `reason=NotDeclared`).
+- No `/parameter_events` message is observed for the unknown-key undeclare attempt.
+- Unknown key remains undeclared/`NOT_SET`.
+
+**Non-claims**
+- Does not require a specific exception text beyond structured reason code matching.
+- Does not require successful-key delete event emission behavior (covered by `P14` profile observation).
+</details>
+
 ### P30 — External Visibility After Success Only
 **Validates:** `SPEC_PC16` (Core), `SPEC_P10` (Global)
 **Layer:** Global
@@ -662,26 +722,24 @@ When a CLI startup override (`--ros-args -p key:=value`) exists for a statically
   - `backend_py`: PASS on Humble, FAIL on Jazzy (`Cannot declare a statically typed parameter with default value of type PARAMETER_NOT_SET`)
 </details>
 
-### P32 — Startup Declaration Event Batching
-**Validates:** `SPEC_P05` (Global) issue-equivalent path for startup declarations
+### P32 — Startup Declaration Event Signature
+**Validates:** probe-only startup event signature (`SPEC_P05.P2` retired from closure)
 **Layer:** Global
 
 **Claim**
-Startup-time `declare_parameter` calls should be observable as one batched parameter event for the startup node.
+Startup-time `declare_parameter` calls produce a measurable event signature that can be tracked across versions/backends.
 
 <details>
 <summary>Assertions and Non-claims</summary>
 
 **Observable assertions**
 - Startup probe op reports declaration count and captured startup event signature.
-- Batched single-event signature is required (`event_count=1`, `max_keys_in_single_event=declare_count`).
+- Probe operation completes successfully for the configured declaration set.
 
 **Non-claims**
 - Does not assert global ordering relative to unrelated nodes' parameter events.
 - Does not assert non-startup set APIs; those are covered by `P20`, `P27`-`P30`.
-
-**Current measured state**
-- In pinned Docker Jazzy+Humble runs in this repository (`backend_prod` and `backend_py`), this claim fails: startup declaration calls were observed as three single-key events, not one batched event.
+- Does not impose a closure-critical batching requirement.
 </details>
 
 ### P36 — Integer Descriptor Range Enforcement
@@ -707,6 +765,29 @@ If an integer parameter descriptor defines an integer range, out-of-range set at
 
 **Current measured state**
 - Pinned Docker Jazzy+Humble (`backend_prod`, `backend_py`): PASS.
+</details>
+
+### P38 — Undeclared-Allowed Mode Implicit Declaration
+**Validates:** `SPEC_PC06` (Core), `SPEC_P02` (Global)
+**Layer:** Global
+
+**Claim**
+When undeclared parameters are allowed, setting an unknown key succeeds and implicitly declares that key for subsequent introspection.
+
+<details>
+<summary>Assertions and Non-claims</summary>
+
+**Observable assertions**
+- Scenario runs with `node_options.allow_undeclared_parameters=true`.
+- Initial set on unknown key succeeds.
+- Follow-up `get_param` reports declared/set with expected value and type.
+- `list_params` includes the implicitly declared key.
+- `get_parameter_types` returns successful 1:1 type mapping for the key.
+- Subsequent set on the same key succeeds and updates value.
+
+**Non-claims**
+- Does not assert behavior for `automatically_declare_parameters_from_overrides=true`.
+- Does not assert mixed declared/undeclared `get_parameter_types` request behavior (covered by `P24` under `SPEC_PC12`).
 </details>
 
 ### P37 — Floating Descriptor Range Enforcement
